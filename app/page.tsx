@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Toast from '@/components/Toast';
+import { loginWithEmail, loginWithGoogle, saveUserProfile, getAuthErrorMessage } from '@/lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -55,15 +56,25 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Simulate login process
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const credential = await loginWithEmail(email, password);
+      // Save the selected role to the user's Firestore profile
+      await saveUserProfile(credential.user.uid, {
+        firstName: credential.user.displayName?.split(' ')[0] || '',
+        lastName: credential.user.displayName?.split(' ').slice(1).join(' ') || '',
+        email: credential.user.email || '',
+        role,
+      });
       setShowToast(true);
-      // Redirect after toast is visible
       setTimeout(() => {
         router.push('/dashboard');
       }, 1500);
-    }, 1000);
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string };
+      setError(getAuthErrorMessage(firebaseError.code || ''));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -216,9 +227,25 @@ export default function LoginPage() {
 
           <button
             type="button"
-            onClick={() => {
-
-              console.log('Continue with Google clicked');
+            onClick={async () => {
+              setError('');
+              try {
+                const result = await loginWithGoogle(role);
+                // Also save role for email/password Google users
+                await saveUserProfile(result.user.uid, {
+                  firstName: result.user.displayName?.split(' ')[0] || '',
+                  lastName: result.user.displayName?.split(' ').slice(1).join(' ') || '',
+                  email: result.user.email || '',
+                  role,
+                });
+                setShowToast(true);
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 1500);
+              } catch (err: unknown) {
+                const firebaseError = err as { code?: string };
+                setError(getAuthErrorMessage(firebaseError.code || ''));
+              }
             }}
             className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white border border-gray-300 rounded-md font-medium text-dark hover:bg-gray-50 hover:shadow-sm transition-all"
           >
@@ -237,8 +264,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-
-                router.push('/register');
+                router.push(`/register?role=${selectedTab}`);
               }}
               className="font-semibold text-primary hover:text-primary-hover transition-colors"
             >

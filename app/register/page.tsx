@@ -1,10 +1,40 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Toast from '@/components/Toast';
+import { registerWithEmail, getAuthErrorMessage } from '@/lib/auth';
+import { Suspense } from 'react';
 
-export default function RegisterPage() {
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get('role') || 'student';
+
+  // Map URL param to display name
+  const getRoleDisplayName = (tab: string) => {
+    switch (tab) {
+      case 'faculty':
+        return 'Faculty';
+      case 'admin':
+        return 'Administrator';
+      default:
+        return 'Student';
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'Faculty':
+        return 'bg-green-100 text-green-800';
+      case 'Administrator':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const role = getRoleDisplayName(roleParam);
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -48,15 +78,19 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    // Simulate registration process
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await registerWithEmail(email, password, firstName, lastName, role);
       setShowToast(true);
-      // Redirect after toast is visible
+      // Redirect to login after toast is visible
       setTimeout(() => {
         router.push('/');
       }, 1500);
-    }, 1000);
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string };
+      setError(getAuthErrorMessage(firebaseError.code || ''));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const EyeOpenIcon = () => (
@@ -74,7 +108,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <Toast message="Account created successfully!" type="success" show={showToast} onClose={handleToastClose} />
+      <Toast message="Account created! Please check your email to verify before signing in." type="success" show={showToast} onClose={handleToastClose} />
       {/* Header with logo */}
       <div className="bg-primary text-white p-4">
         <div className="max-w-md mx-auto">
@@ -87,7 +121,14 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
           <h2 className="text-2xl font-semibold text-dark mb-2 text-center">Create Account</h2>
-          <p className="text-sm text-secondary text-center mb-6">Fill in your details to get started</p>
+          <p className="text-sm text-secondary text-center mb-4">Fill in your details to get started</p>
+
+          {/* Role badge */}
+          <div className="flex justify-center mb-6">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(role)}`}>
+              Registering as: {role}
+            </span>
+          </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-primary text-sm">
@@ -238,5 +279,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

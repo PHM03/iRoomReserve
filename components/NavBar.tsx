@@ -9,13 +9,17 @@ interface NavBarProps {
     initials: string;
     role: string;
   };
+  onLogout?: () => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ user }) => {
+const NavBar: React.FC<NavBarProps> = ({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
   const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
     router.push('/');
   };
 
