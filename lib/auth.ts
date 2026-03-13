@@ -6,6 +6,7 @@ import {
   signOut,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import {
   doc,
@@ -256,6 +257,14 @@ export async function getUserProfile(uid: string) {
 // ─── Logout ─────────────────────────────────────────────────────
 export async function logout() {
   return signOut(auth);
+}
+
+// ─── Forgot Password (Reset via Email) ──────────────────────────
+export async function resetPassword(email: string) {
+  if (!isAllowedEmail(email)) {
+    throw { code: "auth/unauthorized-domain" };
+  }
+  await sendPasswordResetEmail(auth, email);
 }
 
 // ─── Resend Verification Email ──────────────────────────────────

@@ -175,9 +175,13 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <a href="#" className="text-sm text-white/50 hover:text-primary transition-colors font-bold">
+              <button
+                type="button"
+                onClick={() => router.push('/forgot-password')}
+                className="text-sm text-white/50 hover:text-primary transition-colors font-bold"
+              >
                 Forgot Password?
-              </a>
+              </button>
             </div>
 
             <button
