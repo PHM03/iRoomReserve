@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import NavBar from '@/components/NavBar';
 import StudentDashboard from '@/components/dashboards/StudentDashboard';
 import FacultyDashboard from '@/components/dashboards/FacultyDashboard';
+import UtilityStaffDashboard from '@/components/dashboards/UtilityStaffDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
 
 export default function Dashboard() {
@@ -61,6 +62,8 @@ export default function Dashboard() {
     switch (profile?.role) {
       case 'Faculty':
         return <FacultyDashboard firstName={firstName} />;
+      case 'Utility Staff':
+        return <UtilityStaffDashboard firstName={firstName} />;
       case 'Administrator':
         return <AdminDashboard firstName={firstName} />;
       case 'Student':

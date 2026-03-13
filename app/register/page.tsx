@@ -13,12 +13,14 @@ function RegisterForm() {
   const getRoleDisplayName = (tab: string) => {
     switch (tab) {
       case 'faculty': return 'Faculty';
+      case 'utility_staff': return 'Utility Staff';
       case 'admin': return 'Administrator';
       default: return 'Student';
     }
   };
 
   const role = getRoleDisplayName(roleParam);
+  const isFacultyFlow = roleParam === 'faculty' || roleParam === 'utility_staff';
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -30,6 +32,7 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [determinedRole, setDeterminedRole] = useState(role);
   const router = useRouter();
 
   const handleToastClose = useCallback(() => setShowToast(false), []);
@@ -64,11 +67,14 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      await registerWithEmail(email, password, firstName, lastName, role);
+      const result = await registerWithEmail(email, password, firstName, lastName, role);
+      const determinedRole = result.actualRole;
       setShowToast(true);
+      // Store determined role for toast message
+      setDeterminedRole(determinedRole);
       setTimeout(() => {
         router.push('/');
-      }, role === 'Student' ? 1500 : 3000);
+      }, determinedRole === 'Student' ? 1500 : 3000);
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
       setError(getAuthErrorMessage(firebaseError.code || ''));
@@ -92,9 +98,11 @@ function RegisterForm() {
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       <Toast
         message={
-          role === 'Student'
+          determinedRole === 'Student'
             ? 'Account created! Please check your email to verify before signing in.'
-            : 'Account created! Your registration is pending Super Admin approval.'
+            : determinedRole === 'Utility Staff'
+              ? 'Account created as Utility Staff! Your registration is pending Super Admin approval.'
+              : 'Account created! Your registration is pending Super Admin approval.'
         }
         type="success"
         show={showToast}
@@ -122,11 +130,23 @@ function RegisterForm() {
           <p className="text-sm text-white/50 text-center mb-4">Fill in your details to get started</p>
 
           {/* Role badge */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4">
             <span className="glass-badge inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold text-white/80">
               Registering as: {role}
             </span>
           </div>
+
+          {/* Faculty flow info note */}
+          {isFacultyFlow && (
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-sm">
+              <p className="font-bold mb-1">📋 Email determines your role:</p>
+              <p className="text-xs text-blue-300/70">
+                Use your <strong>SDCA email</strong> to register as <strong>Faculty</strong>, or a
+                <strong> personal email</strong> (e.g. Gmail) to register as <strong>Utility Staff</strong>.
+                Both require Super Admin approval.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">

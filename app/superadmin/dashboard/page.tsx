@@ -78,6 +78,7 @@ export default function SuperAdminDashboard() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'Faculty': return 'bg-green-500/20 text-green-300 border-green-500/30';
+      case 'Utility Staff': return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
       case 'Administrator': return 'bg-red-500/20 text-red-300 border-red-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }

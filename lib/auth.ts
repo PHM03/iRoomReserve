@@ -35,9 +35,8 @@ export function isAllowedEmail(email: string): boolean {
 
 // ─── Email / Password Login ─────────────────────────────────────
 export async function loginWithEmail(email: string, password: string) {
-  if (!isAllowedEmail(email)) {
-    throw { code: "auth/unauthorized-domain" };
-  }
+  // Don't enforce SDCA email upfront — Utility Staff use non-SDCA emails.
+  // Domain validation happens based on the user's stored role after login.
   const credential = await signInWithEmailAndPassword(auth, email, password);
 
   // Block login if email is not verified
@@ -58,9 +57,9 @@ export async function loginWithEmail(email: string, password: string) {
     return credential;
   }
 
-  // Check approval status for Faculty and Administrator
+  // Check approval status for Faculty, Utility Staff, and Administrator
   const profile = await getUserProfile(credential.user.uid);
-  if (profile && (profile.role === "Faculty" || profile.role === "Administrator")) {
+  if (profile && (profile.role === "Faculty" || profile.role === "Administrator" || profile.role === "Utility Staff")) {
     if (profile.status === "pending") {
       await signOut(auth);
       throw { code: "auth/account-pending" };
@@ -82,7 +81,14 @@ export async function registerWithEmail(
   lastName: string,
   role: string = "Student"
 ) {
-  if (!isAllowedEmail(email)) {
+  // Auto-detect Utility Staff: if registering as Faculty with a non-SDCA email,
+  // the user is a Utility Staff member.
+  const actualRole = (role === "Faculty" && !isAllowedEmail(email))
+    ? "Utility Staff"
+    : role;
+
+  // Enforce SDCA email for all roles except Utility Staff
+  if (actualRole !== "Utility Staff" && !isAllowedEmail(email)) {
     throw { code: "auth/unauthorized-domain" };
   }
 
@@ -95,10 +101,10 @@ export async function registerWithEmail(
   });
 
   // 3. Determine approval status based on role
-  const status = role === "Student" ? "approved" : "pending";
+  const status = actualRole === "Student" ? "approved" : "pending";
 
   // 4. Save additional profile data to Firestore (including role and status)
-  await saveUserProfile(credential.user.uid, { firstName, lastName, email, role, status });
+  await saveUserProfile(credential.user.uid, { firstName, lastName, email, role: actualRole, status });
 
   // 5. Send email verification
   await sendEmailVerification(credential.user);
@@ -106,7 +112,7 @@ export async function registerWithEmail(
   // 6. Sign out until they verify their email
   await signOut(auth);
 
-  return credential;
+  return { credential, actualRole };
 }
 
 // ─── Google Sign-In ─────────────────────────────────────────────
@@ -141,8 +147,8 @@ export async function loginWithGoogle(role: string = "Student") {
     status,
   });
 
-  // Check approval status for Faculty and Administrator
-  if (finalRole === "Faculty" || finalRole === "Administrator") {
+  // Check approval status for Faculty, Utility Staff, and Administrator
+  if (finalRole === "Faculty" || finalRole === "Administrator" || finalRole === "Utility Staff") {
     if (status === "pending") {
       await signOut(auth);
       throw { code: "auth/account-pending" };
@@ -334,7 +340,7 @@ export function onUsersByStatus(
   const q = query(
     collection(db, "users"),
     where("status", "==", status),
-    where("role", "in", ["Faculty", "Administrator"])
+    where("role", "in", ["Faculty", "Administrator", "Utility Staff"])
   );
   return onSnapshot(q, (snapshot) => {
     const users: ManagedUser[] = [];
