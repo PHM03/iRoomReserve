@@ -2,51 +2,47 @@
 
 import React from 'react';
 
-// ─── Mock Data ──────────────────────────────────────────────────
-const stats = [
-  { icon: '📋', label: 'Total Reservations', count: 12, color: 'border-blue-500/60', textColor: 'text-blue-400' },
-  { icon: '⏳', label: 'Pending', count: 3, color: 'border-yellow-500/60', textColor: 'text-yellow-400' },
-  { icon: '✅', label: 'Approved', count: 7, color: 'border-green-500/60', textColor: 'text-green-400' },
-  { icon: '❌', label: 'Rejected', count: 2, color: 'border-red-500/60', textColor: 'text-red-400' },
-];
-
-const upcomingReservations = [
-  { id: 1, room: 'Room 101', date: 'Mar 14, 2026', time: '09:00 – 10:30', purpose: 'Lecture', status: 'Approved' },
-  { id: 2, room: 'Room 201', date: 'Mar 14, 2026', time: '13:00 – 14:30', purpose: 'Group Study', status: 'Pending' },
-  { id: 3, room: 'Room 302', date: 'Mar 15, 2026', time: '10:00 – 12:00', purpose: 'Workshop', status: 'Approved' },
-  { id: 4, room: 'Room 102', date: 'Mar 16, 2026', time: '16:00 – 17:00', purpose: 'Tutorial', status: 'Rejected' },
-];
-
-const recentActivity = [
-  { id: 1, text: 'Room 101 reservation approved', time: '2 hours ago', icon: '✅' },
-  { id: 2, text: 'Submitted reservation for Room 302', time: '5 hours ago', icon: '📤' },
-  { id: 3, text: 'Room 201 reservation pending review', time: '1 day ago', icon: '⏳' },
-  { id: 4, text: 'Room 102 reservation was rejected', time: '2 days ago', icon: '❌' },
-  { id: 5, text: 'Checked in to Room 101', time: '3 days ago', icon: '📍' },
-];
-
 // ─── Status Badge ───────────────────────────────────────────────
-function ReservationBadge({ status }: { status: string }) {
+function HistoryBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Approved': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'Pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'Rejected': return 'bg-red-500/20 text-red-300 border-red-500/30';
+      case 'Approved': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'Rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'Completed': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'Pending': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }
   })();
-
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${style}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${style}`}>
       {status}
     </span>
   );
+}
+
+function HistoryDot({ status }: { status: string }) {
+  const color = (() => {
+    switch (status) {
+      case 'Approved': return 'bg-green-400';
+      case 'Rejected': return 'bg-red-400';
+      case 'Completed': return 'bg-yellow-400';
+      case 'Pending': return 'bg-blue-400';
+      default: return 'bg-white/30';
+    }
+  })();
+  return <span className={`w-2.5 h-full min-h-full rounded-full ${color} shrink-0`} />;
 }
 
 // ─── Component ──────────────────────────────────────────────────
 interface StudentDashboardProps {
   firstName: string;
 }
+
+// Empty state — no mock data. These arrays will be populated from Firestore later.
+const activeReservation: { room: string; status: string; until: string } | null = null;
+const pendingCount = 0;
+const nextBooking: { time: string; room: string; inMinutes: string } | null = null;
+const reservationHistory: { id: number; room: string; type: string; time: string; status: string }[] = [];
 
 export default function StudentDashboard({ firstName }: StudentDashboardProps) {
   return (
@@ -58,102 +54,119 @@ export default function StudentDashboard({ firstName }: StudentDashboardProps) {
           <p className="text-white/40 mt-1">Here&apos;s an overview of your reservations</p>
         </div>
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((s) => (
-            <div key={s.label} className={`glass-card p-5 border-l-4 ${s.color}`}>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-xl">
-                  {s.icon}
-                </div>
-                <div>
-                  <p className={`text-2xl font-bold ${s.textColor}`}>{s.count}</p>
-                  <p className="text-xs text-white/50 font-bold">{s.label}</p>
-                </div>
+        {/* ─── Top 3 Cards ────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* Active Now */}
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
+              <span className="text-xs text-white/40 font-bold">Active Now</span>
             </div>
-          ))}
-        </div>
-
-        {/* Upcoming Reservations */}
-        <div className="mb-10">
-          <h3 className="text-xl font-bold text-white mb-4">Upcoming Reservations</h3>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block glass-card overflow-hidden !rounded-xl">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Room</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Purpose</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingReservations.map((r) => (
-                  <tr key={r.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">{r.room}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{r.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{r.time}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{r.purpose}</td>
-                    <td className="px-6 py-4 whitespace-nowrap"><ReservationBadge status={r.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
-            {upcomingReservations.map((r) => (
-              <div key={r.id} className="glass-card p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="font-bold text-white">{r.room}</h4>
-                    <p className="text-sm text-white/40">{r.date}</p>
-                  </div>
-                  <ReservationBadge status={r.status} />
+            {activeReservation ? (
+              <>
+                <h3 className="text-lg font-bold text-white">{activeReservation.room}</h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-xs text-green-400 font-bold">Currently Occupied</span>
                 </div>
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Time:</span>
-                    <span className="font-bold text-white/70">{r.time}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/40">Purpose:</span>
-                    <span className="font-bold text-white/70">{r.purpose}</span>
-                  </div>
-                </div>
+                <p className="text-[10px] text-white/30 mt-0.5">Until {activeReservation.until}</p>
+                <button className="mt-3 w-full py-2 px-3 rounded-xl text-xs font-bold border border-white/15 text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                  Finish Reservation
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-2">
+                <p className="text-sm text-white/30 font-bold">No active room</p>
+                <p className="text-[10px] text-white/20 mt-0.5">You have no reservation right now</p>
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* Pending Requests */}
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <span className="text-xs text-white/40 font-bold">Pending Requests</span>
+            </div>
+            <h3 className="text-3xl font-bold text-white">{pendingCount}</h3>
+            <p className="text-xs text-white/30 mt-0.5">Requests</p>
+            <button className="mt-3 w-full py-2 px-3 rounded-xl text-xs font-bold border border-white/15 text-white/60 hover:bg-white/5 hover:text-white transition-all">
+              See Pending Requests
+            </button>
+          </div>
+
+          {/* Next Booking */}
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className="text-xs text-white/40 font-bold">Next Booking</span>
+            </div>
+            {nextBooking ? (
+              <>
+                <h3 className="text-2xl font-bold text-white">{nextBooking.time}</h3>
+                <p className="text-xs text-white/40 mt-0.5">{nextBooking.room}</p>
+                <p className="text-[10px] text-white/20">In {nextBooking.inMinutes}</p>
+              </>
+            ) : (
+              <div className="text-center py-2">
+                <p className="text-sm text-white/30 font-bold">No upcoming</p>
+                <p className="text-[10px] text-white/20 mt-0.5">No reservations scheduled</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Recent Activity Timeline */}
+        {/* ─── New Reservation Button ─────────────────────────────── */}
+        <button className="w-full glass-card p-5 !rounded-2xl flex items-center justify-center gap-3 mb-8 group hover:!border-primary/40 transition-all cursor-pointer">
+          <svg className="w-6 h-6 text-white/40 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span className="text-lg font-bold text-white/60 group-hover:text-white transition-colors">
+            New Reservation
+          </span>
+        </button>
+
+        {/* ─── Reservation History ─────────────────────────────────── */}
         <div>
-          <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
-          <div className="glass-card p-5 !rounded-xl">
-            <div className="space-y-0">
-              {recentActivity.map((a, idx) => (
-                <div key={a.id} className="flex items-start gap-4">
-                  {/* Timeline line + dot */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-sm shrink-0">
-                      {a.icon}
+          <h3 className="text-xl font-bold text-white mb-4">Reservation History</h3>
+          <div className="glass-card !rounded-xl overflow-hidden">
+            {reservationHistory.length === 0 ? (
+              <div className="p-12 text-center">
+                <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <p className="text-sm text-white/30 font-bold">No reservations yet</p>
+                <p className="text-xs text-white/15 mt-1">Your reservation history will appear here</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {reservationHistory.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors">
+                    {/* Color Bar */}
+                    <HistoryDot status={item.status} />
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-white">{item.room} · {item.type}</h4>
+                      <p className="text-xs text-white/35 mt-0.5">{item.time}</p>
                     </div>
-                    {idx < recentActivity.length - 1 && (
-                      <div className="w-px h-8 bg-white/10" />
-                    )}
+                    {/* Status Badge */}
+                    <HistoryBadge status={item.status} />
                   </div>
-                  <div className="pt-1 pb-4">
-                    <p className="text-sm text-white/80 font-bold">{a.text}</p>
-                    <p className="text-xs text-white/30 mt-0.5">{a.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
