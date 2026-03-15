@@ -376,38 +376,13 @@ export async function rejectUser(uid: string) {
 
 // ─── Friendly Error Messages ────────────────────────────────────
 export function getAuthErrorMessage(code: string): string {
-  switch (code) {
-    case "auth/wrong-password":
-      return "Incorrect password. Please try again.";
-    case "auth/user-not-found":
-      return "No account found with this email address.";
-    case "auth/invalid-credential":
-      return "Invalid email or password. Please try again.";
-    case "auth/email-already-in-use":
-      return "This email is already registered. Try signing in instead.";
-    case "auth/weak-password":
-      return "Password is too weak. Please use at least 6 characters.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/too-many-requests":
-      return "Too many failed attempts. Please try again later.";
-    case "auth/quota-exceeded":
-      return "Too many login attempts. Please wait a few minutes and try again.";
-    case "auth/popup-closed-by-user":
-      return "Google sign-in was cancelled.";
-    case "auth/network-request-failed":
-      return "Network error. Please check your connection.";
-    case "auth/unauthorized-domain":
-      return "Please use your official SDCA email address to Continue.";
-    case "auth/email-not-verified":
-      return "Please verify your email address first. Check your inbox for the verification link.";
-    case "auth/account-pending":
-      return "Your account is pending approval from the Super Admin. Please wait for approval before signing in.";
-    case "auth/account-rejected":
-      return "Your account registration has been declined. Please contact the administration for more information.";
-    case "auth/not-superadmin":
-      return "This account does not have Super Admin privileges.";
-    default:
-      return "An unexpected error occurred. Please try again.";
-  }
+  console.error("Auth error:", code); // log real error
+
+  const safeMessages: Record<string, string> = {
+    "auth/email-already-in-use": "This email is already registered.",
+    "auth/weak-password": "Password must be at least 6 characters.",
+    "auth/invalid-email": "Please enter a valid email address.",
+  };
+
+  return safeMessages[code] ?? "Invalid email or password.";
 }

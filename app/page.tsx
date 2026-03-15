@@ -4,13 +4,14 @@ import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Toast from '@/components/Toast';
 import { loginWithEmail, loginWithGoogle, saveUserProfile, getAuthErrorMessage } from '@/lib/auth';
+import { error } from 'console';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [selectedTab, setSelectedTab] = useState('student');
   const [showToast, setShowToast] = useState(false);
   const router = useRouter();
@@ -30,10 +31,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setErrorMessage('');
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setErrorMessage('Please fill in all fields');
       return;
     }
 
@@ -64,7 +65,7 @@ export default function LoginPage() {
       }, 1500);
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
-      setError(getAuthErrorMessage(firebaseError.code || ''));
+      setErrorMessage(getAuthErrorMessage(firebaseError.code || ''));
     } finally {
       setLoading(false);
     }
@@ -75,6 +76,20 @@ export default function LoginPage() {
     { key: 'faculty', label: 'Faculty' },
     { key: 'admin', label: 'Admin' },
   ];
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage('');
+    try {
+      await loginWithGoogle(role);
+      setShowToast(true);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
+      setErrorMessage(getAuthErrorMessage(firebaseError.code || ''));
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -107,20 +122,19 @@ export default function LoginPage() {
                 key={tab.key}
                 type="button"
                 onClick={() => setSelectedTab(tab.key)}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
-                  selectedTab === tab.key
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'text-white/50 hover:text-white hover:bg-white/5'
-                }`}
+                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${selectedTab === tab.key
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
 
-          {error && (
+          {errorMessage && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
-              {error}
+              {errorMessage}
             </div>
           )}
 
@@ -213,19 +227,7 @@ export default function LoginPage() {
           {/* Google Sign-In */}
           <button
             type="button"
-            onClick={async () => {
-              setError('');
-              try {
-                await loginWithGoogle(role);
-                setShowToast(true);
-                setTimeout(() => {
-                  router.push('/dashboard');
-                }, 1500);
-              } catch (err: unknown) {
-                const firebaseError = err as { code?: string };
-                setError(getAuthErrorMessage(firebaseError.code || ''));
-              }
-            }}
+            onClick={handleGoogleSignIn}
             className="glass-card w-full flex items-center justify-center gap-3 py-3 px-4 font-bold text-white/80 hover:text-white cursor-pointer !border-white/15"
           >
             <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">

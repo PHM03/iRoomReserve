@@ -30,7 +30,7 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [determinedRole, setDeterminedRole] = useState(role);
   const router = useRouter();
@@ -46,21 +46,21 @@ function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setErrorMessage('');
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
+      setErrorMessage('Please fill in all fields');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setErrorMessage('Passwords do not match');
       return;
     }
 
     const pwError = validatePassword(password);
     if (pwError) {
-      setError(pwError);
+      setErrorMessage(pwError);
       return;
     }
 
@@ -77,7 +77,7 @@ function RegisterForm() {
       }, determinedRole === 'Student' ? 1500 : 3000);
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
-      setError(getAuthErrorMessage(firebaseError.code || ''));
+      setErrorMessage(getAuthErrorMessage(firebaseError.code || ''));
     } finally {
       setLoading(false);
     }
@@ -136,21 +136,9 @@ function RegisterForm() {
             </span>
           </div>
 
-          {/* Faculty flow info note */}
-          {isFacultyFlow && (
-            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-sm">
-              <p className="font-bold mb-1">📋 Email determines your role:</p>
-              <p className="text-xs text-blue-300/70">
-                Use your <strong>SDCA email</strong> to register as <strong>Faculty</strong>, or a
-                <strong> personal email</strong> (e.g. Gmail) to register as <strong>Utility Staff</strong>.
-                Both require Super Admin approval.
-              </p>
-            </div>
-          )}
-
-          {error && (
+          {errorMessage && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
-              {error}
+              {errorMessage}
             </div>
           )}
 

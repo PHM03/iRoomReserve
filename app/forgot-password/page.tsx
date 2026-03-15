@@ -7,17 +7,17 @@ import { resetPassword, getAuthErrorMessage } from '@/lib/auth';
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setErrorMessage('');
     setSuccess(false);
 
     if (!email) {
-      setError('Please enter your email address.');
+      setErrorMessage('Please enter your email address.');
       return;
     }
 
@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
       setSuccess(true);
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
-      setError(getAuthErrorMessage(firebaseError.code || ''));
+      setErrorMessage(getAuthErrorMessage(firebaseError.code || ''));
     } finally {
       setLoading(false);
     }
@@ -115,9 +115,9 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               {/* Error */}
-              {error && (
+              {errorMessage && (
                 <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
-                  {error}
+                  {errorMessage}
                 </div>
               )}
 
