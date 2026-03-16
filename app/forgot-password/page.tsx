@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             Reset Password
           </h2>
           <p className="text-sm text-white/50 text-center mb-6">
-            Enter your SDCA email address and we&apos;ll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
 
           {/* Success State */}

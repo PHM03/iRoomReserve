@@ -11,6 +11,8 @@ interface UserProfile {
   email: string;
   role: string;
   status: string;
+  assignedBuilding?: string;
+  assignedBuildingId?: string;
 }
 
 interface AuthContextType {
@@ -47,6 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: data.email,
             role: data.role || 'Student',
             status: data.status || 'approved',
+            assignedBuilding: (data as Record<string, unknown>).assignedBuilding as string | undefined,
+            assignedBuildingId: (data as Record<string, unknown>).assignedBuildingId as string | undefined,
           });
         } else {
           setProfile(null);
