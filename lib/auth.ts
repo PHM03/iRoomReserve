@@ -306,6 +306,7 @@ export interface ManagedUser {
   email: string;
   role: string;
   status: string;
+  assignedBuilding?: string;
   updatedAt?: { seconds: number; nanoseconds: number };
 }
 
@@ -353,6 +354,7 @@ export function onUsersByStatus(
         email: data.email || "",
         role: data.role || "",
         status: data.status || "",
+        assignedBuilding: data.assignedBuilding || undefined,
         updatedAt: data.updatedAt,
       });
     });
@@ -363,6 +365,27 @@ export function onUsersByStatus(
 export async function approveUser(uid: string) {
   await updateDoc(doc(db, "users", uid), {
     status: "approved",
+    updatedAt: serverTimestamp(),
+  });
+}
+
+
+export async function approveAdmin(
+  uid: string,
+  buildingId: string,
+  buildingName: string
+) {
+  // 1. Update the user profile with building assignment
+  await updateDoc(doc(db, "users", uid), {
+    status: "approved",
+    assignedBuilding: buildingName,
+    assignedBuildingId: buildingId,
+    updatedAt: serverTimestamp(),
+  });
+
+  // 2. Update the building to record the assigned admin
+  await updateDoc(doc(db, "buildings", buildingId), {
+    assignedAdminUid: uid,
     updatedAt: serverTimestamp(),
   });
 }
