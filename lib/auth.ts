@@ -376,7 +376,7 @@ export async function rejectUser(uid: string) {
 
 // ─── Friendly Error Messages ────────────────────────────────────
 export function getAuthErrorMessage(code: string): string {
-  console.error("Auth error:", code); // log real error
+  console.warn("Auth error:", code);
 
   const safeMessages: Record<string, string> = {
     "auth/email-already-in-use": "This email is already registered.",
