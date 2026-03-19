@@ -143,7 +143,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       unsubFeedback();
       unsubNotifs();
     };
-  }, [buildingId, firebaseUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildingId, firebaseUser?.uid]);
 
   // Load building floors when on add-rooms tab
   useEffect(() => {

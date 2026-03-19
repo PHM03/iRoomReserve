@@ -94,6 +94,8 @@ export function onPendingReservationsByBuilding(
       ...d.data(),
     } as Reservation));
     callback(reservations);
+  }, (error) => {
+    console.warn('Firestore listener error (pending reservations):', error);
   });
 }
 
@@ -113,6 +115,8 @@ export function onReservationsByBuilding(
       ...d.data(),
     } as Reservation));
     callback(reservations);
+  }, (error) => {
+    console.warn('Firestore listener error (reservations by building):', error);
   });
 }
 
@@ -132,6 +136,8 @@ export function onReservationsByUser(
       ...d.data(),
     } as Reservation));
     callback(reservations);
+  }, (error) => {
+    console.warn('Firestore listener error (reservations by user):', error);
   });
 }
 

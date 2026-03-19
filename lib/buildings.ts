@@ -92,5 +92,7 @@ export function onBuildings(
       ...d.data(),
     } as Building));
     callback(buildings);
+  }, (error) => {
+    console.warn('Firestore listener error (buildings):', error);
   });
 }

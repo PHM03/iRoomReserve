@@ -346,6 +346,8 @@ export function onPendingUsers(callback: (users: ManagedUser[]) => void): Unsubs
       });
     });
     callback(users);
+  }, (error) => {
+    console.warn('Firestore listener error (pending users):', error);
   });
 }
 
@@ -374,6 +376,8 @@ export function onUsersByStatus(
       });
     });
     callback(users);
+  }, (error) => {
+    console.warn('Firestore listener error (users by status):', error);
   });
 }
 
@@ -458,6 +462,8 @@ export function onAllUsers(
       });
     });
     callback(users);
+  }, (error) => {
+    console.warn('Firestore listener error (all users):', error);
   });
 }
 

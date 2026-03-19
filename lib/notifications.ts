@@ -62,6 +62,8 @@ export function onUnreadNotifications(
       ...d.data(),
     } as Notification));
     callback(notifs);
+  }, (error) => {
+    console.warn('Firestore listener error (unread notifications):', error);
   });
 }
 
@@ -81,6 +83,8 @@ export function onAllNotifications(
       ...d.data(),
     } as Notification));
     callback(notifs);
+  }, (error) => {
+    console.warn('Firestore listener error (all notifications):', error);
   });
 }
 

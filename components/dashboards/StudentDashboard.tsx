@@ -114,7 +114,8 @@ export default function StudentDashboard({ firstName }: StudentDashboardProps) {
       unsubReservations();
       unsubNotifs();
     };
-  }, [firebaseUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firebaseUser?.uid]);
 
   // ─── Load Buildings ─────────────────────────────────────────
   useEffect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile, logout as firebaseLogout } from '@/lib/auth';
@@ -35,12 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
 
       if (user) {
+        // Skip re-fetching if the UID hasn't changed (e.g. hot reload, token refresh)
+        if (prevUidRef.current === user.uid) {
+          setLoading(false);
+          return;
+        }
+        prevUidRef.current = user.uid;
         const data = await getUserProfile(user.uid);
         if (data) {
           setProfile({
@@ -56,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
         }
       } else {
+        prevUidRef.current = null;
         setProfile(null);
       }
 

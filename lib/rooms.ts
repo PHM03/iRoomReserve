@@ -88,5 +88,7 @@ export function onRoomsByBuilding(
       ...d.data(),
     } as Room));
     callback(rooms);
+  }, (error) => {
+    console.warn('Firestore listener error (rooms):', error);
   });
 }

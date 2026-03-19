@@ -80,6 +80,8 @@ export function onFeedbackByBuilding(
       ...d.data(),
     } as Feedback));
     callback(items);
+  }, (error) => {
+    console.warn('Firestore listener error (feedback):', error);
   });
 }
 
