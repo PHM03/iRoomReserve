@@ -33,8 +33,9 @@ export interface Reservation {
   purpose: string;
   equipment?: Record<string, number>;
   endorsedByEmail?: string;
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
   adminUid: string | null;
+  recurringGroupId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -76,6 +77,80 @@ export async function createReservation(
   }
 
   return docRef.id;
+}
+
+// ─── Helpers for Recurring Reservations ─────────────────────────
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function getDatesForDays(
+  startDate: string,
+  endDate: string,
+  selectedDays: number[] // 0=Sun … 6=Sat
+): string[] {
+  const dates: string[] = [];
+  const current = new Date(startDate + "T00:00:00");
+  const end = new Date(endDate + "T00:00:00");
+
+  while (current <= end) {
+    if (selectedDays.includes(current.getDay())) {
+      dates.push(current.toISOString().split("T")[0]);
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+// ─── Create Recurring Reservation ───────────────────────────────
+export async function createRecurringReservation(
+  data: Omit<ReservationInput, "date">,
+  selectedDays: number[],
+  startDate: string,
+  endDate: string
+): Promise<string[]> {
+  const dates = getDatesForDays(startDate, endDate, selectedDays);
+  if (dates.length === 0) throw new Error("No matching dates found for the selected days.");
+
+  // Generate a group ID to link all recurring reservations
+  const groupId = `recurring_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  // Find admins once
+  const adminsQuery = query(
+    collection(db, "users"),
+    where("assignedBuildingId", "==", data.buildingId),
+    where("status", "==", "approved")
+  );
+  const adminsSnap = await getDocs(adminsQuery);
+  const adminUids = adminsSnap.docs.map((d) => d.id);
+
+  const createdIds: string[] = [];
+
+  for (const date of dates) {
+    const docRef = await addDoc(collection(db, "reservations"), {
+      ...data,
+      date,
+      status: "pending",
+      adminUid: adminUids[0] || null,
+      recurringGroupId: groupId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    createdIds.push(docRef.id);
+  }
+
+  // Send a single summary notification to each admin
+  const dayNames = selectedDays.map((d) => DAY_LABELS[d]).join(", ");
+  for (const uid of adminUids) {
+    await createNotification({
+      recipientUid: uid,
+      type: "new_reservation",
+      title: "New Recurring Reservation",
+      message: `${data.userName} reserved ${data.roomName} every ${dayNames} from ${startDate} to ${endDate} (${data.startTime} – ${data.endTime}) — ${dates.length} dates`,
+      buildingId: data.buildingId,
+      reservationId: createdIds[0],
+    });
+  }
+
+  return createdIds;
 }
 
 // ─── Real-time Pending Reservations by Building ─────────────────
@@ -208,4 +283,110 @@ export async function rejectReservation(
       reservationId,
     });
   }
+}
+
+// ─── Cancel Reservation (by User) ───────────────────────────────
+export async function cancelReservation(
+  reservationId: string,
+  userId: string
+): Promise<void> {
+  const reservationRef = doc(db, "reservations", reservationId);
+  const snap = await getDoc(reservationRef);
+
+  if (!snap.exists()) throw new Error("Reservation not found");
+
+  const data = snap.data();
+
+  // Validate ownership
+  if (data.userId !== userId) throw new Error("Not authorized to cancel this reservation");
+
+  // Only pending or approved reservations can be cancelled
+  if (data.status !== "pending" && data.status !== "approved") {
+    throw new Error("Only pending or approved reservations can be cancelled");
+  }
+
+  await updateDoc(reservationRef, {
+    status: "cancelled",
+    updatedAt: serverTimestamp(),
+  });
+
+  // Notify building admins
+  const adminsQuery = query(
+    collection(db, "users"),
+    where("assignedBuildingId", "==", data.buildingId),
+    where("status", "==", "approved")
+  );
+  const adminsSnap = await getDocs(adminsQuery);
+
+  for (const adminDoc of adminsSnap.docs) {
+    await createNotification({
+      recipientUid: adminDoc.id,
+      type: "reservation_cancelled",
+      title: "Reservation Cancelled",
+      message: `${data.userName} cancelled their reservation for ${data.roomName} on ${data.date} (${data.startTime} – ${data.endTime})`,
+      buildingId: data.buildingId,
+      reservationId,
+    });
+  }
+}
+
+// ─── Complete Reservation (by User) ─────────────────────────────
+export async function completeReservation(
+  reservationId: string,
+  userId: string
+): Promise<void> {
+  const reservationRef = doc(db, "reservations", reservationId);
+  const snap = await getDoc(reservationRef);
+
+  if (!snap.exists()) throw new Error("Reservation not found");
+
+  const data = snap.data();
+
+  // Validate ownership
+  if (data.userId !== userId) throw new Error("Not authorized to complete this reservation");
+
+  // Only approved reservations can be marked as completed
+  if (data.status !== "approved") {
+    throw new Error("Only approved reservations can be marked as completed");
+  }
+
+  await updateDoc(reservationRef, {
+    status: "completed",
+    updatedAt: serverTimestamp(),
+  });
+
+  // Notify building admins
+  const adminsQuery = query(
+    collection(db, "users"),
+    where("assignedBuildingId", "==", data.buildingId),
+    where("status", "==", "approved")
+  );
+  const adminsSnap = await getDocs(adminsQuery);
+
+  for (const adminDoc of adminsSnap.docs) {
+    await createNotification({
+      recipientUid: adminDoc.id,
+      type: "system",
+      title: "Reservation Completed",
+      message: `${data.userName} marked their reservation for ${data.roomName} on ${data.date} as completed.`,
+      buildingId: data.buildingId,
+      reservationId,
+    });
+  }
+
+  // Log to room history
+  await addRoomHistoryEntry({
+    roomId: data.roomId,
+    roomName: data.roomName,
+    buildingId: data.buildingId,
+    userName: data.userName,
+    userRole: data.userRole || "Student",
+    date: data.date,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    type: "reservation",
+    purpose: data.purpose,
+    sourceId: reservationId,
+    status: "completed",
+  });
 }

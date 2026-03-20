@@ -113,3 +113,22 @@ export function isRoomInClass(
     ) || null
   );
 }
+
+// ─── Real-time All Schedules (for student awareness) ────────────
+export function onAllSchedules(
+  callback: (schedules: Schedule[]) => void
+): Unsubscribe {
+  const q = query(collection(db, "schedules"));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const schedules: Schedule[] = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Schedule))
+        .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime));
+      callback(schedules);
+    },
+    (error) => {
+      console.warn("Firestore listener error (all schedules):", error);
+    }
+  );
+}

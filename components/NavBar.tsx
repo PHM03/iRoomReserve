@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 // ─── Admin Tab Type ──────────────────────────────────────────────
 export type AdminTab = 'dashboard' | 'add-rooms' | 'feedback' | 'status-scheduling' | 'room-history';
@@ -20,6 +21,7 @@ interface NavBarProps {
 const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -94,12 +96,13 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
     },
   ];
 
-  // ─── Default nav links for other roles ────────────────────────
+  // ─── Non-admin (Student/Faculty/Utility) nav links ────────────
   const defaultLinks = [
-    { label: 'Dashboard', href: '#', active: true },
-    { label: 'My Reservations', href: '#', active: false },
-    { label: 'Reserve a Room', href: '#', active: false },
-    { label: 'Reports', href: '#', active: false },
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Reserve', href: '/dashboard/reserve' },
+    { label: 'My Reservations', href: '/dashboard/reservations' },
+    { label: 'Contact', href: '/dashboard/contact' },
+    { label: 'Feedback', href: '/dashboard/feedback' },
   ];
 
   const isAdmin = user.role.toLowerCase() === 'administrator';
@@ -132,17 +135,17 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
               ))
             ) : (
               defaultLinks.map((link) => (
-                <a
+                <Link
                   key={link.label}
                   href={link.href}
                   className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                    link.active
+                    pathname === link.href
                       ? 'text-primary bg-primary/10'
                       : 'text-white/50 hover:text-primary hover:bg-white/5'
                   }`}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))
             )}
           </div>
@@ -210,17 +213,18 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
               ))
             ) : (
               defaultLinks.map((link) => (
-                <a
+                <Link
                   key={link.label}
                   href={link.href}
+                  onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                    link.active
+                    pathname === link.href
                       ? 'text-primary bg-primary/10'
                       : 'text-white/50 hover:text-primary hover:bg-white/5'
                   }`}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))
             )}
           </div>

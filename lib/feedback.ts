@@ -22,6 +22,7 @@ export interface Feedback {
   roomName: string;
   buildingId: string;
   buildingName: string;
+  reservationId: string;
   userId: string;
   userName: string;
   message: string;
@@ -93,5 +94,26 @@ export async function respondToFeedback(
   await updateDoc(doc(db, "feedback", feedbackId), {
     adminResponse: response,
     respondedAt: serverTimestamp(),
+  });
+}
+
+// ─── Real-time Feedback by User ─────────────────────────────────
+export function onFeedbackByUser(
+  userId: string,
+  callback: (feedback: Feedback[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, "feedback"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const items: Feedback[] = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    } as Feedback));
+    callback(items);
+  }, (error) => {
+    console.warn('Firestore listener error (feedback by user):', error);
   });
 }
