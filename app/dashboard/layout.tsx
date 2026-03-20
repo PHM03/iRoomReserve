@@ -58,34 +58,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const isAdmin = profile?.role === 'Administrator';
-  const isStudent = !isAdmin && profile?.role !== 'Faculty' && profile?.role !== 'Faculty Professor' && profile?.role !== 'Utility Staff' && profile?.role !== 'Utility';
+  const isFaculty = profile?.role === 'Faculty' || profile?.role === 'Faculty Professor';
+  const isStudent = !isAdmin && !isFaculty && profile?.role !== 'Utility Staff' && profile?.role !== 'Utility';
+
+  // Shared mobile bottom nav icons
+  const navIcons = {
+    home: <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />,
+    reserve: <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />,
+    history: <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />,
+    contact: <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />,
+  };
 
   // Student mobile bottom nav items
   const studentMobileNav = [
-    {
-      label: 'Home',
-      href: '/dashboard',
-      active: pathname === '/dashboard',
-      icon: <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />,
-    },
-    {
-      label: 'Reserve',
-      href: '/dashboard/reserve',
-      active: pathname === '/dashboard/reserve',
-      icon: <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />,
-    },
-    {
-      label: 'History',
-      href: '/dashboard/reservations',
-      active: pathname === '/dashboard/reservations',
-      icon: <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />,
-    },
-    {
-      label: 'Contact',
-      href: '/dashboard/contact',
-      active: pathname === '/dashboard/contact',
-      icon: <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />,
-    },
+    { label: 'Home', href: '/dashboard', active: pathname === '/dashboard', icon: navIcons.home },
+    { label: 'Reserve', href: '/dashboard/reserve', active: pathname === '/dashboard/reserve', icon: navIcons.reserve },
+    { label: 'History', href: '/dashboard/reservations', active: pathname === '/dashboard/reservations', icon: navIcons.history },
+    { label: 'Contact', href: '/dashboard/contact', active: pathname === '/dashboard/contact', icon: navIcons.contact },
+  ];
+
+  // Faculty mobile bottom nav items (same as student, no feedback)
+  const facultyMobileNav = [
+    { label: 'Home', href: '/dashboard', active: pathname === '/dashboard', icon: navIcons.home },
+    { label: 'Reserve', href: '/dashboard/reserve', active: pathname === '/dashboard/reserve', icon: navIcons.reserve },
+    { label: 'History', href: '/dashboard/reservations', active: pathname === '/dashboard/reservations', icon: navIcons.history },
+    { label: 'Contact', href: '/dashboard/contact', active: pathname === '/dashboard/contact', icon: navIcons.contact },
   ];
 
   return (
@@ -109,6 +106,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 z-40">
           <div className="grid grid-cols-4 h-16">
             {studentMobileNav.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex flex-col items-center justify-center transition-colors ${
+                  item.active ? 'text-primary' : 'text-white/30 hover:text-primary'
+                }`}
+              >
+                <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20">{item.icon}</svg>
+                <span className="text-[10px] font-bold">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Nav (Faculty only) */}
+      {isFaculty && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 z-40">
+          <div className="grid grid-cols-4 h-16">
+            {facultyMobileNav.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}

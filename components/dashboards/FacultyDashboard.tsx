@@ -1,51 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import {
+  onReservationsByUser,
+  Reservation,
+} from '@/lib/reservations';
+import {
+  onUnreadNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  Notification,
+} from '@/lib/notifications';
+import { onAllSchedules, Schedule, DAY_NAMES } from '@/lib/schedules';
+import Link from 'next/link';
 
-// ─── Mock Data ──────────────────────────────────────────────────
-const todaySchedule = [
-  { id: 1, subject: 'IT 101 — Intro to Computing', room: 'Room 101', time: '08:00 – 09:30', roomStatus: 'Occupied' },
-  { id: 2, subject: 'IT 202 — Data Structures', room: 'Room 201', time: '10:00 – 11:30', roomStatus: 'Vacant' },
-  { id: 3, subject: 'IT 303 — Web Development', room: 'Room 302', time: '13:00 – 14:30', roomStatus: 'Occupied' },
-  { id: 4, subject: 'IT 404 — Software Engineering', room: 'Room 102', time: '15:00 – 16:30', roomStatus: 'Vacant' },
-];
-
-const rooms = [
-  { id: 1, name: 'Room 101', floor: '1st Floor', status: 'Occupied' },
-  { id: 2, name: 'Room 102', floor: '1st Floor', status: 'Vacant' },
-  { id: 3, name: 'Room 201', floor: '2nd Floor', status: 'Occupied' },
-  { id: 4, name: 'Room 202', floor: '2nd Floor', status: 'Available' },
-  { id: 5, name: 'Room 301', floor: '3rd Floor', status: 'Available' },
-  { id: 6, name: 'Room 302', floor: '3rd Floor', status: 'Occupied' },
-];
-
-const bleBeacons = [
-  { id: 1, room: 'Room 101', signal: 'Online', rssi: -42 },
-  { id: 2, room: 'Room 102', signal: 'Weak', rssi: -78 },
-  { id: 3, room: 'Room 201', signal: 'Online', rssi: -38 },
-  { id: 4, room: 'Room 202', signal: 'Offline', rssi: null },
-  { id: 5, room: 'Room 301', signal: 'Online', rssi: -45 },
-  { id: 6, room: 'Room 302', signal: 'Weak', rssi: -82 },
-];
-
-// ─── Helpers ────────────────────────────────────────────────────
-function RoomStatusDot({ status }: { status: string }) {
-  const color = status === 'Occupied' ? 'bg-orange-400' : status === 'Vacant' ? 'bg-gray-400' : 'bg-green-400';
-  return <span className={`inline-block w-2.5 h-2.5 rounded-full ${color}`} />;
-}
-
-function SignalBadge({ signal }: { signal: string }) {
+// ─── Status Badge ───────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
   const style = (() => {
-    switch (signal) {
-      case 'Online': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'Weak': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'Offline': return 'bg-red-500/20 text-red-300 border-red-500/30';
+    switch (status) {
+      case 'approved': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'completed': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'pending': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'cancelled': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }
   })();
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${style}`}>
-      {signal}
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${style} capitalize`}>
+      {status}
     </span>
   );
 }
@@ -56,177 +40,322 @@ interface FacultyDashboardProps {
 }
 
 export default function FacultyDashboard({ firstName }: FacultyDashboardProps) {
-  const [sidebarTab, setSidebarTab] = useState<'schedule' | 'ble'>('schedule');
+  const { firebaseUser } = useAuth();
 
-  // Find next upcoming class (mock: second class)
-  const nextClass = todaySchedule[1];
+  // ─── State ──────────────────────────────────────────────────
+  const [reservationHistory, setReservationHistory] = useState<Reservation[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+
+  // ─── Real-time Listeners ────────────────────────────────────
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const unsubReservations = onReservationsByUser(firebaseUser.uid, setReservationHistory);
+    const unsubNotifs = onUnreadNotifications(firebaseUser.uid, setNotifications);
+    const unsubSchedules = onAllSchedules(setSchedules);
+
+    return () => {
+      unsubReservations();
+      unsubNotifs();
+      unsubSchedules();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firebaseUser?.uid]);
+
+  const handleMarkAllRead = async () => {
+    if (!firebaseUser) return;
+    await markAllNotificationsRead(firebaseUser.uid);
+  };
+
+  // ─── Computed Values ────────────────────────────────────────
+  const pendingCount = reservationHistory.filter((r) => r.status === 'pending').length;
+  const approvedCount = reservationHistory.filter((r) => r.status === 'approved').length;
+  const activeReservation = reservationHistory.find((r) => r.status === 'approved');
+
+  // Upcoming reservations (approved, date >= today)
+  const today = new Date().toISOString().split('T')[0];
+  const upcomingReservations = reservationHistory
+    .filter((r) => r.status === 'approved' && r.date >= today)
+    .slice(0, 3);
+
+  // Recent activity (last 5 items)
+  const recentActivity = reservationHistory.slice(0, 5);
+
+  // Today's schedules
+  const todayDay = new Date().getDay();
+  const todaySchedules = schedules.filter((s) => s.dayOfWeek === todayDay);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-      {/* Welcome */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Good day, {firstName} 📚</h2>
-        <p className="text-white/40 mt-1">Here&apos;s your teaching schedule and room status for today</p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* ─── Main Content (left) ─────────────────────────────── */}
-        <div className="flex-1 space-y-6">
-          {/* Next Class Check-In Prompt */}
-          <div className="glass-card p-6 border-l-4 border-primary/60">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-white/40 font-bold uppercase tracking-wider mb-1">Next Class</p>
-                <h3 className="text-lg font-bold text-white">{nextClass.subject}</h3>
-                <p className="text-sm text-white/50 mt-1">{nextClass.room} · {nextClass.time}</p>
-              </div>
-              <button className="btn-primary px-5 py-2.5 text-sm shrink-0">
-                Check In
-              </button>
-            </div>
-          </div>
-
-          {/* Today's Class Schedule */}
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4">Today&apos;s Schedule</h3>
-            <div className="space-y-3">
-              {todaySchedule.map((cls) => (
-                <div key={cls.id} className="glass-card p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                      {cls.time.split('–')[0].trim().slice(0, 5)}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{cls.subject}</h4>
-                      <p className="text-xs text-white/40 mt-0.5">{cls.room} · {cls.time}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <RoomStatusDot status={cls.roomStatus} />
-                    <span className="text-white/50 font-bold text-xs">{cls.roomStatus}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Room Status Grid */}
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4">Room Status — Live</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rooms.map((room) => {
-                const statusColor = room.status === 'Occupied'
-                  ? 'border-orange-500/40'
-                  : room.status === 'Vacant'
-                    ? 'border-gray-500/40'
-                    : 'border-green-500/40';
-                const statusBg = room.status === 'Occupied'
-                  ? 'bg-orange-500/20 text-orange-300 border-orange-500/30'
-                  : room.status === 'Vacant'
-                    ? 'bg-white/10 text-white/50 border-white/20'
-                    : 'bg-green-500/20 text-green-300 border-green-500/30';
-
-                return (
-                  <div key={room.id} className={`glass-card p-5 border-l-4 ${statusColor}`}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-bold text-white">{room.name}</h4>
-                        <p className="text-sm text-white/40">{room.floor}</p>
-                      </div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusBg}`}>
-                        {room.status}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
+      {/* Welcome + Notification Bell */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Welcome back, {firstName} 📚</h2>
+          <p className="text-white/40 mt-1">Here&apos;s an overview of your reservations</p>
         </div>
 
-        {/* ─── Sidebar (right) ─────────────────────────────────── */}
-        <div className="lg:w-80 shrink-0 space-y-4">
-          {/* Sidebar Tabs */}
-          <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
-            <button
-              onClick={() => setSidebarTab('schedule')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-                sidebarTab === 'schedule'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                  : 'text-white/40 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              📅 Schedule
-            </button>
-            <button
-              onClick={() => setSidebarTab('ble')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-                sidebarTab === 'ble'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                  : 'text-white/40 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              📡 BLE Monitor
-            </button>
-          </div>
+        {/* Notification Bell */}
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2.5 rounded-xl glass-card !p-2.5 hover:!border-primary/40 transition-all"
+          >
+            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {notifications.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                {notifications.length}
+              </span>
+            )}
+          </button>
 
-          {sidebarTab === 'schedule' ? (
-            /* Class Schedule Sidebar */
-            <div className="glass-card p-4 !rounded-xl">
-              <h4 className="text-sm font-bold text-white/70 mb-3">Full Schedule</h4>
-              <div className="space-y-3">
-                {todaySchedule.map((cls) => (
-                  <div key={cls.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/3 hover:bg-white/5 transition-colors">
-                    <RoomStatusDot status={cls.roomStatus} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-white truncate">{cls.subject}</p>
-                      <p className="text-[10px] text-white/40">{cls.time} · {cls.room}</p>
-                    </div>
-                  </div>
-                ))}
+          {/* Notification Dropdown */}
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/15 shadow-2xl shadow-black/40">
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h4 className="font-bold text-white text-sm">Notifications</h4>
+                {notifications.length > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-primary font-bold hover:text-primary-hover transition-colors"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
-            </div>
-          ) : (
-            /* BLE Beacon Monitor Sidebar */
-            <div className="glass-card p-4 !rounded-xl">
-              <h4 className="text-sm font-bold text-white/70 mb-3">BLE Beacons</h4>
-              <div className="space-y-2.5">
-                {bleBeacons.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between p-2.5 rounded-lg bg-white/3 hover:bg-white/5 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-white">{b.room}</p>
-                      {b.rssi !== null && (
-                        <p className="text-[10px] text-white/30">RSSI: {b.rssi} dBm</p>
-                      )}
-                    </div>
-                    <SignalBadge signal={b.signal} />
+              <div className="max-h-64 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <p className="text-sm text-white/50">No new notifications</p>
                   </div>
-                ))}
+                ) : (
+                  notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className="p-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-start gap-3"
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                        notif.type === 'reservation_approved' ? 'bg-green-500/20' :
+                        notif.type === 'reservation_rejected' ? 'bg-red-500/20' : 'bg-primary/20'
+                      }`}>
+                        <svg className={`w-4 h-4 ${
+                          notif.type === 'reservation_approved' ? 'text-green-400' :
+                          notif.type === 'reservation_rejected' ? 'text-red-400' : 'text-primary'
+                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {notif.type === 'reservation_approved' ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          ) : notif.type === 'reservation_rejected' ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          )}
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-white">{notif.title}</p>
+                        <p className="text-[11px] text-white/70 mt-0.5">{notif.message}</p>
+                      </div>
+                      <button
+                        onClick={() => markNotificationRead(notif.id)}
+                        className="text-white/20 hover:text-white/50 transition-colors shrink-0"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Quick Stats */}
-          <div className="glass-card p-4 !rounded-xl">
-            <h4 className="text-sm font-bold text-white/70 mb-3">Today&apos;s Summary</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 rounded-lg bg-white/3">
-                <p className="text-xl font-bold text-white">{todaySchedule.length}</p>
-                <p className="text-[10px] text-white/40 font-bold">Classes</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-white/3">
-                <p className="text-xl font-bold text-green-400">{rooms.filter(r => r.status === 'Available').length}</p>
-                <p className="text-[10px] text-white/40 font-bold">Available</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-white/3">
-                <p className="text-xl font-bold text-orange-400">{rooms.filter(r => r.status === 'Occupied').length}</p>
-                <p className="text-[10px] text-white/40 font-bold">Occupied</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-white/3">
-                <p className="text-xl font-bold text-blue-400">{bleBeacons.filter(b => b.signal === 'Online').length}</p>
-                <p className="text-[10px] text-white/40 font-bold">Beacons OK</p>
-              </div>
+      {/* ─── Summary Cards ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* Active Now */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
             </div>
+            <span className="text-xs text-white/40 font-bold">Active Now</span>
+          </div>
+          {activeReservation ? (
+            <>
+              <h3 className="text-lg font-bold text-white">{activeReservation.roomName}</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs text-green-400 font-bold">Approved</span>
+              </div>
+              <p className="text-[10px] text-white/30 mt-0.5">{activeReservation.buildingName} · {activeReservation.date}</p>
+            </>
+          ) : (
+            <div className="text-center py-2">
+              <p className="text-sm text-white/30 font-bold">No active room</p>
+              <p className="text-[10px] text-white/20 mt-0.5">You have no reservation right now</p>
+            </div>
+          )}
+        </div>
+
+        {/* Pending Requests */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <span className="text-xs text-white/40 font-bold">Pending Requests</span>
+          </div>
+          <h3 className="text-3xl font-bold text-white">{pendingCount}</h3>
+          <p className="text-xs text-white/30 mt-0.5">Awaiting approval</p>
+        </div>
+
+        {/* Approved Reservations */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-xs text-white/40 font-bold">Approved</span>
+          </div>
+          <h3 className="text-3xl font-bold text-white">{approvedCount}</h3>
+          <p className="text-xs text-white/30 mt-0.5">Ready to use</p>
+        </div>
+      </div>
+
+      {/* ─── Quick Action: New Reservation ────────────────────────── */}
+      <Link
+        href="/dashboard/reserve"
+        className="w-full glass-card p-5 !rounded-2xl flex items-center justify-center gap-3 mb-8 group hover:!border-primary/40 transition-all cursor-pointer block"
+      >
+        <svg className="w-6 h-6 text-white/40 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        <span className="text-lg font-bold text-white/60 group-hover:text-white transition-colors">
+          New Reservation
+        </span>
+      </Link>
+
+      {/* ─── Upcoming Reservations ────────────────────────────────── */}
+      {upcomingReservations.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Upcoming Reservations</h3>
+            <Link href="/dashboard/reservations" className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
+              View all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {upcomingReservations.map((r) => (
+              <div key={r.id} className="glass-card p-4 !rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold text-white">{r.roomName}</h4>
+                  <StatusBadge status={r.status} />
+                </div>
+                <p className="text-xs text-white/40">{r.buildingName}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <svg className="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-xs text-white/30">{r.date}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <svg className="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs text-white/30">{r.startTime} – {r.endTime}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Two-Column: Recent Activity + Class Schedules ─────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+            <Link href="/dashboard/reservations" className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
+              View all →
+            </Link>
+          </div>
+          <div className="glass-card !rounded-xl overflow-hidden">
+            {recentActivity.length === 0 ? (
+              <div className="p-12 text-center">
+                <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <p className="text-sm text-white/30 font-bold">No activity yet</p>
+                <p className="text-xs text-white/15 mt-1">Your reservation history will appear here</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {recentActivity.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors">
+                    <span className={`w-2.5 h-full min-h-[40px] rounded-full shrink-0 ${
+                      item.status === 'approved' ? 'bg-green-400' :
+                      item.status === 'rejected' ? 'bg-red-400' :
+                      item.status === 'completed' ? 'bg-yellow-400' :
+                      item.status === 'cancelled' ? 'bg-gray-400' :
+                      item.status === 'pending' ? 'bg-blue-400' : 'bg-white/30'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-white">{item.roomName} · {item.buildingName}</h4>
+                      <p className="text-xs text-white/35 mt-0.5">{item.date} · {item.startTime} – {item.endTime}</p>
+                    </div>
+                    <StatusBadge status={item.status} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Class Schedules (Today) */}
+        <div>
+          <h3 className="text-xl font-bold text-white mb-4">
+            Today&apos;s Class Schedules
+            <span className="text-sm text-white/30 font-normal ml-2">({DAY_NAMES[todayDay]})</span>
+          </h3>
+          <div className="glass-card !rounded-xl overflow-hidden">
+            {todaySchedules.length === 0 ? (
+              <div className="p-12 text-center">
+                <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-sm text-white/30 font-bold">No classes today</p>
+                <p className="text-xs text-white/15 mt-1">No scheduled classes for today</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {todaySchedules.map((sched) => (
+                  <div key={sched.id} className="p-4 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-white">{sched.subjectName}</h4>
+                        <p className="text-xs text-white/40 mt-0.5">{sched.instructorName}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-primary">{sched.startTime} – {sched.endTime}</p>
+                        <p className="text-[10px] text-white/30">{sched.roomName}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

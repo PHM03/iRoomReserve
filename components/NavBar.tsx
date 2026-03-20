@@ -97,12 +97,14 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
   ];
 
   // ─── Non-admin (Student/Faculty/Utility) nav links ────────────
+  const isFacultyRole = user.role.toLowerCase() === 'faculty professor' || user.role.toLowerCase() === 'faculty';
+
   const defaultLinks = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Reserve', href: '/dashboard/reserve' },
     { label: 'My Reservations', href: '/dashboard/reservations' },
     { label: 'Contact', href: '/dashboard/contact' },
-    { label: 'Feedback', href: '/dashboard/feedback' },
+    ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
   ];
 
   const isAdmin = user.role.toLowerCase() === 'administrator';
