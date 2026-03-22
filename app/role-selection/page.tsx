@@ -1,50 +1,72 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { saveUserProfile, logout } from '@/lib/auth';
+import Toast from '@/components/Toast';
 
 export default function RoleSelectionPage() {
-  const { firebaseUser, profile } = useAuth();
-  const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState('Student');
-  const [loading, setLoading] = useState(false);
+    const { firebaseUser, profile } = useAuth();
+    const router = useRouter();
+    const [selectedRole, setSelectedRole] = useState('Student');
+    const [loading, setLoading] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const handleToastClose = useCallback(() => setShowToast(false), []);
 
-  const roles = [
-    { key: 'Student', label: 'Student', description: 'Browse and reserve rooms for study or group work' },
-    { key: 'Faculty Professor', label: 'Faculty Professor', description: 'Reserve rooms for classes or faculty meetings' },
-    { key: 'Utility Staff', label: 'Utility Staff', description: 'Manage room equipment and facilities' },
-  ];
+    const roles = [
+        { key: 'Student', label: 'Student', description: 'Browse and reserve rooms for study or group work' },
+        { key: 'Faculty Professor', label: 'Faculty Professor', description: 'Reserve rooms for classes or faculty meetings' },
+        { key: 'Utility Staff', label: 'Utility Staff', description: 'Manage room equipment and facilities' },
+    ];
 
-  const handleConfirm = async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
-    try {
-      const status = selectedRole === 'Student' ? 'approved' : 'pending';
+    const handleConfirm = async () => {
+        if (!firebaseUser) return;
+        setLoading(true);
+        try {
+        const status = selectedRole === 'Student' ? 'approved' : 'pending';
 
-      await saveUserProfile(firebaseUser.uid, {
-        firstName: profile?.firstName || firebaseUser.displayName?.split(' ')[0] || '',
-        lastName: profile?.lastName || firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
-        email: firebaseUser.email || '',
-        role: selectedRole,
-        status,
-      });
+        await saveUserProfile(firebaseUser.uid, {
+            firstName: profile?.firstName || firebaseUser.displayName?.split(' ')[0] || '',
+            lastName: profile?.lastName || firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
+            email: firebaseUser.email || '',
+            role: selectedRole,
+            status,
+        });
 
-      if (selectedRole === 'Student') {
-        router.push('/dashboard');
-      } else {
-        await logout();
-        router.push('/?pending=true');
-      }
-      router.push('/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (selectedRole === 'Student') {
+            setShowToast(true);
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 1500);  
+        } else {
+            setShowToast(true);
+            setTimeout(async () => {
+                await logout();
+                router.push('/?pending=true');
+            }, 3000)
+        }
+        } finally {
+        setLoading(false);
+        }
+    };
 
-  return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    return (
+        <div className="min-h-screen flex flex-col relative overflow-hidden">
+            <Toast
+                message={
+                    selectedRole === 'Student'
+                    ? 'Account created! Welcome to iRoomReserve.'
+                    : selectedRole === 'Faculty Professor'
+                        ? 'Account created as Faculty Professor! Your registration is pending for Admin approval.'
+                        : selectedRole === 'Utility Staff'
+                        ? 'Account created as Utility Staff! Your registration is pending for Admin approval.'
+                        : 'Account created! Your registration is pending for Admin approval.'
+                }
+                type="success"
+                show={showToast}
+                onClose={handleToastClose}
+            />
       {/* Decorative background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
