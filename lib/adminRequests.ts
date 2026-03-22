@@ -1,6 +1,8 @@
 import {
   collection,
   addDoc,
+  doc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -80,5 +82,37 @@ export function onAdminRequestsByUser(
     callback(requests);
   }, (error) => {
     console.warn('Firestore listener error (admin requests by user):', error);
+  });
+}
+
+// ─── Real-time Admin Requests by Building (for Admin view) ──────
+export function onAdminRequestsByBuilding(
+  buildingId: string,
+  callback: (requests: AdminRequest[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, "adminRequests"),
+    where("buildingId", "==", buildingId),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const requests: AdminRequest[] = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    } as AdminRequest));
+    callback(requests);
+  }, (error) => {
+    console.warn('Firestore listener error (admin requests by building):', error);
+  });
+}
+
+// ─── Respond to Admin Request ───────────────────────────────────
+export async function respondToAdminRequest(
+  requestId: string,
+  responseText: string
+): Promise<void> {
+  await updateDoc(doc(db, "adminRequests", requestId), {
+    adminResponse: responseText,
+    status: "responded",
   });
 }

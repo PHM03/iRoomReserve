@@ -42,6 +42,16 @@ export const DAY_NAMES = [
   "Saturday",
 ] as const;
 
+// ─── Format 24h → 12h AM/PM ────────────────────────────────────
+export function formatTime12h(time24: string): string {
+  const [hStr, mStr] = time24.split(":");
+  let h = parseInt(hStr, 10);
+  const suffix = h >= 12 ? "PM" : "AM";
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${mStr} ${suffix}`;
+}
+
 // ─── Add Schedule ───────────────────────────────────────────────
 export async function addSchedule(data: ScheduleInput): Promise<string> {
   const docRef = await addDoc(collection(db, "schedules"), {

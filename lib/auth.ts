@@ -278,9 +278,17 @@ export async function logout() {
 
 // ─── Forgot Password (Reset via Email) ──────────────────────────
 export async function resetPassword(email: string) {
-  if (!isAllowedEmail(email)) {
-    throw { code: "auth/unauthorized-domain" };
+  // Check if the email belongs to a registered user in Firestore
+  const usersQuery = query(
+    collection(db, "users"),
+    where("email", "==", email.toLowerCase())
+  );
+  const snapshot = await getDocs(usersQuery);
+
+  if (snapshot.empty) {
+    throw { code: "auth/user-not-found" };
   }
+
   await sendPasswordResetEmail(auth, email);
 }
 
@@ -475,6 +483,7 @@ export function getAuthErrorMessage(code: string): string {
     "auth/account-pending": "Your account is pending approval.",
     "auth/account-rejected": "Your account has been rejected.",
     "auth/unauthorized-domain": "Please use your SDCA email address.",
+    "auth/user-not-found": "This email is not registered. Please sign up first.",
   };
 
   return safeMessages[code] ?? "Invalid email or password.";

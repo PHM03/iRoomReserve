@@ -1,19 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import NavBar from '@/components/NavBar';
-import type { AdminTab } from '@/components/NavBar';
+import { AdminTabProvider, useAdminTab } from '@/context/AdminTabContext';
 import Link from 'next/link';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { firebaseUser, profile, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
-  // Admin tab state (derived from pathname for admin)
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const { activeTab, setActiveTab } = useAdminTab();
 
   // Redirect to login if not authenticated, or to superadmin dashboard if Super Admin
   useEffect(() => {
@@ -141,5 +139,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminTabProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </AdminTabProvider>
   );
 }

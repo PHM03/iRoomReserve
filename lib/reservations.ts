@@ -390,3 +390,22 @@ export async function completeReservation(
     status: "completed",
   });
 }
+
+// ─── Delete Reservation (by User) ───────────────────────────────
+export async function deleteReservation(
+  reservationId: string,
+  userId: string
+): Promise<void> {
+  const { deleteDoc } = await import("firebase/firestore");
+  const reservationRef = doc(db, "reservations", reservationId);
+  const snap = await getDoc(reservationRef);
+
+  if (!snap.exists()) throw new Error("Reservation not found");
+
+  const data = snap.data();
+
+  // Validate ownership
+  if (data.userId !== userId) throw new Error("Not authorized to delete this reservation");
+
+  await deleteDoc(reservationRef);
+}
