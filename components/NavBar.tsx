@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 // ─── Admin Tab Type ──────────────────────────────────────────────
-export type AdminTab = 'dashboard' | 'add-rooms' | 'feedback' | 'status-scheduling' | 'room-history';
+export type AdminTab = 'dashboard' | 'add-rooms' | 'feedback' | 'status-scheduling' | 'room-history' | 'inbox' | 'pending';
 
 interface NavBarProps {
   user: {
@@ -59,6 +59,15 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
       ),
     },
     {
+      label: 'Pending',
+      tab: 'pending',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
       label: 'Add Rooms',
       tab: 'add-rooms',
       icon: (
@@ -94,6 +103,15 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
         </svg>
       ),
     },
+    {
+      label: 'Inbox',
+      tab: 'inbox',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
   ];
 
   // ─── Non-admin (Student/Faculty/Utility) nav links ────────────
@@ -103,6 +121,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Reserve', href: '/dashboard/reserve' },
     { label: 'My Reservations', href: '/dashboard/reservations' },
+    { label: 'Inbox', href: '/dashboard/inbox' },
     { label: 'Contact', href: '/dashboard/contact' },
     ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
   ];

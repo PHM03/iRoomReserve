@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useAdminTab } from '@/context/AdminTabContext';
 import type { AdminTab } from '@/components/NavBar';
 import {
   onPendingReservationsByBuilding,
@@ -46,6 +47,11 @@ import {
   RoomHistoryEntry,
   onRoomHistoryByBuilding,
 } from '@/lib/roomHistory';
+import {
+  AdminRequest,
+  onAdminRequestsByBuilding,
+  respondToAdminRequest,
+} from '@/lib/adminRequests';
 
 // ─── Helpers ────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string }) {
@@ -104,6 +110,7 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ firstName, activeTab }: AdminDashboardProps) {
   const { firebaseUser, profile } = useAuth();
+  const { setActiveTab } = useAdminTab();
   const buildingId = profile?.assignedBuildingId;
   const buildingName = profile?.assignedBuilding;
 
@@ -161,6 +168,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const [addingSchedule, setAddingSchedule] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
 
+  // Inbox state
+  const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
+  const [inboxFilter, setInboxFilter] = useState<'all' | 'open' | 'responded' | 'closed'>('all');
+  const [inboxReplyingTo, setInboxReplyingTo] = useState<string | null>(null);
+  const [inboxReplyText, setInboxReplyText] = useState('');
+  const [inboxSubmitting, setInboxSubmitting] = useState(false);
+  const [inboxExpandedId, setInboxExpandedId] = useState<string | null>(null);
+
   // ─── Real-time Listeners ────────────────────────────────────
   useEffect(() => {
     if (!buildingId || !firebaseUser) return;
@@ -172,6 +187,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     const unsubNotifs = onUnreadNotifications(firebaseUser.uid, setNotifications);
     const unsubSchedules = onSchedulesByBuilding(buildingId, setSchedules);
     const unsubHistory = onRoomHistoryByBuilding(buildingId, setRoomHistory);
+    const unsubAdminRequests = onAdminRequestsByBuilding(buildingId, setAdminRequests);
 
     return () => {
       unsubReservations();
@@ -181,6 +197,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       unsubNotifs();
       unsubSchedules();
       unsubHistory();
+      unsubAdminRequests();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildingId, firebaseUser?.uid]);
@@ -947,7 +964,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Total Rooms</p><p className="text-2xl font-bold text-white mt-1">{rooms.length}</p></div>
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Occupied Now</p><p className="text-2xl font-bold text-orange-400 mt-1">{occupiedCount}</p></div>
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Available</p><p className="text-2xl font-bold text-green-400 mt-1">{availableCount}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Pending Requests</p><p className="text-2xl font-bold text-yellow-400 mt-1">{pendingCount}</p></div>
+            <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-white/40 font-bold">Pending Requests</p><p className="text-2xl font-bold text-yellow-400 mt-1">{pendingCount}</p><p className="text-[10px] text-white/20 mt-0.5">Click to review →</p></button>
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Unavailable</p><p className="text-2xl font-bold text-red-400 mt-1">{unavailableCount}</p></div>
           </div>
 
@@ -1009,33 +1026,50 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             );
           })()}
 
-          {/* Pending Requests */}
+          {/* Pending Requests Preview */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-white">Pending Requests</h3>
-            {requests.length > 0 && <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">{requests.length} pending</span>}
+            {requests.length > 0 && (
+              <button onClick={() => setActiveTab('pending')} className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
+                View all ({requests.length}) →
+              </button>
+            )}
           </div>
           {requests.length === 0 ? (
             <div className="glass-card p-8 text-center"><p className="text-sm text-white/30">No requests waiting for approval.</p></div>
           ) : (
             <div className="space-y-3">
-              {requests.map((req) => (
-                <div key={req.id} className="glass-card p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">{req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}</div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2"><h4 className="font-bold text-white text-sm">{req.userName}</h4><RoleBadge role={req.userRole} /></div>
-                        <p className="text-xs text-white/40 mt-0.5">{req.roomName} · {req.date} · {req.startTime} – {req.endTime}</p>
-                        <p className="text-xs text-white/30 mt-0.5">Purpose: {req.purpose}</p>
+              {requests.slice(0, 3).map((req) => (
+                <button
+                  key={req.id}
+                  onClick={() => setActiveTab('pending')}
+                  className="glass-card p-4 w-full text-left hover:!border-yellow-500/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold text-sm shrink-0">
+                      {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-white text-sm">{req.userName}</h4>
+                        <RoleBadge role={req.userRole} />
                       </div>
+                      <p className="text-xs text-white/40 mt-0.5">{req.roomName} · {req.date} · {req.startTime} – {req.endTime}</p>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => handleApprove(req.id)} disabled={actionLoading === req.id} className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30 transition-all disabled:opacity-50">Approve</button>
-                      <button onClick={() => handleReject(req.id)} disabled={actionLoading === req.id} className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-all disabled:opacity-50">Reject</button>
-                    </div>
+                    <svg className="w-5 h-5 text-white/20 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
-                </div>
+                </button>
               ))}
+              {requests.length > 3 && (
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className="w-full text-center py-2 text-sm font-bold text-primary/70 hover:text-primary transition-colors"
+                >
+                  +{requests.length - 3} more pending...
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1296,6 +1330,339 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           </div>
         </div>
       )}
+
+      {/* ════════════════════════════════════════════════════════════ */}
+      {/* ─── TAB: PENDING RESERVATIONS ──────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════ */}
+      {activeTab === 'pending' && (
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                Pending Reservations
+                {requests.length > 0 && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                    {requests.length} pending
+                  </span>
+                )}
+              </h3>
+              <p className="text-white/40 mt-1 text-sm">
+                Review and approve reservation requests for <span className="text-teal-400 font-bold">{buildingName}</span>
+              </p>
+            </div>
+          </div>
+
+          {requests.length === 0 ? (
+            <div className="glass-card p-12 !rounded-xl text-center">
+              <svg className="w-16 h-16 text-white/8 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              <p className="text-sm text-white/30 font-bold">All caught up!</p>
+              <p className="text-xs text-white/15 mt-1">No pending reservation requests</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {requests.map((req) => (
+                <div key={req.id} className="glass-card !rounded-xl overflow-hidden border-l-4 border-yellow-500/40">
+                  <div className="p-5">
+                    {/* User Info Row */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold text-sm shrink-0">
+                          {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h4 className="font-bold text-white">{req.userName}</h4>
+                            <RoleBadge role={req.userRole} />
+                          </div>
+                          <p className="text-xs text-white/40">Reservation Request</p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                        Pending
+                      </span>
+                    </div>
+
+                    {/* Reservation Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Room</p>
+                        <p className="text-sm font-bold text-white">{req.roomName}</p>
+                        <p className="text-xs text-white/30 mt-0.5">{req.buildingName}</p>
+                      </div>
+                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Date</p>
+                        <p className="text-sm font-bold text-white">{req.date}</p>
+                      </div>
+                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Time</p>
+                        <p className="text-sm font-bold text-white">{req.startTime} – {req.endTime}</p>
+                      </div>
+                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Purpose</p>
+                        <p className="text-sm font-bold text-white truncate">{req.purpose || 'Not specified'}</p>
+                      </div>
+                    </div>
+
+                    {/* Additional Details */}
+                    {(req.equipment || req.endorsedByEmail) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        {req.equipment && Object.keys(req.equipment).length > 0 && (
+                          <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Equipment</p>
+                            <p className="text-sm text-white/70">{Object.entries(req.equipment).map(([k, v]) => `${k} (×${v})`).join(', ')}</p>
+                          </div>
+                        )}
+                        {req.endorsedByEmail && (
+                          <div className="bg-white/3 rounded-xl p-3 border border-white/5">
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Endorsed By</p>
+                            <p className="text-sm text-white/70">{req.endorsedByEmail}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                      <button
+                        onClick={() => handleApprove(req.id)}
+                        disabled={actionLoading === req.id}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30 transition-all disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(req.id)}
+                        disabled={actionLoading === req.id}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-all disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════ */}
+      {/* ─── TAB: INBOX ──────────────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════ */}
+      {activeTab === 'inbox' && (() => {
+        const filteredInbox = inboxFilter === 'all'
+          ? adminRequests
+          : adminRequests.filter((r) => r.status === inboxFilter);
+        const openCount = adminRequests.filter((r) => r.status === 'open').length;
+
+        const handleInboxReply = async (requestId: string) => {
+          if (!inboxReplyText.trim()) return;
+          setInboxSubmitting(true);
+          try {
+            await respondToAdminRequest(requestId, inboxReplyText.trim());
+            setInboxReplyingTo(null);
+            setInboxReplyText('');
+          } catch (err) {
+            console.error('Failed to respond:', err);
+          }
+          setInboxSubmitting(false);
+        };
+
+        const typeIcon = (type: string) => {
+          switch (type) {
+            case 'equipment': return '🔧';
+            case 'general': return '💬';
+            default: return '📋';
+          }
+        };
+
+        const formatDate = (ts: { toDate?: () => Date } | undefined): string => {
+          if (!ts || typeof ts.toDate !== 'function') return '';
+          const d = ts.toDate();
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+            ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        };
+
+        return (
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                  Inbox
+                  {openCount > 0 && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      {openCount} new
+                    </span>
+                  )}
+                </h3>
+                <p className="text-white/40 mt-1 text-sm">
+                  Messages from users in <span className="text-teal-400 font-bold">{buildingName}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+              {(['all', 'open', 'responded', 'closed'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setInboxFilter(f)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
+                    inboxFilter === f
+                      ? 'bg-primary/20 text-primary border border-primary/30'
+                      : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/60'
+                  }`}
+                >
+                  {f === 'all' ? `All (${adminRequests.length})` : `${f} (${adminRequests.filter(r => r.status === f).length})`}
+                </button>
+              ))}
+            </div>
+
+            {/* Messages */}
+            <div className="space-y-4">
+              {filteredInbox.length === 0 ? (
+                <div className="glass-card p-12 !rounded-xl text-center">
+                  <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p className="text-sm text-white/30 font-bold">No messages</p>
+                  <p className="text-xs text-white/15 mt-1">
+                    {inboxFilter === 'all' ? 'Your inbox is empty' : `No ${inboxFilter} messages`}
+                  </p>
+                </div>
+              ) : (
+                filteredInbox.map((req) => {
+                  const isExpanded = inboxExpandedId === req.id;
+                  return (
+                    <div key={req.id} className="glass-card !rounded-xl overflow-hidden">
+                      {/* Clickable Header */}
+                      <button
+                        onClick={() => setInboxExpandedId(isExpanded ? null : req.id)}
+                        className="w-full p-5 text-left hover:bg-white/5 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                              {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <h4 className="text-sm font-bold text-white">{req.userName}</h4>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  req.status === 'open' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                  req.status === 'responded' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                  'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                } capitalize`}>
+                                  {req.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-white/40">
+                                <span className="mr-1">{typeIcon(req.type)}</span>
+                                {req.type} · {req.subject}
+                                {req.createdAt && <span className="ml-2 text-white/25">· {formatDate(req.createdAt)}</span>}
+                              </p>
+                            </div>
+                          </div>
+                          <svg className={`w-5 h-5 text-white/30 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+
+                      {/* Expanded Detail */}
+                      {isExpanded && (
+                        <div className="border-t border-white/5 px-5 pb-5">
+                          {/* User's Message */}
+                          <div className="mt-4">
+                            <p className="text-xs font-bold text-white/50 mb-2">Message</p>
+                            <p className="text-sm text-white/70 leading-relaxed bg-white/3 border border-white/5 rounded-xl p-3">{req.message}</p>
+                          </div>
+
+                          {/* Admin Response */}
+                          {req.adminResponse && (
+                            <div className="mt-4">
+                              <p className="text-xs font-bold text-green-400 mb-2">Your Response</p>
+                              <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
+                                <p className="text-sm text-white/70 leading-relaxed">{req.adminResponse}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Reply Section */}
+                          {req.status === 'open' && (
+                            <>
+                              {inboxReplyingTo === req.id ? (
+                                <div className="space-y-3 mt-4 pt-4 border-t border-white/5">
+                                  <textarea
+                                    value={inboxReplyText}
+                                    onChange={(e) => setInboxReplyText(e.target.value)}
+                                    className="glass-input w-full px-4 py-3 min-h-[100px] resize-none"
+                                    placeholder="Type your response..."
+                                    autoFocus
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleInboxReply(req.id)}
+                                      disabled={inboxSubmitting || !inboxReplyText.trim()}
+                                      className="btn-primary px-5 py-2 text-sm flex items-center gap-2"
+                                    >
+                                      {inboxSubmitting ? (
+                                        <>
+                                          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                          </svg>
+                                          Sending...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                          </svg>
+                                          Send Response
+                                        </>
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => { setInboxReplyingTo(null); setInboxReplyText(''); }}
+                                      className="px-4 py-2 text-sm font-bold text-white/40 hover:text-white/60 transition-all"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setInboxReplyingTo(req.id)}
+                                  className="mt-4 px-4 py-2 rounded-xl text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                  </svg>
+                                  Reply
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }

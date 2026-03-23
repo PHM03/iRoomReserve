@@ -4,100 +4,73 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   AdminRequest,
+  onAdminRequestsByUser,
   onAdminRequestsByBuilding,
   respondToAdminRequest,
 } from '@/lib/adminRequests';
+import { useAdminTab } from '@/context/AdminTabContext';
 
-export default function InboxPage() {
-  const { firebaseUser, profile } = useAuth();
-  const buildingId = profile?.assignedBuildingId;
-  const buildingName = profile?.assignedBuilding;
-
-  const [requests, setRequests] = useState<AdminRequest[]>([]);
-  const [filter, setFilter] = useState<'all' | 'open' | 'responded' | 'closed'>('all');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!buildingId || !firebaseUser) return;
-    const unsub = onAdminRequestsByBuilding(buildingId, setRequests);
-    return () => unsub();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildingId, firebaseUser?.uid]);
-
-  const filteredRequests = filter === 'all'
-    ? requests
-    : requests.filter((r) => r.status === filter);
-
-  const openCount = requests.filter((r) => r.status === 'open').length;
-
-  const handleReply = async (requestId: string) => {
-    if (!replyText.trim()) return;
-    setSubmitting(true);
-    try {
-      await respondToAdminRequest(requestId, replyText.trim());
-      setReplyingTo(null);
-      setReplyText('');
-    } catch (err) {
-      console.error('Failed to respond:', err);
-    }
-    setSubmitting(false);
-  };
-
-  const statusStyle = (status: string) => {
+// ─── Status Badge ─────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const style = (() => {
     switch (status) {
       case 'open': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'responded': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'closed': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }
-  };
+  })();
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${style} capitalize`}>
+      {status}
+    </span>
+  );
+}
 
-  const typeIcon = (type: string) => {
-    switch (type) {
-      case 'equipment': return '🔧';
-      case 'general': return '💬';
-      default: return '📋';
-    }
-  };
+function TypeIcon({ type }: { type: string }) {
+  const icons: Record<string, string> = { equipment: '🔧', general: '💬', other: '📋' };
+  return <span className="mr-1">{icons[type] || '📋'}</span>;
+}
 
-  if (!buildingId || !buildingName) {
-    return (
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <h2 className="text-2xl font-bold text-white mb-4">Inbox</h2>
-        <div className="glass-card p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-bold text-white/60 mb-2">No Building Assigned</h3>
-          <p className="text-sm text-white/30 max-w-sm mx-auto">
-            You need to be assigned to a building to view inbox messages.
-          </p>
-        </div>
-      </main>
-    );
-  }
+function formatDate(ts: { toDate?: () => Date } | undefined): string {
+  if (!ts || typeof ts.toDate !== 'function') return '';
+  const d = ts.toDate();
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+    ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// ─── Student/Faculty Inbox ────────────────────────────────────────
+function UserInbox({ uid }: { uid: string }) {
+  const [requests, setRequests] = useState<AdminRequest[]>([]);
+  const [filter, setFilter] = useState<'all' | 'open' | 'responded' | 'closed'>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = onAdminRequestsByUser(uid, setRequests);
+    return () => unsub();
+  }, [uid]);
+
+  const filteredRequests = filter === 'all' ? requests : requests.filter((r) => r.status === filter);
+  const openCount = requests.filter((r) => r.status === 'open').length;
+  const respondedCount = requests.filter((r) => r.status === 'responded').length;
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            Inbox
-            {openCount > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                {openCount} new
-              </span>
-            )}
-          </h2>
-          <p className="text-white/40 mt-1">
-            Messages from users in <span className="text-teal-400 font-bold">{buildingName}</span>
-          </p>
-        </div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+          <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Inbox
+          {respondedCount > 0 && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-300 border border-green-500/30">
+              {respondedCount} replied
+            </span>
+          )}
+        </h2>
+        <p className="text-white/40 mt-1">Your messages with the administration</p>
       </div>
 
       {/* Filter Tabs */}
@@ -121,104 +94,143 @@ export default function InboxPage() {
       <div className="space-y-4">
         {filteredRequests.length === 0 ? (
           <div className="glass-card p-12 !rounded-xl text-center">
-            <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 text-white/8 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
             <p className="text-sm text-white/30 font-bold">No messages</p>
             <p className="text-xs text-white/15 mt-1">
-              {filter === 'all' ? 'Your inbox is empty' : `No ${filter} messages`}
+              {filter === 'all' ? 'Your inbox is empty. Send a request via the Contact page.' : `No ${filter} messages`}
             </p>
           </div>
         ) : (
-          filteredRequests.map((req) => (
-            <div key={req.id} className="glass-card p-5 !rounded-xl">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="text-sm font-bold text-white">{req.userName}</h4>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusStyle(req.status)} capitalize`}>
-                        {req.status}
-                      </span>
-                    </div>
-                    <p className="text-xs text-white/40">
-                      <span className="mr-1">{typeIcon(req.type)}</span>
-                      {req.type} · {req.subject}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Message */}
-              <p className="text-sm text-white/50 mb-3">{req.message}</p>
-
-              {/* Admin Response */}
-              {req.adminResponse && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-3">
-                  <p className="text-xs font-bold text-primary mb-1">Your Response</p>
-                  <p className="text-sm text-white/60">{req.adminResponse}</p>
-                </div>
-              )}
-
-              {/* Reply Section */}
-              {req.status === 'open' && (
-                <>
-                  {replyingTo === req.id ? (
-                    <div className="space-y-3 mt-3 pt-3 border-t border-white/5">
-                      <textarea
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        className="glass-input w-full px-4 py-3 min-h-[100px] resize-none"
-                        placeholder="Type your response..."
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleReply(req.id)}
-                          disabled={submitting || !replyText.trim()}
-                          className="btn-primary px-5 py-2 text-sm flex items-center gap-2"
-                        >
-                          {submitting ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                              </svg>
-                              Sending...
-                            </>
-                          ) : (
-                            'Send Response'
-                          )}
-                        </button>
-                        <button
-                          onClick={() => { setReplyingTo(null); setReplyText(''); }}
-                          className="px-4 py-2 text-sm font-bold text-white/40 hover:text-white/60 transition-all"
-                        >
-                          Cancel
-                        </button>
+          filteredRequests.map((req) => {
+            const isExpanded = expandedId === req.id;
+            return (
+              <div key={req.id} className="glass-card !rounded-xl overflow-hidden">
+                {/* Clickable Header */}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : req.id)}
+                  className="w-full p-5 text-left hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                        req.status === 'responded' ? 'bg-green-500/20' : req.status === 'open' ? 'bg-blue-500/20' : 'bg-white/5'
+                      }`}>
+                        {req.status === 'responded' ? (
+                          <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h4 className="text-sm font-bold text-white">{req.subject}</h4>
+                          <StatusBadge status={req.status} />
+                        </div>
+                        <p className="text-xs text-white/40">
+                          <TypeIcon type={req.type} />{req.type} · {req.buildingName}
+                          {req.createdAt && <span className="ml-2 text-white/25">· {formatDate(req.createdAt)}</span>}
+                        </p>
                       </div>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setReplyingTo(req.id)}
-                      className="mt-2 px-4 py-2 rounded-xl text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                      Reply
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          ))
+                    <svg className={`w-5 h-5 text-white/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Expanded Detail View */}
+                {isExpanded && (
+                  <div className="border-t border-white/5 px-5 pb-5">
+                    {/* Your Sent Message */}
+                    <div className="mt-4 flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold shrink-0 mt-0.5">
+                        You
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-primary mb-1">Your Message</p>
+                        <div className="bg-primary/5 border border-primary/15 rounded-xl p-3">
+                          <p className="text-sm text-white/70 leading-relaxed">{req.message}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Admin Response */}
+                    {req.adminResponse ? (
+                      <div className="mt-4 flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                          <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-green-400 mb-1">Admin Response</p>
+                          <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
+                            <p className="text-sm text-white/70 leading-relaxed">{req.adminResponse}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 p-3 rounded-xl bg-white/3 border border-white/5 text-center">
+                        <p className="text-xs text-white/30">
+                          <svg className="w-4 h-4 inline mr-1 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Awaiting admin response...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </main>
   );
+}
+
+// ─── Admin Inbox (redirects to tab) ───────────────────────────────
+function AdminInboxRedirect() {
+  const { setActiveTab } = useAdminTab();
+
+  useEffect(() => {
+    setActiveTab('inbox');
+  }, [setActiveTab]);
+
+  return (
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <div className="glass-card p-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2">Inbox</h3>
+        <p className="text-sm text-white/40">
+          Your inbox is available in the <span className="text-primary font-bold">Inbox</span> tab on your dashboard.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+// ─── Page Component ───────────────────────────────────────────────
+export default function InboxPage() {
+  const { firebaseUser, profile } = useAuth();
+  const isAdmin = profile?.role === 'Administrator';
+
+  if (!firebaseUser) return null;
+
+  if (isAdmin) {
+    return <AdminInboxRedirect />;
+  }
+
+  return <UserInbox uid={firebaseUser.uid} />;
 }

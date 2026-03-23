@@ -3,6 +3,7 @@ import {
   addDoc,
   doc,
   updateDoc,
+  getDoc,
   query,
   where,
   orderBy,
@@ -115,4 +116,22 @@ export async function respondToAdminRequest(
     adminResponse: responseText,
     status: "responded",
   });
+
+  // Notify the user who sent the request
+  try {
+    const requestDoc = await getDoc(doc(db, "adminRequests", requestId));
+    if (requestDoc.exists()) {
+      const data = requestDoc.data();
+      await createNotification({
+        recipientUid: data.userId,
+        type: "system",
+        title: "Admin Replied",
+        message: `Your request "${data.subject}" received a response: "${responseText.slice(0, 80)}${responseText.length > 80 ? '...' : ''}"`,
+        buildingId: data.buildingId,
+        reservationId: requestId,
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to send reply notification:', err);
+  }
 }
