@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
+import { USER_ROLES } from '@/lib/domain/roles';
 import StudentDashboard from '@/components/dashboards/StudentDashboard';
 import FacultyDashboard from '@/components/dashboards/FacultyDashboard';
 import UtilityStaffDashboard from '@/components/dashboards/UtilityStaffDashboard';
@@ -16,15 +17,13 @@ export default function Dashboard() {
 
   // Render the role-specific dashboard
   switch (profile?.role) {
-    case 'Faculty':
-    case 'Faculty Professor':
+    case USER_ROLES.FACULTY:
       return <FacultyDashboard firstName={firstName} />;
-    case 'Utility Staff':
-    case 'Utility':
+    case USER_ROLES.UTILITY:
       return <UtilityStaffDashboard firstName={firstName} />;
-    case 'Administrator':
+    case USER_ROLES.ADMIN:
       return <AdminDashboard firstName={firstName} activeTab={activeTab} />;
-    case 'Student':
+    case USER_ROLES.STUDENT:
     default:
       return <StudentDashboard firstName={firstName} />;
   }

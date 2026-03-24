@@ -68,7 +68,8 @@ function RoleBadge({ role }: { role: string }) {
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Occupied': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+      case 'Ongoing': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+      case 'Reserved': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
       case 'Unavailable': return 'bg-red-500/20 text-red-300 border-red-500/30';
       case 'Available': return 'bg-green-500/20 text-green-300 border-green-500/30';
       case 'approved': return 'bg-green-500/20 text-green-300 border-green-500/30';
@@ -368,10 +369,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const computeEffectiveStatus = (room: Room): { status: string; detail: string } => {
     // Manual overrides take priority
     if (room.status === 'Unavailable') return { status: 'Unavailable', detail: 'Manual override' };
-    if (room.status === 'Occupied') return { status: 'Occupied', detail: 'Manually set' };
+    if (room.status === 'Ongoing') return { status: 'Ongoing', detail: 'Checked in' };
+    if (room.status === 'Reserved') return { status: 'Reserved', detail: 'Reserved' };
     // Check active class schedules
     const activeClass = isRoomInClass(schedules, room.id);
-    if (activeClass) return { status: 'Occupied', detail: `Class: ${activeClass.subjectName}` };
+    if (activeClass) return { status: 'Reserved', detail: `Class: ${activeClass.subjectName}` };
     // Check active reservations
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -379,13 +381,18 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     const activeReservation = allReservations.find(
       (r) => r.roomId === room.id && r.status === 'approved' && r.date === today && r.startTime <= currentTime && r.endTime > currentTime
     );
-    if (activeReservation) return { status: 'Occupied', detail: `Reserved: ${activeReservation.userName}` };
+    if (activeReservation) {
+      return activeReservation.checkedInAt
+        ? { status: 'Ongoing', detail: `Checked in: ${activeReservation.userName}` }
+        : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
+    }
     return { status: 'Available', detail: '' };
   };
 
-  const occupiedCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Occupied').length;
+  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Ongoing').length;
+  const reservedCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Reserved').length;
   const unavailableCount = rooms.filter((r) => r.status === 'Unavailable').length;
-  const availableCount = rooms.length - occupiedCount - unavailableCount;
+  const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
   const pendingCount = requests.length;
 
   // Filtered rooms for search & floor filter
@@ -962,10 +969,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Total Rooms</p><p className="text-2xl font-bold text-white mt-1">{rooms.length}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Occupied Now</p><p className="text-2xl font-bold text-orange-400 mt-1">{occupiedCount}</p></div>
+            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Reserved</p><p className="text-2xl font-bold text-blue-400 mt-1">{reservedCount}</p></div>
             <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Available</p><p className="text-2xl font-bold text-green-400 mt-1">{availableCount}</p></div>
             <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-white/40 font-bold">Pending Requests</p><p className="text-2xl font-bold text-yellow-400 mt-1">{pendingCount}</p><p className="text-[10px] text-white/20 mt-0.5">Click to review →</p></button>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Unavailable</p><p className="text-2xl font-bold text-red-400 mt-1">{unavailableCount}</p></div>
+            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Ongoing</p><p className="text-2xl font-bold text-orange-400 mt-1">{ongoingCount}</p></div>
           </div>
 
           {/* Live Room Status Grid */}
@@ -976,7 +983,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
               {rooms.map((room) => {
                 const effective = computeEffectiveStatus(room);
-                const borderColor = effective.status === 'Occupied' ? 'border-orange-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
+                const borderColor = effective.status === 'Ongoing' ? 'border-orange-500/40' : effective.status === 'Reserved' ? 'border-blue-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
                 return (
                   <div key={room.id} className={`glass-card p-4 border-l-4 ${borderColor}`}>
                     <div className="flex justify-between items-start">
@@ -1093,7 +1100,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rooms.map((room) => {
                 const effective = computeEffectiveStatus(room);
-                const statusBorder = effective.status === 'Occupied' ? 'border-orange-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
+                const statusBorder = effective.status === 'Ongoing' ? 'border-orange-500/40' : effective.status === 'Reserved' ? 'border-blue-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
                 return (
                   <div key={room.id} className={`glass-card p-5 border-l-4 ${statusBorder}`}>
                     <div className="flex justify-between items-start mb-2">
@@ -1103,8 +1110,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     {effective.detail && <p className="text-xs text-white/50 mb-2">{effective.detail}</p>}
                     <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
                       <button onClick={() => handleStatusChange(room.id, 'Available')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Available' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-green-500/10 hover:text-green-300'}`}>Available</button>
-                      <button onClick={() => handleStatusChange(room.id, 'Occupied')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Occupied' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-orange-500/10 hover:text-orange-300'}`}>Occupied</button>
-                      <button onClick={() => handleStatusChange(room.id, 'Unavailable')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Unavailable' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-red-500/10 hover:text-red-300'}`}>Unavailable</button>
+                      <button onClick={() => handleStatusChange(room.id, 'Reserved')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Reserved' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-blue-500/10 hover:text-blue-300'}`}>Reserved</button>
+                      <button onClick={() => handleStatusChange(room.id, 'Ongoing')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Ongoing' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-orange-500/10 hover:text-orange-300'}`}>Ongoing</button>
                     </div>
                   </div>
                 );

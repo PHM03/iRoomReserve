@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import StatusBadge, { Status } from './StatusBadge';
+import StatusBadge from './StatusBadge';
+import type { RoomStatusValue } from '@/lib/roomStatus';
 
 interface RoomCardProps {
   name: string;
   floor: string;
-  status: Status;
+  status: RoomStatusValue;
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({ name, floor, status }) => {

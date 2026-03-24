@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
-  onReservationsByUser,
+  getReservationsByUser,
   Reservation,
 } from '@/lib/reservations';
 import {
   createAdminRequest,
-  onAdminRequestsByUser,
+  getAdminRequestsByUser,
   AdminRequest,
 } from '@/lib/adminRequests';
 import { getBuildings, Building } from '@/lib/buildings';
@@ -33,15 +33,33 @@ export default function ContactAdminPage() {
 
   useEffect(() => {
     if (!firebaseUser) return;
-    const unsubRequests = onAdminRequestsByUser(firebaseUser.uid, setRequests);
-    const unsubReservations = onReservationsByUser(firebaseUser.uid, setReservations);
-    getBuildings().then(setBuildings).catch(console.error);
-    return () => {
-      unsubRequests();
-      unsubReservations();
+
+    let cancelled = false;
+
+    const loadContactData = async () => {
+      try {
+        const [nextRequests, nextReservations, nextBuildings] = await Promise.all([
+          getAdminRequestsByUser(firebaseUser.uid),
+          getReservationsByUser(firebaseUser.uid),
+          getBuildings(),
+        ]);
+
+        if (!cancelled) {
+          setRequests(nextRequests);
+          setReservations(nextReservations);
+          setBuildings(nextBuildings);
+        }
+      } catch (error) {
+        console.error('Failed to load contact page data:', error);
+      }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firebaseUser?.uid]);
+
+    loadContactData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser]);
 
   const activeReservations = reservations.filter(
     (r) => r.status === 'pending' || r.status === 'approved'
@@ -79,6 +97,8 @@ export default function ContactAdminPage() {
         buildingId: selectedBuildingId,
         buildingName: selectedBuildingName,
       });
+      const updatedRequests = await getAdminRequestsByUser(firebaseUser.uid);
+      setRequests(updatedRequests);
       setSubmitSuccess(true);
       setTimeout(() => {
         setShowForm(false);

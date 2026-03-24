@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import {
-  Schedule,
-  onSchedulesByBuilding,
   DAY_NAMES,
   formatTime12h,
+  isRoomInClass,
+  onSchedulesByBuilding,
+  Schedule,
 } from '@/lib/schedules';
 import {
   onReservationsByBuilding,
@@ -17,76 +19,89 @@ import {
   onAdminRequestsByBuilding,
 } from '@/lib/adminRequests';
 import {
-  Room,
   onRoomsByBuilding,
+  Room,
 } from '@/lib/rooms';
+import StatusBadge from '@/components/StatusBadge';
+import {
+  getCurrentTimeString,
+  getLocalDateString,
+  resolveRoomStatus,
+} from '@/lib/roomStatus';
 
-// ─── Helpers ────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
-  const style = (() => {
-    switch (status) {
-      case 'Occupied': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-      case 'Unavailable': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      case 'Available': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'approved': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/20';
-    }
-  })();
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${style}`}>
-      {status}
-    </span>
-  );
-}
-
-// ─── Component ──────────────────────────────────────────────────
 interface UtilityStaffDashboardProps {
   firstName: string;
 }
 
-export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboardProps) {
+export default function UtilityStaffDashboard({
+  firstName,
+}: UtilityStaffDashboardProps) {
   const { firebaseUser, profile } = useAuth();
   const buildingId = profile?.assignedBuildingId;
   const buildingName = profile?.assignedBuilding;
 
-  // State
   const [rooms, setRooms] = useState<Room[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
 
-  // ─── Real-time Listeners ──────────────────────────────────────
   useEffect(() => {
-    if (!buildingId || !firebaseUser) return;
+    if (!buildingId || !firebaseUser) {
+      return;
+    }
 
-    const unsubRooms = onRoomsByBuilding(buildingId, setRooms);
-    const unsubSchedules = onSchedulesByBuilding(buildingId, setSchedules);
-    const unsubReservations = onReservationsByBuilding(buildingId, setReservations);
-    const unsubRequests = onAdminRequestsByBuilding(buildingId, setAdminRequests);
+    const unsubscribeRooms = onRoomsByBuilding(buildingId, setRooms);
+    const unsubscribeSchedules = onSchedulesByBuilding(buildingId, setSchedules);
+    const unsubscribeReservations = onReservationsByBuilding(
+      buildingId,
+      setReservations
+    );
+    const unsubscribeRequests = onAdminRequestsByBuilding(
+      buildingId,
+      setAdminRequests
+    );
 
     return () => {
-      unsubRooms();
-      unsubSchedules();
-      unsubReservations();
-      unsubRequests();
+      unsubscribeRooms();
+      unsubscribeSchedules();
+      unsubscribeReservations();
+      unsubscribeRequests();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildingId, firebaseUser?.uid]);
+  }, [buildingId, firebaseUser]);
 
-  // ─── Computed Values ──────────────────────────────────────────
   const today = new Date();
-  const todayDateStr = today.toISOString().split('T')[0];
+  const todayDateString = getLocalDateString(today);
   const currentDay = today.getDay();
-  const currentTime = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
+  const currentTime = getCurrentTimeString(today);
 
-  const todaySchedules = schedules.filter((s) => s.dayOfWeek === currentDay);
-  const todayReservations = reservations.filter(
-    (r) => r.date === todayDateStr && (r.status === 'approved' || r.status === 'pending')
+  const todaySchedules = schedules.filter(
+    (schedule) => schedule.dayOfWeek === currentDay
   );
-  const openRequests = adminRequests.filter((r) => r.status === 'open');
+  const todayReservations = reservations.filter(
+    (reservation) =>
+      reservation.date === todayDateString &&
+      (reservation.status === 'approved' || reservation.status === 'pending')
+  );
+  const openRequests = adminRequests.filter(
+    (request) => request.status === 'open'
+  );
+  const roomStatuses = rooms.map((room) => ({
+    room,
+    resolved: resolveRoomStatus(room, reservations, {
+      activeSchedule: isRoomInClass(schedules, room.id),
+      now: today,
+    }),
+  }));
+  const availableCount = roomStatuses.filter(
+    ({ resolved }) => resolved.status === 'Available'
+  ).length;
+  const reservedCount = roomStatuses.filter(
+    ({ resolved }) => resolved.status === 'Reserved'
+  ).length;
+  const ongoingCount = roomStatuses.filter(
+    ({ resolved }) => resolved.status === 'Ongoing'
+  ).length;
 
-  // ─── No Building Assigned State ───────────────────────────────
   if (!buildingId || !buildingName) {
     return (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
@@ -96,13 +111,26 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         </div>
         <div className="glass-card p-12 text-center">
           <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="w-8 h-8 text-yellow-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-white/60 mb-2">No Building Assigned</h3>
+          <h3 className="text-lg font-bold text-white/60 mb-2">
+            No Building Assigned
+          </h3>
           <p className="text-sm text-white/30 max-w-sm mx-auto">
-            Your account has been approved, but no building has been assigned to you yet. Please contact the Super Admin.
+            Your account has been approved, but no building has been assigned to
+            you yet. Please contact the Super Admin.
           </p>
         </div>
       </main>
@@ -111,7 +139,6 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
-      {/* Welcome */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-white">Hello, {firstName} 🔑</h2>
         <p className="text-white/40 mt-1">
@@ -119,19 +146,22 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="glass-card p-5 border-l-4 border-teal-500/60">
           <p className="text-2xl font-bold text-teal-400">{rooms.length}</p>
           <p className="text-xs text-white/50 font-bold">Total Rooms</p>
         </div>
-        <div className="glass-card p-5 border-l-4 border-orange-500/60">
-          <p className="text-2xl font-bold text-orange-400">{todaySchedules.length}</p>
-          <p className="text-xs text-white/50 font-bold">Classes Today</p>
+        <div className="glass-card p-5 border-l-4 border-green-500/60">
+          <p className="text-2xl font-bold text-green-400">{availableCount}</p>
+          <p className="text-xs text-white/50 font-bold">Available</p>
         </div>
         <div className="glass-card p-5 border-l-4 border-blue-500/60">
-          <p className="text-2xl font-bold text-blue-400">{todayReservations.length}</p>
-          <p className="text-xs text-white/50 font-bold">Reservations Today</p>
+          <p className="text-2xl font-bold text-blue-400">{reservedCount}</p>
+          <p className="text-xs text-white/50 font-bold">Reserved</p>
+        </div>
+        <div className="glass-card p-5 border-l-4 border-orange-500/60">
+          <p className="text-2xl font-bold text-orange-400">{ongoingCount}</p>
+          <p className="text-xs text-white/50 font-bold">Ongoing</p>
         </div>
         <div className="glass-card p-5 border-l-4 border-yellow-500/60">
           <p className="text-2xl font-bold text-yellow-400">{openRequests.length}</p>
@@ -139,14 +169,60 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         </div>
       </div>
 
-      {/* ─── Today's Class Schedules ──────────────────────────────── */}
+      <div className="glass-card p-5 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-white">Room Status Overview</h3>
+            <p className="text-sm text-white/40 mt-1">
+              Monitor live room states and approved reservations for {buildingName}.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/room-status"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all"
+          >
+            Open Room Status
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <StatusBadge status="Available" />
+            </div>
+            <p className="text-sm text-white/60">
+              Rooms ready for the next reservation.
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <StatusBadge status="Reserved" />
+            </div>
+            <p className="text-sm text-white/60">
+              Approved classes or reservations are holding the room.
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <StatusBadge status="Ongoing" />
+            </div>
+            <p className="text-sm text-white/60">
+              A reservation has checked in and is actively using the room.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">
             Today&apos;s Class Schedules
-            <span className="text-sm text-white/30 font-normal ml-2">({DAY_NAMES[currentDay]})</span>
+            <span className="text-sm text-white/30 font-normal ml-2">
+              ({DAY_NAMES[currentDay]})
+            </span>
           </h3>
-          <span className="text-xs text-white/30">{todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}</span>
+          <span className="text-xs text-white/30">
+            {todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}
+          </span>
         </div>
 
         {todaySchedules.length === 0 ? (
@@ -156,27 +232,37 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {todaySchedules.map((s) => {
-              const isActive = s.startTime <= currentTime && s.endTime > currentTime;
-              const isUpcoming = s.startTime > currentTime;
+            {todaySchedules.map((schedule) => {
+              const isActive =
+                schedule.startTime <= currentTime && schedule.endTime > currentTime;
+              const isUpcoming = schedule.startTime > currentTime;
+
               return (
-                <div key={s.id} className={`glass-card p-4 border-l-4 ${isActive ? 'border-orange-500/60' : isUpcoming ? 'border-teal-500/40' : 'border-white/10'}`}>
+                <div
+                  key={schedule.id}
+                  className={`glass-card p-4 border-l-4 ${
+                    isActive
+                      ? 'border-orange-500/60'
+                      : isUpcoming
+                        ? 'border-teal-500/40'
+                        : 'border-white/10'
+                  }`}
+                >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-bold text-white">{s.subjectName}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{s.roomName} · {s.instructorName}</p>
-                      <p className="text-xs text-white/50 mt-1">{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
+                      <p className="text-sm font-bold text-white">
+                        {schedule.subjectName}
+                      </p>
+                      <p className="text-xs text-white/40 mt-0.5">
+                        {schedule.roomName} | {schedule.instructorName}
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">
+                        {formatTime12h(schedule.startTime)} -{' '}
+                        {formatTime12h(schedule.endTime)}
+                      </p>
                     </div>
-                    {isActive && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                        In Progress
-                      </span>
-                    )}
-                    {isUpcoming && !isActive && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                        Upcoming
-                      </span>
-                    )}
+                    {isActive && <StatusBadge status="Reserved" />}
+                    {isUpcoming && !isActive && <StatusBadge status="Available" />}
                   </div>
                 </div>
               );
@@ -185,11 +271,15 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         )}
       </div>
 
-      {/* ─── Today's Room Reservations ────────────────────────────── */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-white">Today&apos;s Room Reservations</h3>
-          <span className="text-xs text-white/30">{todayReservations.length} reservation{todayReservations.length !== 1 ? 's' : ''}</span>
+          <h3 className="text-xl font-bold text-white">
+            Today&apos;s Room Reservations
+          </h3>
+          <span className="text-xs text-white/30">
+            {todayReservations.length} reservation
+            {todayReservations.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {todayReservations.length === 0 ? (
@@ -199,31 +289,51 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
           </div>
         ) : (
           <div className="space-y-3">
-            {todayReservations.map((res) => {
-              const isActive = res.startTime <= currentTime && res.endTime > currentTime;
+            {todayReservations.map((reservation) => {
+              const reservationRoom = rooms.find(
+                (room) => room.id === reservation.roomId
+              );
+              const roomStatus = resolveRoomStatus(
+                reservationRoom ?? {
+                  id: reservation.roomId,
+                  status: reservation.checkedInAt ? 'Ongoing' : 'Reserved',
+                },
+                reservations,
+                { now: today }
+              );
+
               return (
-                <div key={res.id} className={`glass-card p-4 sm:p-5 border-l-4 ${isActive ? 'border-orange-500/40' : res.status === 'pending' ? 'border-yellow-500/40' : 'border-green-500/40'}`}>
+                <div
+                  key={reservation.id}
+                  className="glass-card p-4 sm:p-5 border-l-4 border-blue-500/30"
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-4">
                       <div className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {res.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {reservation.userName
+                          .split(' ')
+                          .map((name) => name[0])
+                          .join('')
+                          .toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-white text-sm">{res.userName}</h4>
-                          <StatusBadge status={res.status} />
-                          {isActive && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                              Active Now
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-white text-sm">
+                            {reservation.userName}
+                          </h4>
+                          <StatusBadge status={reservation.status} />
+                          <StatusBadge status={roomStatus.status} />
                         </div>
                         <p className="text-xs text-white/40 mt-0.5">
-                          {res.roomName} · {res.startTime} – {res.endTime}
+                          {reservation.roomName} | {reservation.startTime} -{' '}
+                          {reservation.endTime}
                         </p>
-                        <p className="text-xs text-white/30 mt-0.5">Purpose: {res.purpose}</p>
+                        <p className="text-xs text-white/30 mt-0.5">
+                          Purpose: {reservation.purpose}
+                        </p>
                       </div>
                     </div>
+                    <p className="text-xs text-white/40">{roomStatus.detail}</p>
                   </div>
                 </div>
               );
@@ -232,7 +342,6 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         )}
       </div>
 
-      {/* ─── Contact Requests from Admin ──────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">Admin Requests</h3>
@@ -246,47 +355,64 @@ export default function UtilityStaffDashboard({ firstName }: UtilityStaffDashboa
         {adminRequests.length === 0 ? (
           <div className="glass-card p-8 text-center">
             <div className="text-3xl mb-2">💬</div>
-            <p className="text-sm text-white/30">No admin requests for this building.</p>
+            <p className="text-sm text-white/30">
+              No admin requests for this building.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {adminRequests.slice(0, 10).map((req) => {
-              const reqStatusStyle = (() => {
-                switch (req.status) {
-                  case 'open': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-                  case 'responded': return 'bg-green-500/20 text-green-400 border-green-500/30';
-                  case 'closed': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-                  default: return 'bg-white/10 text-white/50 border-white/20';
-                }
-              })();
-              const reqTypeIcon = req.type === 'equipment' ? '🔧' : req.type === 'general' ? '💬' : '📋';
+            {adminRequests.slice(0, 10).map((request) => {
+              const requestStatusStyle =
+                request.status === 'open'
+                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  : request.status === 'responded'
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+              const requestTypeIcon =
+                request.type === 'equipment'
+                  ? '🔧'
+                  : request.type === 'general'
+                    ? '💬'
+                    : '📋';
 
               return (
-                <div key={req.id} className="glass-card p-4 sm:p-5">
+                <div key={request.id} className="glass-card p-4 sm:p-5">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        {request.userName
+                          .split(' ')
+                          .map((name) => name[0])
+                          .join('')
+                          .toUpperCase()}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <h4 className="font-bold text-white text-sm">{req.userName}</h4>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${reqStatusStyle} capitalize`}>
-                            {req.status}
+                          <h4 className="font-bold text-white text-sm">
+                            {request.userName}
+                          </h4>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${requestStatusStyle} capitalize`}
+                          >
+                            {request.status}
                           </span>
                         </div>
                         <p className="text-xs text-white/40">
-                          <span className="mr-1">{reqTypeIcon}</span>
-                          {req.type} · {req.subject}
+                          <span className="mr-1">{requestTypeIcon}</span>
+                          {request.type} | {request.subject}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-white/50 mb-2">{req.message}</p>
-                  {req.adminResponse && (
+                  <p className="text-sm text-white/50 mb-2">{request.message}</p>
+                  {request.adminResponse && (
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
-                      <p className="text-xs font-bold text-primary mb-1">Admin Response</p>
-                      <p className="text-sm text-white/60">{req.adminResponse}</p>
+                      <p className="text-xs font-bold text-primary mb-1">
+                        Admin Response
+                      </p>
+                      <p className="text-sm text-white/60">
+                        {request.adminResponse}
+                      </p>
                     </div>
                   )}
                 </div>

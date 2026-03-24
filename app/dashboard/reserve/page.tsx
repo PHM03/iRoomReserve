@@ -5,13 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getBuildings, Building } from '@/lib/buildings';
 import { createReservation, createRecurringReservation } from '@/lib/reservations';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { onAvailableRoomsByBuilding } from '@/lib/rooms';
 
 interface Room {
   id: string;
@@ -68,32 +62,33 @@ export default function ReserveRoomPage() {
   // Load rooms when building selected
   useEffect(() => {
     if (!selectedBuildingId) {
-      setRooms([]);
       return;
     }
-    setRoomsLoading(true);
-    const fetchRooms = async () => {
-      const q = query(
-        collection(db, 'rooms'),
-        where('buildingId', '==', selectedBuildingId),
-        where('status', '==', 'Available')
+
+    const unsubscribe = onAvailableRoomsByBuilding(selectedBuildingId, (nextRooms) => {
+      setRooms(
+        nextRooms.map((room) => ({
+          id: room.id,
+          name: room.name,
+          floor: room.floor,
+          status: room.status,
+        }))
       );
-      const snap = await getDocs(q);
-      const r: Room[] = snap.docs.map((d) => ({
-        id: d.id,
-        name: d.data().name || '',
-        floor: d.data().floor || '',
-        status: d.data().status || 'Available',
-      }));
-      setRooms(r);
       setRoomsLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
     };
-    fetchRooms();
   }, [selectedBuildingId]);
+
+  const availableRooms = selectedBuildingId ? rooms : [];
 
   // Handlers
   const handleBuildingSelect = (buildingId: string) => {
     const building = buildings.find((b) => b.id === buildingId);
+    setRooms([]);
+    setRoomsLoading(Boolean(buildingId));
     setSelectedBuildingId(buildingId);
     setSelectedBuildingName(building?.name || '');
     setSelectedRoomId('');
@@ -102,7 +97,7 @@ export default function ReserveRoomPage() {
   };
 
   const handleRoomSelect = (roomId: string) => {
-    const room = rooms.find((r) => r.id === roomId);
+    const room = availableRooms.find((r) => r.id === roomId);
     setSelectedRoomId(roomId);
     setSelectedRoomName(room?.name || '');
     setFormStep(3);
@@ -338,7 +333,7 @@ export default function ReserveRoomPage() {
                     </svg>
                     <p className="text-sm text-white/30">Loading rooms...</p>
                   </div>
-                ) : rooms.length === 0 ? (
+                ) : availableRooms.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-white/30">No available rooms in this building.</p>
                     <button
@@ -350,7 +345,7 @@ export default function ReserveRoomPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {rooms.map((room) => (
+                    {availableRooms.map((room) => (
                       <button
                         key={room.id}
                         onClick={() => handleRoomSelect(room.id)}

@@ -3,28 +3,31 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { USER_ROLES } from '@/lib/domain/roles';
 import { saveUserProfile, logout } from '@/lib/auth';
 import Toast from '@/components/Toast';
 
 export default function RoleSelectionPage() {
     const { firebaseUser, profile } = useAuth();
     const router = useRouter();
-    const [selectedRole, setSelectedRole] = useState('Student');
+    const [selectedRole, setSelectedRole] = useState<
+      typeof USER_ROLES.STUDENT | typeof USER_ROLES.FACULTY | typeof USER_ROLES.UTILITY
+    >(USER_ROLES.STUDENT);
     const [loading, setLoading] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const handleToastClose = useCallback(() => setShowToast(false), []);
 
     const roles = [
-        { key: 'Student', label: 'Student', description: 'Browse and reserve rooms for study or group work' },
-        { key: 'Faculty Professor', label: 'Faculty Professor', description: 'Reserve rooms for classes or faculty meetings' },
-        { key: 'Utility Staff', label: 'Utility Staff', description: 'Manage room equipment and facilities' },
+        { key: USER_ROLES.STUDENT, label: USER_ROLES.STUDENT, description: 'Browse and reserve rooms for study or group work' },
+        { key: USER_ROLES.FACULTY, label: USER_ROLES.FACULTY, description: 'Reserve rooms for classes or faculty meetings' },
+        { key: USER_ROLES.UTILITY, label: USER_ROLES.UTILITY, description: 'Manage room equipment and facilities' },
     ];
 
     const handleConfirm = async () => {
         if (!firebaseUser) return;
         setLoading(true);
         try {
-        const status = selectedRole === 'Student' ? 'approved' : 'pending';
+        const status = selectedRole === USER_ROLES.STUDENT ? 'approved' : 'pending';
 
         await saveUserProfile(firebaseUser.uid, {
             firstName: profile?.firstName || firebaseUser.displayName?.split(' ')[0] || '',
@@ -55,11 +58,11 @@ export default function RoleSelectionPage() {
         <div className="min-h-screen flex flex-col relative overflow-hidden">
             <Toast
                 message={
-                    selectedRole === 'Student'
+                    selectedRole === USER_ROLES.STUDENT
                     ? 'Account created! Welcome to iRoomReserve.'
-                    : selectedRole === 'Faculty Professor'
+                    : selectedRole === USER_ROLES.FACULTY
                         ? 'Account created as Faculty Professor! Your registration is pending for Admin approval.'
-                        : selectedRole === 'Utility Staff'
+                        : selectedRole === USER_ROLES.UTILITY
                         ? 'Account created as Utility Staff! Your registration is pending for Admin approval.'
                         : 'Account created! Your registration is pending for Admin approval.'
                 }

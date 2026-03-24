@@ -13,11 +13,8 @@ import {
   enableUserAccount,
   ManagedUser,
 } from '@/lib/auth';
-import {
-  getBuildingByAdmin,
-  unassignAdminFromBuilding,
-  Building,
-} from '@/lib/buildings';
+import { getBuildings, Building } from '@/lib/buildings';
+import { USER_ROLES } from '@/lib/domain/roles';
 import { seedBuildings } from '@/lib/seedBuildings';
 
 type Tab = 'all' | 'students' | 'faculty' | 'utility' | 'admins' | 'pending';
@@ -39,6 +36,11 @@ export default function SuperAdminDashboard() {
   // ─── Delete Confirmation State ─────────────────────────────────
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
+  const [seedingBuildings, setSeedingBuildings] = useState(false);
+  const [seedResult, setSeedResult] = useState<{
+    created: string[];
+    skipped: string[];
+  } | null>(null);
 
   // Redirect if not super admin
   useEffect(() => {
@@ -47,14 +49,7 @@ export default function SuperAdminDashboard() {
     }
   }, [loading, firebaseUser, profile, router]);
 
-  // Auto-seed buildings on first load
   const seeded = useRef(false);
-  useEffect(() => {
-    if (!seeded.current) {
-      seeded.current = true;
-      seedBuildings().catch(console.warn);
-    }
-  }, []);
 
   // Real-time listener for ALL users
   useEffect(() => {
@@ -64,14 +59,12 @@ export default function SuperAdminDashboard() {
 
   // ─── Computed Data ────────────────────────────────────────────
   const pendingUsers = allUsers.filter((u) => u.status === 'pending');
-  const approvedUsers = allUsers.filter((u) => u.status === 'approved');
   const disabledUsers = allUsers.filter((u) => u.status === 'disabled');
-  const rejectedUsers = allUsers.filter((u) => u.status === 'rejected');
 
   const students = allUsers.filter((u) => u.role === 'Student');
-  const facultyProfessors = allUsers.filter((u) => u.role === 'Faculty Professor');
-  const utilityUsers = allUsers.filter((u) => u.role === 'Utility');
-  const administrators = allUsers.filter((u) => u.role === 'Administrator');
+  const facultyProfessors = allUsers.filter((u) => u.role === USER_ROLES.FACULTY);
+  const utilityUsers = allUsers.filter((u) => u.role === USER_ROLES.UTILITY);
+  const administrators = allUsers.filter((u) => u.role === USER_ROLES.ADMIN);
 
   const currentUsers = (() => {
     switch (activeTab) {
@@ -91,9 +84,7 @@ export default function SuperAdminDashboard() {
     setSelectedBuildingId('');
     setShowApprovalModal(true);
     try {
-      const { getBuildings } = await import('@/lib/buildings');
-      const buildings = await getBuildings();
-      setAvailableBuildings(buildings);
+      setAvailableBuildings(await getBuildings());
     } catch (err) {
       console.warn('Failed to fetch buildings:', err);
       setAvailableBuildings([]);
@@ -106,7 +97,7 @@ export default function SuperAdminDashboard() {
     try {
       const building = availableBuildings.find((b) => b.id === selectedBuildingId);
       if (!building) return;
-      await approveAdmin(selectedUser.uid, building.id, building.name);
+      await approveAdmin(selectedUser.uid, building.id, building.name, selectedUser.role);
     } catch (err) {
       console.warn('Failed to approve admin:', err);
     }
@@ -143,11 +134,6 @@ export default function SuperAdminDashboard() {
     if (!deletingUser) return;
     setActionLoading(deletingUser.uid);
     try {
-      // If admin, unassign building first
-      if (deletingUser.role === 'Administrator' || deletingUser.role === 'Utility') {
-        const building = await getBuildingByAdmin(deletingUser.uid);
-        if (building) await unassignAdminFromBuilding(building.id);
-      }
       await deleteUserAccount(deletingUser.uid);
     } catch (err) {
       console.warn('Failed to delete:', err);
@@ -160,10 +146,6 @@ export default function SuperAdminDashboard() {
   const handleRevokeAdmin = async (user: ManagedUser) => {
     setActionLoading(user.uid);
     try {
-      const building = await getBuildingByAdmin(user.uid);
-      if (building) {
-        await unassignAdminFromBuilding(building.id);
-      }
       await rejectUser(user.uid);
     } catch (err) {
       console.warn('Failed to revoke admin:', err);
@@ -174,6 +156,18 @@ export default function SuperAdminDashboard() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const handleSeedBuildings = async () => {
+    setSeedingBuildings(true);
+    try {
+      const result = await seedBuildings();
+      setSeedResult(result);
+      seeded.current = true;
+    } catch (err) {
+      console.warn('Failed to seed buildings:', err);
+    }
+    setSeedingBuildings(false);
   };
 
   if (loading || !firebaseUser || profile?.role !== 'Super Admin') {
@@ -194,7 +188,7 @@ export default function SuperAdminDashboard() {
     switch (role) {
       case 'Student': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
       case 'Faculty Professor': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'Utility': return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
+      case 'Utility Staff': return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
       case 'Administrator': return 'bg-red-500/20 text-red-300 border-red-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }
@@ -215,13 +209,13 @@ export default function SuperAdminDashboard() {
     { key: 'all', label: 'All Users', count: allUsers.length },
     { key: 'students', label: 'Students', count: students.length },
     { key: 'faculty', label: 'Faculty Professor', count: facultyProfessors.length },
-    { key: 'utility', label: 'Utility', count: utilityUsers.length },
+    { key: 'utility', label: 'Utility Staff', count: utilityUsers.length },
     { key: 'admins', label: 'Admins', count: administrators.length },
   ];
 
   // Helper to check if a user needs building assignment during approval
   const needsBuildingAssignment = (user: ManagedUser) =>
-    user.role === 'Administrator' || user.role === 'Utility';
+    user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.UTILITY;
 
   return (
     <div className="min-h-screen relative">
@@ -272,6 +266,29 @@ export default function SuperAdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <div className="glass-card p-4 sm:p-5 mb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">System Tools</h2>
+              <p className="text-sm text-white/40 mt-1">
+                Seed default buildings from the protected backend when you need an initial campus setup.
+              </p>
+              {seedResult && (
+                <p className="text-xs text-white/30 mt-2">
+                  Created: {seedResult.created.length} | Skipped: {seedResult.skipped.length}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleSeedBuildings}
+              disabled={seedingBuildings}
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-all disabled:opacity-50"
+            >
+              {seedingBuildings ? 'Seeding Buildings...' : 'Seed Default Buildings'}
+            </button>
+          </div>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="glass-card p-4">
@@ -316,7 +333,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Utility</p>
+                <p className="text-xs text-white/40 font-bold">Utility Staff</p>
                 <p className="text-2xl font-bold text-teal-400 mt-1">{utilityUsers.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center">
@@ -487,7 +504,7 @@ export default function SuperAdminDashboard() {
                           </svg>
                           Disable
                         </button>
-                        {(user.role === 'Administrator' || user.role === 'Utility') && (
+                        {(user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.UTILITY) && (
                           <button
                             onClick={() => handleRevokeAdmin(user)}
                             disabled={actionLoading === user.uid}

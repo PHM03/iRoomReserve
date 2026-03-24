@@ -15,23 +15,35 @@ export default function Toast({ message, type = 'success', show, onClose, durati
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
-    if (show) {
-      setVisible(true);
-      requestAnimationFrame(() => setAnimating(true));
+    let animationFrame = 0;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
-      const timer = setTimeout(() => {
+    if (show) {
+      animationFrame = requestAnimationFrame(() => {
+        setVisible(true);
+        requestAnimationFrame(() => setAnimating(true));
+      });
+
+      hideTimer = setTimeout(() => {
         setAnimating(false);
-        setTimeout(() => {
+        closeTimer = setTimeout(() => {
           setVisible(false);
           onClose();
         }, 300);
       }, duration);
-
-      return () => clearTimeout(timer);
     } else {
-      setAnimating(false);
-      setVisible(false);
+      animationFrame = requestAnimationFrame(() => {
+        setAnimating(false);
+        setVisible(false);
+      });
     }
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      if (hideTimer) clearTimeout(hideTimer);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
   }, [show, duration, onClose]);
 
   if (!visible) return null;

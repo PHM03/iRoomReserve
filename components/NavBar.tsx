@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
 
 // ─── Admin Tab Type ──────────────────────────────────────────────
 export type AdminTab = 'dashboard' | 'add-rooms' | 'feedback' | 'status-scheduling' | 'room-history' | 'inbox' | 'pending';
@@ -31,16 +32,16 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
   };
 
   const getRoleBadgeStyle = () => {
-    switch (user.role.toLowerCase()) {
-      case 'student':
+    switch (normalizeRole(user.role)) {
+      case USER_ROLES.STUDENT:
         return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'faculty professor':
+      case USER_ROLES.FACULTY:
         return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'utility':
+      case USER_ROLES.UTILITY:
         return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
-      case 'administrator':
+      case USER_ROLES.ADMIN:
         return 'bg-red-500/20 text-red-300 border-red-500/30';
-      case 'super admin':
+      case USER_ROLES.SUPER_ADMIN:
         return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
       default:
         return 'bg-white/10 text-white/60 border-white/20';
@@ -115,18 +116,27 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
   ];
 
   // ─── Non-admin (Student/Faculty/Utility) nav links ────────────
-  const isFacultyRole = user.role.toLowerCase() === 'faculty professor' || user.role.toLowerCase() === 'faculty';
+  const normalizedRole = normalizeRole(user.role);
+  const isFacultyRole = normalizedRole === USER_ROLES.FACULTY;
+  const isUtilityRole = normalizedRole === USER_ROLES.UTILITY;
 
-  const defaultLinks = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Reserve', href: '/dashboard/reserve' },
-    { label: 'My Reservations', href: '/dashboard/reservations' },
-    { label: 'Inbox', href: '/dashboard/inbox' },
-    { label: 'Contact', href: '/dashboard/contact' },
-    ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
-  ];
+  const defaultLinks = isUtilityRole
+    ? [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Room Status', href: '/dashboard/room-status' },
+        { label: 'Inbox', href: '/dashboard/inbox' },
+        { label: 'Contact', href: '/dashboard/contact' },
+      ]
+    : [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Reserve', href: '/dashboard/reserve' },
+        { label: 'My Reservations', href: '/dashboard/reservations' },
+        { label: 'Inbox', href: '/dashboard/inbox' },
+        { label: 'Contact', href: '/dashboard/contact' },
+        ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
+      ];
 
-  const isAdmin = user.role.toLowerCase() === 'administrator';
+  const isAdmin = normalizedRole === USER_ROLES.ADMIN;
 
   return (
     <nav className="glass-nav sticky top-0 z-50">

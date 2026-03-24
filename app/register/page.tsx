@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Toast from '@/components/Toast';
+import { USER_ROLES } from '@/lib/domain/roles';
 import { registerWithEmail, getAuthErrorMessage } from '@/lib/auth';
 import { Suspense } from 'react';
 
@@ -13,16 +14,14 @@ function RegisterForm() {
   const getRoleDisplayName = (tab: string) => {
     switch (tab) {
       case 'faculty': return 'Faculty';
-      case 'utility_staff': return 'Utility Staff';
-      case 'admin': return 'Administrator';
-      default: return 'Student';
+      case 'utility_staff': return USER_ROLES.UTILITY;
+      case 'admin': return USER_ROLES.ADMIN;
+      default: return USER_ROLES.STUDENT;
     }
   };
 
   const [selectedRole, setSelectedRole] = useState(roleParam);
   const role = getRoleDisplayName(selectedRole);
-  const isFacultyFlow = roleParam === 'faculty' || roleParam === 'utility_staff';
-
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -99,11 +98,11 @@ function RegisterForm() {
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       <Toast
         message={
-          determinedRole === 'Student'
+          determinedRole === USER_ROLES.STUDENT
             ? 'Account created! Please check your inbox or spam folder to verify your email before signing in.'
-            : determinedRole === 'Utility'
+            : determinedRole === USER_ROLES.UTILITY
               ? 'Account created as Utility! Your registration is pending for Admin approval.'
-              : determinedRole === 'Faculty Professor'
+              : determinedRole === USER_ROLES.FACULTY
                 ? 'Account created as Faculty Professor! Your registration is pending for Admin approval.'
                 : 'Account created! Your registration is pending for Admin approval.'
         }
