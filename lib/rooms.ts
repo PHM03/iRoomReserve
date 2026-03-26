@@ -1,7 +1,9 @@
 import {
   collection,
+  doc,
   documentId,
   FieldValue,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -196,6 +198,25 @@ export function onAvailableRoomsByBuilding(
   );
 }
 
+export async function getRoomsByBuilding(buildingId: string): Promise<Room[]> {
+  const roomQuery = query(
+    collection(db, "rooms"),
+    where("buildingId", "==", buildingId),
+    orderBy("floor"),
+    orderBy("name")
+  );
+  const snapshot = await getDocs(roomQuery);
+
+  return snapshot.docs.map((roomDoc) =>
+    mapRoom(
+      roomDoc.id,
+      roomDoc.data() as Omit<Room, "id" | "status"> & {
+        status?: string | null;
+      }
+    )
+  );
+}
+
 export async function getAvailableRoomsByBuilding(
   buildingId: string
 ): Promise<Room[]> {
@@ -216,6 +237,47 @@ export async function getAvailableRoomsByBuilding(
       }
     )
   );
+}
+
+export async function getRoomById(roomId: string): Promise<Room | null> {
+  const snapshot = await getDoc(doc(db, "rooms", roomId));
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return mapRoom(
+    snapshot.id,
+    snapshot.data() as Omit<Room, "id" | "status"> & {
+      status?: string | null;
+    }
+  );
+}
+
+export async function getRoomsByIds(roomIds: string[]): Promise<Room[]> {
+  const uniqueRoomIds = [...new Set(roomIds.filter(Boolean))];
+  if (uniqueRoomIds.length === 0) {
+    return [];
+  }
+
+  const roomIdChunks = chunkValues(uniqueRoomIds, 10);
+  const chunkResults = await Promise.all(
+    roomIdChunks.map(async (roomIdChunk) => {
+      const snapshot = await getDocs(
+        query(collection(db, "rooms"), where(documentId(), "in", roomIdChunk))
+      );
+
+      return snapshot.docs.map((roomDoc) =>
+        mapRoom(
+          roomDoc.id,
+          roomDoc.data() as Omit<Room, "id" | "status"> & {
+            status?: string | null;
+          }
+        )
+      );
+    })
+  );
+
+  return chunkResults.flat().sort(sortRooms);
 }
 
 export function onRoomsByIds(

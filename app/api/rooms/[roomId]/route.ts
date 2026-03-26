@@ -10,6 +10,7 @@ import {
   assertCanManageBuilding,
   assertRole,
 } from "@/lib/server/route-guards";
+import { getRoomById } from "@/lib/rooms";
 import { roomUpdateSchema } from "@/lib/server/schemas";
 import { deleteRoomRecord, updateRoomRecord } from "@/lib/server/services/rooms";
 
@@ -20,6 +21,27 @@ async function getRoomBuildingId(roomId: string) {
   }
 
   return (roomSnapshot.data() as { buildingId?: string }).buildingId;
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const authContext = await getRequestAuthContext(request);
+    assertAuthenticated(authContext);
+
+    const { roomId } = await params;
+    const room = await getRoomById(roomId);
+
+    if (!room) {
+      throw new ApiError(404, "not_found", "Room not found.");
+    }
+
+    return NextResponse.json(room);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 export async function PATCH(

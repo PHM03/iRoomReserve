@@ -1,5 +1,6 @@
 import {
   collection,
+  getDocs,
   onSnapshot,
   query,
   Unsubscribe,
@@ -107,6 +108,18 @@ export function onSchedulesByBuilding(
       console.warn("Firestore listener error (schedules):", error);
     }
   );
+}
+
+export async function getSchedulesByRoomId(roomId: string): Promise<Schedule[]> {
+  const q = query(collection(db, "schedules"), where("roomId", "==", roomId));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs
+    .map((scheduleDoc) => ({
+      id: scheduleDoc.id,
+      ...scheduleDoc.data(),
+    }) as Schedule)
+    .sort(sortSchedules);
 }
 
 export function onSchedulesByBuildingIds(

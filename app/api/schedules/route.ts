@@ -8,8 +8,23 @@ import {
   assertCanManageBuilding,
   assertRole,
 } from "@/lib/server/route-guards";
+import { getSchedulesByRoomId } from "@/lib/schedules";
 import { scheduleInputSchema } from "@/lib/server/schemas";
 import { createScheduleRecord } from "@/lib/server/services/schedules";
+
+export async function GET(request: NextRequest) {
+  try {
+    const authContext = await getRequestAuthContext(request);
+    assertAuthenticated(authContext);
+
+    const { searchParams } = new URL(request.url);
+    const roomId = searchParams.get("roomId");
+
+    return NextResponse.json(roomId ? await getSchedulesByRoomId(roomId) : []);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
