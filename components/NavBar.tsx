@@ -34,17 +34,17 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
   const getRoleBadgeStyle = () => {
     switch (normalizeRole(user.role)) {
       case USER_ROLES.STUDENT:
-        return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+        return 'bg-blue-100/90 text-blue-800 border-blue-300/80';
       case USER_ROLES.FACULTY:
-        return 'bg-green-500/20 text-green-300 border-green-500/30';
+        return 'bg-green-100/90 text-green-800 border-green-300/80';
       case USER_ROLES.UTILITY:
-        return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
+        return 'bg-teal-100/90 text-teal-800 border-teal-300/80';
       case USER_ROLES.ADMIN:
-        return 'bg-red-500/20 text-red-300 border-red-500/30';
+        return 'bg-red-100/90 text-red-800 border-red-300/80';
       case USER_ROLES.SUPER_ADMIN:
-        return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        return 'bg-purple-100/90 text-purple-800 border-purple-300/80';
       default:
-        return 'bg-white/10 text-white/60 border-white/20';
+        return 'bg-dark/10 text-black border-dark/20';
     }
   };
 
@@ -137,6 +137,16 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
       ];
 
   const isAdmin = normalizedRole === USER_ROLES.ADMIN;
+  const navItemBaseClasses =
+    'rounded-lg text-sm font-bold transition-all duration-200 ease-in-out';
+  const navItemActiveClasses =
+    'bg-[#a12124]/12 text-[#a12124] shadow-[inset_0_0_0_1px_rgba(161,33,36,0.14)]';
+  const navItemInactiveClasses =
+    'text-[#343434] hover:bg-[#a12124]/8 hover:text-[#a12124] hover:shadow-[inset_0_0_0_1px_rgba(161,33,36,0.08)]';
+  const getNavItemClasses = (isActive: boolean) =>
+    `${navItemBaseClasses} ${isActive ? navItemActiveClasses : navItemInactiveClasses}`;
+  const navIconButtonClasses =
+    'rounded-lg p-2 text-[#343434] transition-all duration-200 ease-in-out hover:bg-[#a12124]/8 hover:text-[#a12124]';
 
   return (
     <nav className="glass-nav sticky top-0 z-50">
@@ -144,7 +154,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
         <div className="flex justify-between h-16">
           {/* Left: Logo */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-white">iRoomReserve</h1>
+            <h1 className="text-xl font-bold text-[#343434]">iRoomReserve</h1>
           </div>
 
           {/* Center: Desktop Navigation */}
@@ -154,11 +164,9 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
                 <button
                   key={link.tab}
                   onClick={() => onTabChange?.(link.tab)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-2 ${getNavItemClasses(
                     activeTab === link.tab
-                      ? 'text-primary bg-primary/10'
-                      : 'text-white/50 hover:text-primary hover:bg-white/5'
-                  }`}
+                  )}`}
                 >
                   {link.icon}
                   {link.label}
@@ -169,11 +177,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                    pathname === link.href
-                      ? 'text-primary bg-primary/10'
-                      : 'text-white/50 hover:text-primary hover:bg-white/5'
-                  }`}
+                  className={`px-4 py-2 ${getNavItemClasses(pathname === link.href)}`}
                 >
                   {link.label}
                 </Link>
@@ -193,7 +197,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg text-white/40 hover:text-primary hover:bg-white/5 transition-all"
+              className={navIconButtonClasses}
               title="Logout"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +208,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-white/40 hover:text-primary hover:bg-white/5 transition-all"
+              className={`md:hidden ${navIconButtonClasses}`}
             >
               {isMenuOpen ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +226,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-white/5">
+        <div className="md:hidden border-t border-[#343434]/8 bg-[#f5f5f5]/80 backdrop-blur-xl">
           <div className="px-3 py-2 space-y-1">
             {isAdmin ? (
               adminLinks.map((link) => (
@@ -232,11 +236,9 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
                     onTabChange?.(link.tab);
                     setIsMenuOpen(false);
                   }}
-                  className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                  className={`flex w-full items-center gap-2 px-3 py-2.5 text-left ${getNavItemClasses(
                     activeTab === link.tab
-                      ? 'text-primary bg-primary/10'
-                      : 'text-white/50 hover:text-primary hover:bg-white/5'
-                  }`}
+                  )}`}
                 >
                   {link.icon}
                   {link.label}
@@ -248,11 +250,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
                   key={link.label}
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                    pathname === link.href
-                      ? 'text-primary bg-primary/10'
-                      : 'text-white/50 hover:text-primary hover:bg-white/5'
-                  }`}
+                  className={`block px-3 py-2.5 ${getNavItemClasses(pathname === link.href)}`}
                 >
                   {link.label}
                 </Link>

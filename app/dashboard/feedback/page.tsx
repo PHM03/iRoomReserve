@@ -85,7 +85,7 @@ export default function FeedbackPage() {
     return Array.from({ length: 5 }, (_, i) => (
       <svg
         key={i}
-        className={`${size} ${i < count ? 'text-yellow-400' : 'text-white/10'}`}
+        className={`${size} ${i < count ? 'text-yellow-400' : 'text-black'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -97,14 +97,14 @@ export default function FeedbackPage() {
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Feedback</h2>
-        <p className="text-white/40 mt-1">Rate your experience and help us improve</p>
+        <h2 className="text-2xl font-bold text-black">Feedback</h2>
+        <p className="text-black mt-1">Rate your experience and help us improve</p>
       </div>
 
       {/* Pending Feedback Prompt */}
       {pendingFeedback.length > 0 && !showForm && (
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
             Rate Your Experience
           </h3>
@@ -112,8 +112,8 @@ export default function FeedbackPage() {
             {pendingFeedback.map((r) => (
               <div key={r.id} className="glass-card p-4 !rounded-xl flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-white">{r.roomName}</h4>
-                  <p className="text-xs text-white/40">{r.buildingName} · {r.date} · {r.startTime} – {r.endTime}</p>
+                  <h4 className="text-sm font-bold text-black">{r.roomName}</h4>
+                  <p className="text-xs text-black">{r.buildingName} · {r.date} · {r.startTime} – {r.endTime}</p>
                 </div>
                 <button
                   onClick={() => handleOpenFeedback(r)}
@@ -137,21 +137,21 @@ export default function FeedbackPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-white mb-1">Feedback Submitted!</h3>
-              <p className="text-sm text-white/40">Thank you for your feedback.</p>
+              <h3 className="text-lg font-bold text-black mb-1">Feedback Submitted!</h3>
+              <p className="text-sm text-black">Thank you for your feedback.</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Rate Your Experience</h3>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <h3 className="text-lg font-bold text-black">Rate Your Experience</h3>
+                  <p className="text-xs text-black mt-0.5">
                     {selectedReservation.roomName} · {selectedReservation.buildingName} · {selectedReservation.date}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                  className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -162,7 +162,7 @@ export default function FeedbackPage() {
               <div className="space-y-6">
                 {/* Star Rating */}
                 <div>
-                  <label className="block text-sm font-bold text-white/70 mb-3">Rating</label>
+                  <label className="block text-sm font-bold text-black mb-3">Rating</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -174,7 +174,7 @@ export default function FeedbackPage() {
                       >
                         <svg
                           className={`w-8 h-8 ${
-                            star <= (hoverRating || rating) ? 'text-yellow-400' : 'text-white/15'
+                            star <= (hoverRating || rating) ? 'text-yellow-400' : 'text-black'
                           } transition-colors`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
@@ -185,7 +185,7 @@ export default function FeedbackPage() {
                     ))}
                   </div>
                   {rating > 0 && (
-                    <p className="text-xs text-white/30 mt-1">
+                    <p className="text-xs text-black mt-1">
                       {rating === 1 ? 'Poor' : rating === 2 ? 'Fair' : rating === 3 ? 'Good' : rating === 4 ? 'Very Good' : 'Excellent'}
                     </p>
                   )}
@@ -193,7 +193,7 @@ export default function FeedbackPage() {
 
                 {/* Comment */}
                 <div>
-                  <label className="block text-sm font-bold text-white/70 mb-1.5">Comments</label>
+                  <label className="block text-sm font-bold text-black mb-1.5">Comments</label>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
@@ -210,7 +210,7 @@ export default function FeedbackPage() {
                 >
                   {submitting ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
@@ -227,33 +227,33 @@ export default function FeedbackPage() {
       )}
 
       {/* Past Feedback */}
-      <h3 className="text-xl font-bold text-white mb-4">Your Feedback</h3>
+      <h3 className="text-xl font-bold text-black mb-4">Your Feedback</h3>
       <div className="space-y-4">
         {feedbackList.length === 0 ? (
           <div className="glass-card p-12 !rounded-xl text-center">
-            <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
-            <p className="text-sm text-white/30 font-bold">No feedback yet</p>
-            <p className="text-xs text-white/15 mt-1">Your submitted feedback will appear here</p>
+            <p className="text-sm text-black font-bold">No feedback yet</p>
+            <p className="text-xs text-black mt-1">Your submitted feedback will appear here</p>
           </div>
         ) : (
           feedbackList.map((fb) => (
             <div key={fb.id} className="glass-card p-5 !rounded-xl">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="text-sm font-bold text-white">{fb.roomName}</h4>
-                  <p className="text-xs text-white/30">{fb.buildingName}</p>
+                  <h4 className="text-sm font-bold text-black">{fb.roomName}</h4>
+                  <p className="text-xs text-black">{fb.buildingName}</p>
                 </div>
                 <div className="flex">
                   {renderStars(fb.rating)}
                 </div>
               </div>
-              <p className="text-sm text-white/50 mb-3">{fb.message}</p>
+              <p className="text-sm text-black mb-3">{fb.message}</p>
               {fb.adminResponse && (
-                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                <div className="bg-dark/5 rounded-xl p-3 border border-dark/10">
                   <p className="text-xs font-bold text-primary mb-1">Admin Response</p>
-                  <p className="text-sm text-white/60">{fb.adminResponse}</p>
+                  <p className="text-sm text-black">{fb.adminResponse}</p>
                 </div>
               )}
             </div>

@@ -33,7 +33,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <p className="text-white/50">Loading...</p>
+          <p className="text-black">Loading...</p>
         </div>
       </div>
     );
@@ -114,14 +114,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Nav (Student only) */}
       {isStudent && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 z-40">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-dark/10 z-40">
           <div className="grid grid-cols-5 h-16">
             {studentMobileNav.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
                 className={`flex flex-col items-center justify-center transition-colors ${
-                  item.active ? 'text-primary' : 'text-white/30 hover:text-primary'
+                  item.active ? 'text-primary' : 'text-black hover:text-primary'
                 }`}
               >
                 <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20">{item.icon}</svg>
@@ -134,14 +134,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Nav (Faculty only) */}
       {isFaculty && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 z-40">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-dark/10 z-40">
           <div className="grid grid-cols-5 h-16">
             {facultyMobileNav.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
                 className={`flex flex-col items-center justify-center transition-colors ${
-                  item.active ? 'text-primary' : 'text-white/30 hover:text-primary'
+                  item.active ? 'text-primary' : 'text-black hover:text-primary'
                 }`}
               >
                 <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20">{item.icon}</svg>
@@ -153,14 +153,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {isUtility && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 z-40">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav border-t border-dark/10 z-40">
           <div className="grid grid-cols-4 h-16">
             {utilityMobileNav.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
                 className={`flex flex-col items-center justify-center transition-colors ${
-                  item.active ? 'text-primary' : 'text-white/30 hover:text-primary'
+                  item.active ? 'text-primary' : 'text-black hover:text-primary'
                 }`}
               >
                 <svg className="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20">{item.icon}</svg>

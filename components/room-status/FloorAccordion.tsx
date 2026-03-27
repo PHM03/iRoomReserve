@@ -20,16 +20,16 @@ export default function FloorAccordion({
       <button
         type="button"
         onClick={() => setIsOpen((previous) => !previous)}
-        className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
+        className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 hover:bg-primary/10 transition-colors"
       >
         <div>
-          <h3 className="text-base font-bold text-white">{floor}</h3>
-          <p className="text-sm text-white/40 mt-1">
+          <h3 className="text-base font-bold text-black">{floor}</h3>
+          <p className="text-sm text-black mt-1">
             {roomCount} room{roomCount === 1 ? '' : 's'}
           </p>
         </div>
 
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-dark/10 bg-dark/5 text-black">
           <svg
             className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none"

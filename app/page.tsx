@@ -127,15 +127,15 @@ function LoginForm() {
       {/* Header */}
       <div className="glass-nav py-4 px-4 relative z-10">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-bold text-white">iRoomReserve</h1>
-          <p className="text-sm text-white/60">St. Dominic College of Asia</p>
+          <h1 className="text-xl font-bold text-black">iRoomReserve</h1>
+          <p className="text-sm text-black">St. Dominic College of Asia</p>
         </div>
       </div>
 
       {/* Login card */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
         <div className="glass-card p-8 w-full max-w-md">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Sign In</h2>
+          <h2 className="text-2xl font-bold text-black mb-6 text-center">Sign In</h2>
 
           {errorMessage && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">
@@ -160,7 +160,7 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-bold text-white/70 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-bold text-black mb-1.5">
                 Email Address
               </label>
               <input
@@ -175,7 +175,7 @@ function LoginForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-bold text-white/70 mb-1.5">
+              <label htmlFor="password" className="block text-sm font-bold text-black mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -191,7 +191,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-white/40 hover:text-primary transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-black hover:text-primary transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -212,7 +212,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => router.push('/forgot-password')}
-                className="text-sm text-white/50 hover:text-primary transition-colors font-bold"
+                className="text-sm text-black hover:text-primary transition-colors font-bold"
               >
                 Forgot Password?
               </button>
@@ -225,7 +225,7 @@ function LoginForm() {
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -239,16 +239,16 @@ function LoginForm() {
 
           {/* Divider */}
           <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-white/10" />
-            <span className="px-3 text-sm text-white/30">or</span>
-            <div className="flex-1 border-t border-white/10" />
+            <div className="flex-1 border-t border-dark/10" />
+            <span className="px-3 text-sm text-black">or</span>
+            <div className="flex-1 border-t border-dark/10" />
           </div>
 
           {/* Google Sign-In */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="glass-card w-full flex items-center justify-center gap-3 py-3 px-4 font-bold text-white/80 hover:text-white cursor-pointer !border-white/15"
+            className="glass-card w-full flex items-center justify-center gap-3 py-3 px-4 font-bold text-black hover:text-primary cursor-pointer !border-dark/15"
           >
             <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -260,7 +260,7 @@ function LoginForm() {
           </button>
 
           {/* Register link */}
-          <p className="mt-5 text-center text-sm text-white/40">
+          <p className="mt-5 text-center text-sm text-black">
             Don&apos;t have an account?{' '}
             <button
               type="button"
@@ -275,7 +275,7 @@ function LoginForm() {
 
       {/* Footer */}
       <div className="glass-nav py-4 relative z-10">
-        <div className="max-w-md mx-auto text-center text-xs text-white/30 font-bold">
+        <div className="max-w-md mx-auto text-center text-xs text-black font-bold">
           iRoomReserve v1.0 — SDCA Capstone Project
         </div>
       </div>
@@ -285,7 +285,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white/50">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-black">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );

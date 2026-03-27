@@ -120,19 +120,19 @@ function RegisterForm() {
       {/* Header */}
       <div className="glass-nav py-4 px-4 relative z-10">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-bold text-white">iRoomReserve</h1>
-          <p className="text-sm text-white/60">St. Dominic College of Asia</p>
+          <h1 className="text-xl font-bold text-black">iRoomReserve</h1>
+          <p className="text-sm text-black">St. Dominic College of Asia</p>
         </div>
       </div>
 
       {/* Register card */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
         <div className="glass-card p-8 w-full max-w-md">
-          <h2 className="text-2xl font-bold text-white mb-2 text-center">Create Account</h2>
-          <p className="text-sm text-white/50 text-center mb-4">Fill in your details to get started</p>
+          <h2 className="text-2xl font-bold text-black mb-2 text-center">Create Account</h2>
+          <p className="text-sm text-black text-center mb-4">Fill in your details to get started</p>
 
           {/* Role Tabs */}
-          <div className="flex mb-4 bg-white/5 rounded-xl p-1 border border-white/10">
+          <div className="flex mb-4 bg-dark/5 rounded-xl p-1 border border-dark/10">
             {[
               { key: 'student', label: 'Student' },
               { key: 'faculty', label: 'Faculty' },
@@ -145,7 +145,7 @@ function RegisterForm() {
                 className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${
                   selectedRole === tab.key
                     ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'text-white/50 hover:text-white hover:bg-white/5'
+                    : 'text-black hover:text-primary hover:bg-primary/10'
                 }`}
               >
                 {tab.label}
@@ -162,7 +162,7 @@ function RegisterForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-bold text-white/70 mb-1.5">
+                <label htmlFor="firstName" className="block text-sm font-bold text-black mb-1.5">
                   First Name
                 </label>
                 <input
@@ -176,7 +176,7 @@ function RegisterForm() {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-bold text-white/70 mb-1.5">
+                <label htmlFor="lastName" className="block text-sm font-bold text-black mb-1.5">
                   Last Name
                 </label>
                 <input
@@ -192,7 +192,7 @@ function RegisterForm() {
             </div>
 
             <div>
-              <label htmlFor="registerEmail" className="block text-sm font-bold text-white/70 mb-1.5">
+              <label htmlFor="registerEmail" className="block text-sm font-bold text-black mb-1.5">
                 Email Address
               </label>
               <input
@@ -207,7 +207,7 @@ function RegisterForm() {
             </div>
 
             <div>
-              <label htmlFor="registerPassword" className="block text-sm font-bold text-white/70 mb-1.5">
+              <label htmlFor="registerPassword" className="block text-sm font-bold text-black mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -223,16 +223,16 @@ function RegisterForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-white/40 hover:text-primary transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-black hover:text-primary transition-colors"
                 >
                   <EyeIcon open={showPassword} />
                 </button>
               </div>
-              <p className="mt-1.5 text-xs text-white/30">(Min 8 chars, 1 uppercase, 1 number)</p>
+              <p className="mt-1.5 text-xs text-black">(Min 8 chars, 1 uppercase, 1 number)</p>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-bold text-white/70 mb-1.5">
+              <label htmlFor="confirmPassword" className="block text-sm font-bold text-black mb-1.5">
                 Confirm Password
               </label>
               <div className="relative">
@@ -248,7 +248,7 @@ function RegisterForm() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-white/40 hover:text-primary transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-black hover:text-primary transition-colors"
                 >
                   <EyeIcon open={showConfirmPassword} />
                 </button>
@@ -262,7 +262,7 @@ function RegisterForm() {
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -274,7 +274,7 @@ function RegisterForm() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-sm text-white/40">
+          <p className="mt-5 text-center text-sm text-black">
             Already have an account?{' '}
             <button
               type="button"
@@ -289,7 +289,7 @@ function RegisterForm() {
 
       {/* Footer */}
       <div className="glass-nav py-4 relative z-10">
-        <div className="max-w-md mx-auto text-center text-xs text-white/30 font-bold">
+        <div className="max-w-md mx-auto text-center text-xs text-black font-bold">
           iRoomReserve v1.0 — SDCA Capstone Project
         </div>
       </div>
@@ -299,7 +299,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white/50">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-black">Loading...</div>}>
       <RegisterForm />
     </Suspense>
   );

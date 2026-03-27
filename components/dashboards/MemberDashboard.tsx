@@ -143,10 +143,10 @@ export default function MemberDashboard({
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-black">
             Welcome back, {firstName} {welcomeEmoji}
           </h2>
-          <p className="text-white/40 mt-1">
+          <p className="text-black mt-1">
             Here&apos;s an overview of your reservations
           </p>
         </div>
@@ -157,7 +157,7 @@ export default function MemberDashboard({
             className="relative p-2.5 rounded-xl glass-card !p-2.5 hover:!border-primary/40 transition-all"
           >
             <svg
-              className="w-5 h-5 text-white/60"
+              className="w-5 h-5 text-black"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -177,9 +177,9 @@ export default function MemberDashboard({
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/15 shadow-2xl shadow-black/40">
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <h4 className="font-bold text-white text-sm">Notifications</h4>
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 bg-white/95 backdrop-blur-xl border border-dark/15 shadow-2xl shadow-black/20">
+              <div className="flex items-center justify-between p-4 border-b border-dark/10">
+                <h4 className="font-bold text-black text-sm">Notifications</h4>
                 {notifications.length > 0 && (
                   <button
                     onClick={handleMarkAllRead}
@@ -192,13 +192,13 @@ export default function MemberDashboard({
               <div className="max-h-64 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center">
-                    <p className="text-sm text-white/50">No new notifications</p>
+                    <p className="text-sm text-black">No new notifications</p>
                   </div>
                 ) : (
                   notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className="p-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-start gap-3"
+                      className="p-3 border-b border-dark/5 hover:bg-primary/10 transition-colors flex items-start gap-3"
                     >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
@@ -246,16 +246,16 @@ export default function MemberDashboard({
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white">
+                        <p className="text-xs font-bold text-black">
                           {notification.title}
                         </p>
-                        <p className="text-[11px] text-white/70 mt-0.5">
+                        <p className="text-[11px] text-black mt-0.5">
                           {notification.message}
                         </p>
                       </div>
                       <button
                         onClick={() => markNotificationRead(notification.id)}
-                        className="text-white/20 hover:text-white/50 transition-colors shrink-0"
+                        className="text-black hover:text-primary transition-colors shrink-0"
                       >
                         <svg
                           className="w-4 h-4"
@@ -298,20 +298,20 @@ export default function MemberDashboard({
                 />
               </svg>
             </div>
-            <span className="text-xs text-white/40 font-bold">Current Room</span>
+            <span className="text-xs text-black font-bold">Current Room</span>
           </div>
           {activeReservation ? (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-black">
                   {activeReservation.roomName}
                 </h3>
                 <StatusBadge status={getRoomStatus(activeReservation)} />
               </div>
-              <p className="text-xs text-white/40 mt-2">
+              <p className="text-xs text-black mt-2">
                 {activeReservation.buildingName}
               </p>
-              <p className="text-[10px] text-white/30 mt-0.5">
+              <p className="text-[10px] text-black mt-0.5">
                 {activeReservation.date} | {activeReservation.startTime} -{' '}
                 {activeReservation.endTime}
               </p>
@@ -332,8 +332,8 @@ export default function MemberDashboard({
             </>
           ) : (
             <div className="text-center py-2">
-              <p className="text-sm text-white/30 font-bold">No active room</p>
-              <p className="text-[10px] text-white/20 mt-0.5">
+              <p className="text-sm text-black font-bold">No active room</p>
+              <p className="text-[10px] text-black mt-0.5">
                 You have no approved reservation right now
               </p>
             </div>
@@ -357,12 +357,12 @@ export default function MemberDashboard({
                 />
               </svg>
             </div>
-            <span className="text-xs text-white/40 font-bold">
+            <span className="text-xs text-black font-bold">
               Pending Requests
             </span>
           </div>
-          <h3 className="text-3xl font-bold text-white">{pendingCount}</h3>
-          <p className="text-xs text-white/30 mt-0.5">Awaiting approval</p>
+          <h3 className="text-3xl font-bold text-black">{pendingCount}</h3>
+          <p className="text-xs text-black mt-0.5">Awaiting approval</p>
         </div>
 
         <div className="glass-card p-5">
@@ -382,19 +382,19 @@ export default function MemberDashboard({
                 />
               </svg>
             </div>
-            <span className="text-xs text-white/40 font-bold">Approved</span>
+            <span className="text-xs text-black font-bold">Approved</span>
           </div>
-          <h3 className="text-3xl font-bold text-white">{approvedCount}</h3>
-          <p className="text-xs text-white/30 mt-0.5">Ready to use</p>
+          <h3 className="text-3xl font-bold text-black">{approvedCount}</h3>
+          <p className="text-xs text-black mt-0.5">Ready to use</p>
         </div>
       </div>
 
       <Link
         href="/dashboard/reserve"
-        className="w-full glass-card p-5 !rounded-2xl flex items-center justify-center gap-3 mb-8 group hover:!border-primary/40 transition-all cursor-pointer block"
+        className="group mb-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-[#a12124]/90 bg-[#a12124] px-5 py-5 text-white shadow-[0_14px_32px_rgba(161,33,36,0.16)] transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-[#8e1d20] hover:shadow-[0_18px_34px_rgba(142,29,32,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a12124]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f5f5f5]"
       >
         <svg
-          className="w-6 h-6 text-white/40 group-hover:text-primary transition-colors"
+          className="h-6 w-6 text-white transition-transform duration-300 ease-in-out group-hover:scale-105"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -406,7 +406,7 @@ export default function MemberDashboard({
             d="M12 4v16m8-8H4"
           />
         </svg>
-        <span className="text-lg font-bold text-white/60 group-hover:text-white transition-colors">
+        <span className="text-lg font-bold text-white">
           New Reservation
         </span>
       </Link>
@@ -414,7 +414,7 @@ export default function MemberDashboard({
       {upcomingReservations.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Upcoming Reservations</h3>
+            <h3 className="text-xl font-bold text-black">Upcoming Reservations</h3>
             <Link
               href="/dashboard/reservations"
               className="text-sm text-primary font-bold hover:text-primary-hover transition-colors"
@@ -426,7 +426,7 @@ export default function MemberDashboard({
             {upcomingReservations.map((reservation) => (
               <div key={reservation.id} className="glass-card p-4 !rounded-xl">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-black">
                     {reservation.roomName}
                   </h4>
                   <StatusBadge status={getRoomStatus(reservation)} />
@@ -445,10 +445,10 @@ export default function MemberDashboard({
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-white/40">{reservation.buildingName}</p>
+                <p className="text-xs text-black">{reservation.buildingName}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <svg
-                    className="w-3.5 h-3.5 text-white/30"
+                    className="w-3.5 h-3.5 text-black"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -460,11 +460,11 @@ export default function MemberDashboard({
                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span className="text-xs text-white/30">{reservation.date}</span>
+                  <span className="text-xs text-black">{reservation.date}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <svg
-                    className="w-3.5 h-3.5 text-white/30"
+                    className="w-3.5 h-3.5 text-black"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -476,7 +476,7 @@ export default function MemberDashboard({
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span className="text-xs text-white/30">
+                  <span className="text-xs text-black">
                     {reservation.startTime} - {reservation.endTime}
                   </span>
                 </div>
@@ -489,7 +489,7 @@ export default function MemberDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+            <h3 className="text-xl font-bold text-black">Recent Activity</h3>
             <Link
               href="/dashboard/reservations"
               className="text-sm text-primary font-bold hover:text-primary-hover transition-colors"
@@ -501,7 +501,7 @@ export default function MemberDashboard({
             {recentActivity.length === 0 ? (
               <div className="p-12 text-center">
                 <svg
-                  className="w-14 h-14 text-white/8 mx-auto mb-3"
+                  className="w-14 h-14 text-black mx-auto mb-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -513,17 +513,17 @@ export default function MemberDashboard({
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                   />
                 </svg>
-                <p className="text-sm text-white/30 font-bold">No activity yet</p>
-                <p className="text-xs text-white/15 mt-1">
+                <p className="text-sm text-black font-bold">No activity yet</p>
+                <p className="text-xs text-black mt-1">
                   Your reservation history will appear here
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-dark/5">
                 {recentActivity.map((reservation) => (
                   <div
                     key={reservation.id}
-                    className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-4 p-4 hover:bg-primary/10 transition-colors"
                   >
                     <span
                       className={`w-2.5 h-full min-h-[40px] rounded-full shrink-0 ${
@@ -537,14 +537,14 @@ export default function MemberDashboard({
                                 ? 'bg-gray-400'
                                 : reservation.status === 'pending'
                                   ? 'bg-blue-400'
-                                  : 'bg-white/30'
+                                  : 'bg-dark/30'
                       }`}
                     />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-white">
+                      <h4 className="text-sm font-bold text-black">
                         {reservation.roomName} | {reservation.buildingName}
                       </h4>
-                      <p className="text-xs text-white/35 mt-0.5">
+                      <p className="text-xs text-black mt-0.5">
                         {reservation.date} | {reservation.startTime} -{' '}
                         {reservation.endTime}
                       </p>
@@ -561,9 +561,9 @@ export default function MemberDashboard({
         </div>
 
         <div>
-          <h3 className="text-xl font-bold text-white mb-4">
+          <h3 className="text-xl font-bold text-black mb-4">
             Today&apos;s Class Schedules
-            <span className="text-sm text-white/30 font-normal ml-2">
+            <span className="text-sm text-black font-normal ml-2">
               ({DAY_NAMES[todayDay]})
             </span>
           </h3>
@@ -571,7 +571,7 @@ export default function MemberDashboard({
             {todaySchedules.length === 0 ? (
               <div className="p-12 text-center">
                 <svg
-                  className="w-14 h-14 text-white/8 mx-auto mb-3"
+                  className="w-14 h-14 text-black mx-auto mb-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -583,24 +583,24 @@ export default function MemberDashboard({
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p className="text-sm text-white/30 font-bold">No classes today</p>
-                <p className="text-xs text-white/15 mt-1">
+                <p className="text-sm text-black font-bold">No classes today</p>
+                <p className="text-xs text-black mt-1">
                   No scheduled classes for today
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-dark/5">
                 {todaySchedules.map((schedule) => (
                   <div
                     key={schedule.id}
-                    className="p-4 hover:bg-white/5 transition-colors"
+                    className="p-4 hover:bg-primary/10 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-bold text-white">
+                        <h4 className="text-sm font-bold text-black">
                           {schedule.subjectName}
                         </h4>
-                        <p className="text-xs text-white/40 mt-0.5">
+                        <p className="text-xs text-black mt-0.5">
                           {schedule.instructorName}
                         </p>
                       </div>
@@ -609,7 +609,7 @@ export default function MemberDashboard({
                           {formatTime12h(schedule.startTime)} -{' '}
                           {formatTime12h(schedule.endTime)}
                         </p>
-                        <p className="text-[10px] text-white/30">
+                        <p className="text-[10px] text-black">
                           {schedule.roomName}
                         </p>
                       </div>

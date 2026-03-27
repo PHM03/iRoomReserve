@@ -17,7 +17,7 @@ function StatusBadge({ status }: { status: string }) {
       case 'open': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'responded': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'closed': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/20';
+      default: return 'bg-dark/10 text-black border-dark/20';
     }
   })();
   return (
@@ -59,7 +59,7 @@ function UserInbox({ uid }: { uid: string }) {
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+        <h2 className="text-2xl font-bold text-black flex items-center gap-3">
           <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
@@ -70,7 +70,7 @@ function UserInbox({ uid }: { uid: string }) {
             </span>
           )}
         </h2>
-        <p className="text-white/40 mt-1">Your messages with the administration</p>
+        <p className="text-black mt-1">Your messages with the administration</p>
       </div>
 
       {/* Filter Tabs */}
@@ -82,7 +82,7 @@ function UserInbox({ uid }: { uid: string }) {
             className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
               filter === f
                 ? 'bg-primary/20 text-primary border border-primary/30'
-                : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/60'
+                : 'bg-dark/5 text-black border border-dark/10 hover:text-primary'
             }`}
           >
             {f === 'all' ? `All (${requests.length})` : `${f} (${requests.filter(r => r.status === f).length})`}
@@ -94,11 +94,11 @@ function UserInbox({ uid }: { uid: string }) {
       <div className="space-y-4">
         {filteredRequests.length === 0 ? (
           <div className="glass-card p-12 !rounded-xl text-center">
-            <svg className="w-16 h-16 text-white/8 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 text-black mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
-            <p className="text-sm text-white/30 font-bold">No messages</p>
-            <p className="text-xs text-white/15 mt-1">
+            <p className="text-sm text-black font-bold">No messages</p>
+            <p className="text-xs text-black mt-1">
               {filter === 'all' ? 'Your inbox is empty. Send a request via the Contact page.' : `No ${filter} messages`}
             </p>
           </div>
@@ -110,12 +110,12 @@ function UserInbox({ uid }: { uid: string }) {
                 {/* Clickable Header */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : req.id)}
-                  className="w-full p-5 text-left hover:bg-white/5 transition-colors"
+                  className="w-full p-5 text-left hover:bg-primary/10 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                        req.status === 'responded' ? 'bg-green-500/20' : req.status === 'open' ? 'bg-blue-500/20' : 'bg-white/5'
+                        req.status === 'responded' ? 'bg-green-500/20' : req.status === 'open' ? 'bg-blue-500/20' : 'bg-dark/5'
                       }`}>
                         {req.status === 'responded' ? (
                           <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,16 +129,16 @@ function UserInbox({ uid }: { uid: string }) {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <h4 className="text-sm font-bold text-white">{req.subject}</h4>
+                          <h4 className="text-sm font-bold text-black">{req.subject}</h4>
                           <StatusBadge status={req.status} />
                         </div>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-black">
                           <TypeIcon type={req.type} />{req.type} · {req.buildingName}
-                          {req.createdAt && <span className="ml-2 text-white/25">· {formatDate(req.createdAt)}</span>}
+                          {req.createdAt && <span className="ml-2 text-black">· {formatDate(req.createdAt)}</span>}
                         </p>
                       </div>
                     </div>
-                    <svg className={`w-5 h-5 text-white/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-5 h-5 text-black transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -146,7 +146,7 @@ function UserInbox({ uid }: { uid: string }) {
 
                 {/* Expanded Detail View */}
                 {isExpanded && (
-                  <div className="border-t border-white/5 px-5 pb-5">
+                  <div className="border-t border-dark/5 px-5 pb-5">
                     {/* Your Sent Message */}
                     <div className="mt-4 flex gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold shrink-0 mt-0.5">
@@ -155,7 +155,7 @@ function UserInbox({ uid }: { uid: string }) {
                       <div className="flex-1">
                         <p className="text-xs font-bold text-primary mb-1">Your Message</p>
                         <div className="bg-primary/5 border border-primary/15 rounded-xl p-3">
-                          <p className="text-sm text-white/70 leading-relaxed">{req.message}</p>
+                          <p className="text-sm text-black leading-relaxed">{req.message}</p>
                         </div>
                       </div>
                     </div>
@@ -171,13 +171,13 @@ function UserInbox({ uid }: { uid: string }) {
                         <div className="flex-1">
                           <p className="text-xs font-bold text-green-400 mb-1">Admin Response</p>
                           <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
-                            <p className="text-sm text-white/70 leading-relaxed">{req.adminResponse}</p>
+                            <p className="text-sm text-black leading-relaxed">{req.adminResponse}</p>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-4 p-3 rounded-xl bg-white/3 border border-white/5 text-center">
-                        <p className="text-xs text-white/30">
+                      <div className="mt-4 p-3 rounded-xl bg-dark/3 border border-dark/5 text-center">
+                        <p className="text-xs text-black">
                           <svg className="w-4 h-4 inline mr-1 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
@@ -212,8 +212,8 @@ function AdminInboxRedirect() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <h3 className="text-lg font-bold text-white mb-2">Inbox</h3>
-        <p className="text-sm text-white/40">
+        <h3 className="text-lg font-bold text-black mb-2">Inbox</h3>
+        <p className="text-sm text-black">
           Your inbox is available in the <span className="text-primary font-bold">Inbox</span> tab on your dashboard.
         </p>
       </div>

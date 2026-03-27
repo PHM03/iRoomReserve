@@ -79,15 +79,15 @@ export default function RoleSelectionPage() {
       {/* Header */}
       <div className="glass-nav py-4 px-4 relative z-10">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-bold text-white">iRoomReserve</h1>
-          <p className="text-sm text-white/60">St. Dominic College of Asia</p>
+          <h1 className="text-xl font-bold text-black">iRoomReserve</h1>
+          <p className="text-sm text-black">St. Dominic College of Asia</p>
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
         <div className="glass-card p-8 w-full max-w-md">
-          <h2 className="text-2xl font-bold text-white mb-2 text-center">Select Your Role</h2>
-          <p className="text-sm text-white/50 text-center mb-6">Choose the role that best describes you</p>
+          <h2 className="text-2xl font-bold text-black mb-2 text-center">Select Your Role</h2>
+          <p className="text-sm text-black text-center mb-6">Choose the role that best describes you</p>
 
           <div className="space-y-3 mb-6">
             {roles.map((role) => (
@@ -97,8 +97,8 @@ export default function RoleSelectionPage() {
                 onClick={() => setSelectedRole(role.key)}
                 className={`w-full p-4 rounded-xl border text-left transition-all ${
                   selectedRole === role.key
-                    ? 'border-primary bg-primary/10 text-white'
-                    : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-dark/10 bg-dark/5 text-black hover:border-primary/30 hover:text-primary'
                 }`}
               >
                 <p className="font-bold text-sm">{role.label}</p>
@@ -115,7 +115,7 @@ export default function RoleSelectionPage() {
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
@@ -130,7 +130,7 @@ export default function RoleSelectionPage() {
 
       {/* Footer */}
       <div className="glass-nav py-4 relative z-10">
-        <div className="max-w-md mx-auto text-center text-xs text-white/30 font-bold">
+        <div className="max-w-md mx-auto text-center text-xs text-black font-bold">
           iRoomReserve v1.0 — SDCA Capstone Project
         </div>
       </div>

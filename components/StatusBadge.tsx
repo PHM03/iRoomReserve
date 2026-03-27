@@ -27,30 +27,30 @@ interface StatusBadgeProps {
 function getBadgeStyle(status: string): string {
   switch (status) {
     case 'Available':
-      return 'bg-green-500/20 text-green-300 border-green-500/30';
+      return 'bg-green-100/90 text-green-800 border-green-300/80 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.08)]';
     case 'Reserved':
-      return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      return 'bg-blue-100/90 text-blue-800 border-blue-300/80 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.08)]';
     case 'Ongoing':
     case 'Occupied':
-      return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+      return 'bg-orange-100/90 text-orange-800 border-orange-300/80 shadow-[inset_0_0_0_1px_rgba(249,115,22,0.08)]';
     case 'Unavailable':
-      return 'bg-red-500/20 text-red-300 border-red-500/30';
+      return 'bg-red-100/90 text-red-800 border-red-300/80 shadow-[inset_0_0_0_1px_rgba(239,68,68,0.08)]';
     case 'approved':
     case 'responded':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
+      return 'bg-green-100/90 text-green-800 border-green-300/80 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.08)]';
     case 'pending':
     case 'open':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      return 'bg-blue-100/90 text-blue-800 border-blue-300/80 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.08)]';
     case 'completed':
-      return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      return 'bg-yellow-100/90 text-yellow-800 border-yellow-300/80 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.08)]';
     case 'rejected':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-red-100/90 text-red-800 border-red-300/80 shadow-[inset_0_0_0_1px_rgba(239,68,68,0.08)]';
     case 'cancelled':
     case 'closed':
     case 'Vacant':
-      return 'bg-white/10 text-white/50 border-white/20';
+      return 'bg-[#f0f0f0] text-[#343434] border-[#d1d1d1]';
     default:
-      return 'bg-white/10 text-white/50 border-white/20';
+      return 'bg-[#f0f0f0] text-[#343434] border-[#d1d1d1]';
   }
 }
 
@@ -70,7 +70,7 @@ function getBadgeLabel(status: string): string {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => {
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getBadgeStyle(status)} ${className}`.trim()}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border leading-5 ${getBadgeStyle(status)} ${className}`.trim()}
     >
       {getBadgeLabel(status)}
     </span>

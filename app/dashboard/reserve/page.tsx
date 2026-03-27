@@ -262,8 +262,8 @@ export default function ReserveRoomPage() {
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Reserve a Room</h2>
-        <p className="text-white/40 mt-1">Find and book the perfect space for your needs</p>
+        <h2 className="text-2xl font-bold text-black">Reserve a Room</h2>
+        <p className="text-black mt-1">Find and book the perfect space for your needs</p>
       </div>
 
       <div className="glass-card p-6 !rounded-2xl">
@@ -275,10 +275,10 @@ export default function ReserveRoomPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
+            <h3 className="text-xl font-bold text-black mb-2">
               {createdCount > 1 ? `${createdCount} Reservations Submitted!` : 'Reservation Submitted!'}
             </h3>
-            <p className="text-sm text-white/40 mb-6">
+            <p className="text-sm text-black mb-6">
               {createdCount > 1
                 ? `${createdCount} recurring reservations have been created. Each one will follow the ${selectedCampus === 'digi' ? 'single-step building admin approval' : 'Main Campus approval chain'}.`
                 : selectedCampus === 'digi'
@@ -289,7 +289,7 @@ export default function ReserveRoomPage() {
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-black hover:text-primary bg-dark/5 hover:bg-primary/10 border border-dark/10 transition-all"
               >
                 Back to Dashboard
               </button>
@@ -306,8 +306,8 @@ export default function ReserveRoomPage() {
             {/* Progress Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-white">New Reservation</h3>
-                <p className="text-xs text-white/40 mt-0.5">
+                <h3 className="text-lg font-bold text-black">New Reservation</h3>
+                <p className="text-xs text-black mt-0.5">
                   Step {formStep} of 4 — {
                     formStep === 1 ? 'Select Building' :
                     formStep === 2 ? 'Select Room' :
@@ -318,7 +318,7 @@ export default function ReserveRoomPage() {
               </div>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -332,7 +332,7 @@ export default function ReserveRoomPage() {
                 <div
                   key={step}
                   className={`h-1 flex-1 rounded-full transition-all ${
-                    step <= formStep ? 'bg-primary' : 'bg-white/10'
+                    step <= formStep ? 'bg-primary' : 'bg-dark/10'
                   }`}
                 />
               ))}
@@ -341,14 +341,14 @@ export default function ReserveRoomPage() {
             {/* Step 1: Select Building */}
             {formStep === 1 && (
               <div>
-                <h4 className="text-sm font-bold text-white/70 mb-3">Where would you like to book?</h4>
+                <h4 className="text-sm font-bold text-black mb-3">Where would you like to book?</h4>
                 {buildings.length === 0 ? (
                   <div className="text-center py-8">
-                    <svg className="animate-spin h-6 w-6 text-white/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-6 w-6 text-black mx-auto mb-3" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <p className="text-sm text-white/30">Loading buildings...</p>
+                    <p className="text-sm text-black">Loading buildings...</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -356,7 +356,7 @@ export default function ReserveRoomPage() {
                       <button
                         key={building.id}
                         onClick={() => handleBuildingSelect(building.id)}
-                        className="glass-card !bg-white/5 p-4 !rounded-xl text-left group hover:!border-primary/40 transition-all cursor-pointer"
+                        className="glass-card !bg-dark/5 p-4 !rounded-xl text-left group hover:!border-primary/40 transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
@@ -365,9 +365,9 @@ export default function ReserveRoomPage() {
                             </svg>
                           </div>
                           <div>
-                            <h5 className="font-bold text-white text-sm group-hover:text-primary transition-colors">{building.name}</h5>
+                            <h5 className="font-bold text-black text-sm group-hover:text-primary transition-colors">{building.name}</h5>
                             {building.code && (
-                              <p className="text-[10px] text-white/30">{building.code} · {building.floors} floors</p>
+                              <p className="text-[10px] text-black">{building.code} · {building.floors} floors</p>
                             )}
                           </div>
                         </div>
@@ -384,28 +384,28 @@ export default function ReserveRoomPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <button
                     onClick={() => setFormStep(1)}
-                    className="p-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
+                    className="p-1 rounded-lg text-black hover:text-primary transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h4 className="text-sm font-bold text-white/70">
+                  <h4 className="text-sm font-bold text-black">
                     Available rooms in <span className="text-primary">{selectedBuildingName}</span>
                   </h4>
                 </div>
 
                 {roomsLoading ? (
                   <div className="text-center py-8">
-                    <svg className="animate-spin h-6 w-6 text-white/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-6 w-6 text-black mx-auto mb-3" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <p className="text-sm text-white/30">Loading rooms...</p>
+                    <p className="text-sm text-black">Loading rooms...</p>
                   </div>
                 ) : availableRooms.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-white/30">No available rooms in this building.</p>
+                    <p className="text-sm text-black">No available rooms in this building.</p>
                     <button
                       onClick={() => setFormStep(1)}
                       className="mt-3 text-sm text-primary font-bold hover:text-primary-hover transition-colors"
@@ -419,10 +419,10 @@ export default function ReserveRoomPage() {
                       <button
                         key={room.id}
                         onClick={() => handleRoomSelect(room.id)}
-                        className="glass-card !bg-white/5 p-4 !rounded-xl text-left group hover:!border-green-500/40 transition-all cursor-pointer border-l-4 border-green-500/40"
+                        className="glass-card !bg-dark/5 p-4 !rounded-xl text-left group hover:!border-green-500/40 transition-all cursor-pointer border-l-4 border-green-500/40"
                       >
-                        <h5 className="font-bold text-white text-sm">{room.name}</h5>
-                        <p className="text-[10px] text-white/30 mt-0.5">{room.floor}</p>
+                        <h5 className="font-bold text-black text-sm">{room.name}</h5>
+                        <p className="text-[10px] text-black mt-0.5">{room.floor}</p>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-green-500/20 text-green-300 border-green-500/30 mt-2">
                           Available
                         </span>
@@ -439,23 +439,23 @@ export default function ReserveRoomPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <button
                     onClick={() => setFormStep(2)}
-                    className="p-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
+                    className="p-1 rounded-lg text-black hover:text-primary transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h4 className="text-sm font-bold text-white/70">
+                  <h4 className="text-sm font-bold text-black">
                     Booking <span className="text-primary">{selectedRoomName}</span> in {selectedBuildingName}
                   </h4>
                 </div>
 
                 <div className="space-y-4">
                   {/* Recurring Toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-dark/5 border border-dark/10">
                     <div>
-                      <span className="text-sm font-bold text-white/70">Recurring Reservation</span>
-                      <p className="text-[10px] text-white/30 mt-0.5">Book the same time slot on multiple days</p>
+                      <span className="text-sm font-bold text-black">Recurring Reservation</span>
+                      <p className="text-[10px] text-black mt-0.5">Book the same time slot on multiple days</p>
                     </div>
                     <button
                       onClick={() => {
@@ -466,7 +466,7 @@ export default function ReserveRoomPage() {
                         }
                       }}
                       className={`relative w-11 h-6 rounded-full transition-all ${
-                        isRecurring ? 'bg-primary' : 'bg-white/15'
+                        isRecurring ? 'bg-primary' : 'bg-dark/15'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all ${
@@ -480,7 +480,7 @@ export default function ReserveRoomPage() {
                     <>
                       {/* Day Picker */}
                       <div>
-                        <label className="block text-sm font-bold text-white/70 mb-2">Select Days of the Week</label>
+                        <label className="block text-sm font-bold text-black mb-2">Select Days of the Week</label>
                         <div className="flex gap-2">
                           {DAY_LABELS.map((label, i) => (
                             <button
@@ -489,7 +489,7 @@ export default function ReserveRoomPage() {
                               className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                                 selectedDays.includes(i)
                                   ? 'bg-primary/20 text-primary border border-primary/30'
-                                  : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/60 hover:bg-white/10'
+                                  : 'bg-dark/5 text-black border border-dark/10 hover:text-primary hover:bg-primary/10'
                               }`}
                             >
                               {label}
@@ -501,7 +501,7 @@ export default function ReserveRoomPage() {
                       {/* Date Range */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-bold text-white/70 mb-1.5">Start Date</label>
+                          <label className="block text-sm font-bold text-black mb-1.5">Start Date</label>
                           <input
                             type="date"
                             value={reservationDate}
@@ -511,7 +511,7 @@ export default function ReserveRoomPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-white/70 mb-1.5">End Date</label>
+                          <label className="block text-sm font-bold text-black mb-1.5">End Date</label>
                           <input
                             type="date"
                             value={recurringEndDate}
@@ -535,12 +535,12 @@ export default function ReserveRoomPage() {
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {previewDates.map((d) => (
-                              <span key={d} className="px-2 py-0.5 rounded-lg bg-white/5 text-[10px] text-white/50 font-bold border border-white/10">
+                              <span key={d} className="px-2 py-0.5 rounded-lg bg-dark/5 text-[10px] text-black font-bold border border-dark/10">
                                 {d}
                               </span>
                             ))}
                             {previewDates.length >= 20 && (
-                              <span className="px-2 py-0.5 text-[10px] text-white/30 font-bold">…and more</span>
+                              <span className="px-2 py-0.5 text-[10px] text-black font-bold">…and more</span>
                             )}
                           </div>
                         </div>
@@ -548,7 +548,7 @@ export default function ReserveRoomPage() {
                     </>
                   ) : (
                     <div>
-                      <label className="block text-sm font-bold text-white/70 mb-1.5">Date</label>
+                      <label className="block text-sm font-bold text-black mb-1.5">Date</label>
                       <input
                         type="date"
                         value={reservationDate}
@@ -562,7 +562,7 @@ export default function ReserveRoomPage() {
                   {/* Time */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-white/70 mb-1.5">Start Time</label>
+                      <label className="block text-sm font-bold text-black mb-1.5">Start Time</label>
                       <input
                         type="time"
                         value={startTime}
@@ -571,7 +571,7 @@ export default function ReserveRoomPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-white/70 mb-1.5">End Time</label>
+                      <label className="block text-sm font-bold text-black mb-1.5">End Time</label>
                       <input
                         type="time"
                         value={endTime}
@@ -583,7 +583,7 @@ export default function ReserveRoomPage() {
 
                   {/* Purpose */}
                   <div>
-                    <label className="block text-sm font-bold text-white/70 mb-1.5">Purpose</label>
+                    <label className="block text-sm font-bold text-black mb-1.5">Purpose</label>
                     <input
                       type="text"
                       value={purpose}
@@ -616,13 +616,13 @@ export default function ReserveRoomPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <button
                     onClick={() => setFormStep(3)}
-                    className="p-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
+                    className="p-1 rounded-lg text-black hover:text-primary transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h4 className="text-sm font-bold text-white/70">Materials / Equipment</h4>
+                  <h4 className="text-sm font-bold text-black">Materials / Equipment</h4>
                 </div>
 
                 {/* Recurring summary banner */}
@@ -652,25 +652,25 @@ export default function ReserveRoomPage() {
                     ].map((item) => (
                       <div
                         key={item.key}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10"
+                        className="flex items-center justify-between p-3 rounded-xl bg-dark/5 border border-dark/10"
                       >
-                        <span className="text-sm font-bold text-white/70">{item.label}</span>
+                        <span className="text-sm font-bold text-black">{item.label}</span>
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
                             onClick={() => updateEquipment(item.key, -1)}
                             disabled={equipment[item.key] === 0}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all bg-white/5 border border-white/10 hover:bg-white/10 hover:text-primary disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:text-white/40"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all bg-dark/5 border border-dark/10 hover:bg-primary/10 hover:text-primary disabled:opacity-30 disabled:hover:bg-primary/10 disabled:hover:text-primary"
                           >
                             −
                           </button>
-                          <span className="w-8 text-center text-sm font-bold text-white">
+                          <span className="w-8 text-center text-sm font-bold text-black">
                             {equipment[item.key]}
                           </span>
                           <button
                             type="button"
                             onClick={() => updateEquipment(item.key, 1)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all bg-white/5 border border-white/10 hover:bg-white/10 hover:text-primary"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all bg-dark/5 border border-dark/10 hover:bg-primary/10 hover:text-primary"
                           >
                             +
                           </button>
@@ -680,14 +680,14 @@ export default function ReserveRoomPage() {
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-3">Approval Routing</h5>
+                    <h5 className="text-sm font-bold text-black uppercase tracking-wider mb-3">Approval Routing</h5>
                     <div className="space-y-3">
                       {(selectedCampus === 'digi'
                         ? DIGI_APPROVAL_EMAIL_FIELDS
                         : MAIN_APPROVAL_EMAIL_FIELDS
                       ).map((field) => (
                         <div key={field.key}>
-                          <label className="block text-xs font-bold text-white/40 mb-1.5">
+                          <label className="block text-xs font-bold text-black mb-1.5">
                             {field.label}
                           </label>
                           <input
@@ -708,7 +708,7 @@ export default function ReserveRoomPage() {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-white/35 mt-2">
+                    <p className="text-[11px] text-black mt-2">
                       {selectedCampus === 'digi'
                         ? 'Digi Campus uses a single-step building admin approval.'
                         : 'Main Campus uses advisor, DSAS, registrar, then building admin approval.'}
@@ -726,7 +726,7 @@ export default function ReserveRoomPage() {
                   >
                     {submitting ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>

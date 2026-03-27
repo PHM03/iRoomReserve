@@ -181,7 +181,7 @@ export default function SuperAdminDashboard() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <p className="text-white/50">Loading...</p>
+          <p className="text-black">Loading...</p>
         </div>
       </div>
     );
@@ -193,7 +193,7 @@ export default function SuperAdminDashboard() {
       case 'Faculty Professor': return 'bg-green-500/20 text-green-300 border-green-500/30';
       case 'Utility Staff': return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
       case 'Administrator': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/20';
+      default: return 'bg-dark/10 text-black border-dark/20';
     }
   };
 
@@ -203,7 +203,7 @@ export default function SuperAdminDashboard() {
       case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
       case 'rejected': return 'bg-red-500/20 text-red-300 border-red-500/30';
       case 'disabled': return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/20';
+      default: return 'bg-dark/10 text-black border-dark/20';
     }
   };
 
@@ -247,8 +247,8 @@ export default function SuperAdminDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">iRoomReserve</h1>
-                <p className="text-[10px] text-white/40 -mt-0.5 font-bold">Super Admin Dashboard</p>
+                <h1 className="text-lg font-bold text-black">iRoomReserve</h1>
+                <p className="text-[10px] text-black -mt-0.5 font-bold">Super Admin Dashboard</p>
               </div>
             </div>
 
@@ -263,7 +263,7 @@ export default function SuperAdminDashboard() {
               </div>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg text-white/40 hover:text-primary hover:bg-white/5 transition-all"
+                className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
                 title="Logout"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,12 +280,12 @@ export default function SuperAdminDashboard() {
         <div className="glass-card p-4 sm:p-5 mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-white">System Tools</h2>
-              <p className="text-sm text-white/40 mt-1">
+              <h2 className="text-lg font-bold text-black">System Tools</h2>
+              <p className="text-sm text-black mt-1">
                 Seed default buildings from the protected backend when you need an initial campus setup.
               </p>
               {seedResult && (
-                <p className="text-xs text-white/30 mt-2">
+                <p className="text-xs text-black mt-2">
                   Created: {seedResult.created.length} | Skipped: {seedResult.skipped.length}
                 </p>
               )}
@@ -305,7 +305,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Pending</p>
+                <p className="text-xs text-black font-bold">Pending</p>
                 <p className="text-2xl font-bold text-yellow-400 mt-1">{pendingUsers.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
@@ -318,7 +318,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Students</p>
+                <p className="text-xs text-black font-bold">Students</p>
                 <p className="text-2xl font-bold text-blue-400 mt-1">{students.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -331,7 +331,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Faculty Prof</p>
+                <p className="text-xs text-black font-bold">Faculty Prof</p>
                 <p className="text-2xl font-bold text-green-400 mt-1">{facultyProfessors.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -344,7 +344,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Utility Staff</p>
+                <p className="text-xs text-black font-bold">Utility Staff</p>
                 <p className="text-2xl font-bold text-teal-400 mt-1">{utilityUsers.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center">
@@ -358,7 +358,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Admins</p>
+                <p className="text-xs text-black font-bold">Admins</p>
                 <p className="text-2xl font-bold text-red-400 mt-1">{administrators.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -371,7 +371,7 @@ export default function SuperAdminDashboard() {
           <div className="glass-card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40 font-bold">Disabled</p>
+                <p className="text-xs text-black font-bold">Disabled</p>
                 <p className="text-2xl font-bold text-gray-400 mt-1">{disabledUsers.length}</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-gray-500/10 flex items-center justify-center">
@@ -392,13 +392,13 @@ export default function SuperAdminDashboard() {
               className={`flex-1 min-w-[100px] py-2.5 px-3 rounded-lg text-sm font-bold transition-all ${
                 activeTab === tab.key
                   ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                  : 'text-white/40 hover:text-white hover:bg-white/5'
+                  : 'text-black hover:text-primary hover:bg-primary/10'
               }`}
             >
               {tab.label}
               {tab.count > 0 && (
                 <span className={`ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white/10 text-white/50'
+                  activeTab === tab.key ? 'bg-dark/20 text-black' : 'bg-dark/10 text-black'
                 }`}>
                   {tab.count}
                 </span>
@@ -410,11 +410,11 @@ export default function SuperAdminDashboard() {
         {/* User List */}
         {currentUsers.length === 0 ? (
           <div className="glass-card p-12 text-center">
-            <svg className="w-16 h-16 text-white/10 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 text-black mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="text-lg font-bold text-white/60 mb-1">No users found</h3>
-            <p className="text-sm text-white/30">
+            <h3 className="text-lg font-bold text-black mb-1">No users found</h3>
+            <p className="text-sm text-black">
               {activeTab === 'pending' ? 'All caught up! No registrations waiting for approval.'
                 : `No ${activeTab === 'all' ? '' : activeTab + ' '}users found.`}
             </p>
@@ -429,12 +429,12 @@ export default function SuperAdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   {/* User Info */}
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-12 h-12 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-lg">
                       {user.firstName[0]?.toUpperCase() || '?'}{user.lastName[0]?.toUpperCase() || ''}
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-lg">{user.firstName} {user.lastName}</h3>
-                      <p className="text-white/40 text-sm">{user.email}</p>
+                      <h3 className="text-black font-bold text-lg">{user.firstName} {user.lastName}</h3>
+                      <p className="text-black text-sm">{user.email}</p>
                     </div>
                   </div>
 
@@ -527,7 +527,7 @@ export default function SuperAdminDashboard() {
                           <button
                             onClick={() => handleRevokeAdmin(user)}
                             disabled={actionLoading === user.uid}
-                            className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-white/50 border border-white/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all disabled:opacity-50"
+                            className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-dark/5 text-black border border-dark/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all disabled:opacity-50"
                           >
                             Revoke
                           </button>
@@ -554,7 +554,7 @@ export default function SuperAdminDashboard() {
                       <button
                         onClick={() => needsBuildingAssignment(user) ? openApprovalModal(user) : handleApprove(user.uid)}
                         disabled={actionLoading === user.uid}
-                        className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-white/50 border border-white/10 hover:bg-green-500/20 hover:text-green-300 hover:border-green-500/30 transition-all disabled:opacity-50"
+                        className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-dark/5 text-black border border-dark/10 hover:bg-green-500/20 hover:text-green-300 hover:border-green-500/30 transition-all disabled:opacity-50"
                       >
                         Reinstate
                       </button>
@@ -564,7 +564,7 @@ export default function SuperAdminDashboard() {
                     <button
                       onClick={() => { setDeletingUser(user); setShowDeleteModal(true); }}
                       disabled={actionLoading === user.uid}
-                      className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-red-400/60 border border-white/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all disabled:opacity-50"
+                      className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-dark/5 text-red-400/60 border border-dark/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all disabled:opacity-50"
                       title="Delete account"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -586,23 +586,23 @@ export default function SuperAdminDashboard() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => !modalLoading && setShowApprovalModal(false)}
           />
-          <div className="glass-card !bg-[#1a1a2e]/95 p-6 sm:p-8 w-full max-w-md relative z-10 !rounded-2xl border-primary/20">
-            <h2 className="text-xl font-bold text-white mb-1">Approve & Assign Buildings</h2>
-            <p className="text-sm text-white/40 mb-6">Choose one or more buildings for this person to manage.</p>
+          <div className="glass-card !bg-white/95 p-6 sm:p-8 w-full max-w-md relative z-10 !rounded-2xl border-primary/20">
+            <h2 className="text-xl font-bold text-black mb-1">Approve & Assign Buildings</h2>
+            <p className="text-sm text-black mb-6">Choose one or more buildings for this person to manage.</p>
 
-            <div className="flex items-center space-x-4 glass-card !bg-white/5 p-4 !rounded-xl mb-6">
+            <div className="flex items-center space-x-4 glass-card !bg-dark/5 p-4 !rounded-xl mb-6">
               <div className="w-11 h-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                 {selectedUser.firstName[0]?.toUpperCase() || '?'}{selectedUser.lastName[0]?.toUpperCase() || ''}
               </div>
               <div className="min-w-0">
-                <h4 className="font-bold text-white text-sm">{selectedUser.firstName} {selectedUser.lastName}</h4>
-                <p className="text-xs text-white/40 truncate">{selectedUser.email}</p>
+                <h4 className="font-bold text-black text-sm">{selectedUser.firstName} {selectedUser.lastName}</h4>
+                <p className="text-xs text-black truncate">{selectedUser.email}</p>
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-bold text-white/70 mb-2">Assign Buildings</label>
-              <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3">
+              <label className="block text-sm font-bold text-black mb-2">Assign Buildings</label>
+              <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border border-dark/10 bg-dark/5 p-3">
                 {availableBuildings.map((building) => {
                   const checked = selectedBuildingIds.includes(building.id);
 
@@ -611,13 +611,13 @@ export default function SuperAdminDashboard() {
                       key={building.id}
                       className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all ${
                         checked
-                          ? 'border-primary/40 bg-primary/10 text-white'
-                          : 'border-white/10 bg-transparent text-white/70 hover:bg-white/5'
+                          ? 'border-primary/40 bg-primary/10 text-primary'
+                          : 'border-dark/10 bg-transparent text-black hover:bg-primary/10'
                       }`}
                     >
                       <div>
                         <p className="text-sm font-bold">{building.name}</p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-black">
                           {building.code ? `${building.code} · ` : ''}{building.floors} floors
                         </p>
                       </div>
@@ -642,7 +642,7 @@ export default function SuperAdminDashboard() {
               <button
                 onClick={() => setShowApprovalModal(false)}
                 disabled={modalLoading}
-                className="flex-1 py-3 px-4 rounded-xl text-sm font-bold border border-white/15 text-white/60 hover:bg-white/5 hover:text-white transition-all disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-bold border border-dark/15 text-black hover:bg-primary/10 hover:text-primary transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -680,22 +680,22 @@ export default function SuperAdminDashboard() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => !actionLoading && setShowDeleteModal(false)}
           />
-          <div className="glass-card !bg-[#1a1a2e]/95 p-6 sm:p-8 w-full max-w-md relative z-10 !rounded-2xl border-red-500/20">
+          <div className="glass-card !bg-white/95 p-6 sm:p-8 w-full max-w-md relative z-10 !rounded-2xl border-red-500/20">
             <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2 text-center">Delete Account</h2>
-            <p className="text-sm text-white/40 mb-6 text-center">
-              Are you sure you want to permanently delete <span className="text-white font-bold">{deletingUser.firstName} {deletingUser.lastName}</span>&apos;s account? This action cannot be undone.
+            <h2 className="text-xl font-bold text-black mb-2 text-center">Delete Account</h2>
+            <p className="text-sm text-black mb-6 text-center">
+              Are you sure you want to permanently delete <span className="text-black font-bold">{deletingUser.firstName} {deletingUser.lastName}</span>&apos;s account? This action cannot be undone.
             </p>
 
             <div className="flex space-x-3">
               <button
                 onClick={() => { setShowDeleteModal(false); setDeletingUser(null); }}
                 disabled={actionLoading === deletingUser.uid}
-                className="flex-1 py-3 px-4 rounded-xl text-sm font-bold border border-white/15 text-white/60 hover:bg-white/5 hover:text-white transition-all disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-bold border border-dark/15 text-black hover:bg-primary/10 hover:text-primary transition-all disabled:opacity-50"
               >
                 Cancel
               </button>

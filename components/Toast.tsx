@@ -48,9 +48,15 @@ export default function Toast({ message, type = 'success', show, onClose, durati
 
   if (!visible) return null;
 
-  const bgStyle = type === 'success'
-    ? 'bg-green-500/20 border-green-500/40 text-green-300'
-    : 'bg-red-500/20 border-red-500/40 text-red-300';
+  const toastStyle = type === 'success'
+    ? {
+        container: 'border-green-300/90 bg-[#f5fbf6] text-[#343434] shadow-[0_14px_36px_rgba(52,52,52,0.12)]',
+        iconWrap: 'bg-green-100 text-green-700 border border-green-200',
+      }
+    : {
+        container: 'border-red-300/90 bg-[#fff6f6] text-[#343434] shadow-[0_14px_36px_rgba(52,52,52,0.12)]',
+        iconWrap: 'bg-red-100 text-red-700 border border-red-200',
+      };
 
   const icon = type === 'success' ? (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -65,14 +71,16 @@ export default function Toast({ message, type = 'success', show, onClose, durati
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none">
       <div
-        className={`mt-4 flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-bold pointer-events-auto backdrop-blur-xl transition-all duration-300 ease-in-out ${bgStyle} ${
+        className={`mt-4 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold pointer-events-auto backdrop-blur-xl transition-all duration-300 ease-in-out ${toastStyle.container} ${
           animating
             ? 'translate-y-0 opacity-100'
             : '-translate-y-4 opacity-0'
         }`}
       >
-        {icon}
-        {message}
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${toastStyle.iconWrap}`}>
+          {icon}
+        </span>
+        <span className="leading-5 text-[#343434]">{message}</span>
       </div>
     </div>
   );

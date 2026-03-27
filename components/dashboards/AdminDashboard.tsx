@@ -77,7 +77,7 @@ function StatusBadge({ status }: { status: string }) {
       case 'rejected': return 'bg-red-500/20 text-red-300 border-red-500/30';
       case 'pending': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
       case 'completed': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      default: return 'bg-white/10 text-white/50 border-white/20';
+      default: return 'bg-dark/10 text-black border-dark/20';
     }
   })();
   return (
@@ -93,7 +93,7 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((star) => (
         <svg
           key={star}
-          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400' : 'text-white/15'}`}
+          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400' : 'text-black'}`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -641,8 +641,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     return (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white">Welcome, {firstName} 🏛️</h2>
-          <p className="text-white/40 mt-1">Administrator Dashboard</p>
+          <h2 className="text-2xl font-bold text-black">Welcome, {firstName} 🏛️</h2>
+          <p className="text-black mt-1">Administrator Dashboard</p>
         </div>
         <div className="glass-card p-12 text-center">
           <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
@@ -650,8 +650,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-white/60 mb-2">No Building Assigned</h3>
-          <p className="text-sm text-white/30 max-w-sm mx-auto">
+          <h3 className="text-lg font-bold text-black mb-2">No Building Assigned</h3>
+          <p className="text-sm text-black max-w-sm mx-auto">
             Your account has been approved, but the Super Admin has not yet assigned a building to you.
             Please contact the Super Admin to get a building assignment.
           </p>
@@ -665,23 +665,23 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ─── Header with Notification Bell ───────────────────────── */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Welcome, {firstName} 🏛️</h2>
-          <p className="text-white/40 mt-1">
+          <h2 className="text-2xl font-bold text-black">Welcome, {firstName} 🏛️</h2>
+          <p className="text-black mt-1">
             Managing: <span className="text-primary font-bold">{buildingName}</span>
           </p>
           {managedBuildings.length > 1 && (
             <div className="mt-4 max-w-xs">
-              <label className="block text-xs font-bold uppercase tracking-wide text-white/35 mb-2">
+              <label className="block text-xs font-bold uppercase tracking-wide text-black mb-2">
                 Active Building
               </label>
               <select
                 value={buildingId ?? ''}
                 onChange={(event) => setSelectedManagedBuildingId(event.target.value)}
-                className="glass-input w-full px-4 py-3 bg-white/6 appearance-none cursor-pointer"
+                className="glass-input w-full px-4 py-3 bg-dark/6 appearance-none cursor-pointer"
                 style={{ backgroundImage: 'none' }}
               >
                 {managedBuildings.map((building) => (
-                  <option key={building.id} value={building.id} className="bg-[#1a1a2e] text-white">
+                  <option key={building.id} value={building.id} className="bg-white text-black">
                     {building.name}
                   </option>
                 ))}
@@ -696,7 +696,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative p-2.5 rounded-xl glass-card !p-2.5 hover:!border-primary/40 transition-all"
           >
-            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             {notifications.length > 0 && (
@@ -709,8 +709,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           {/* Notification Dropdown */}
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 glass-card !rounded-xl overflow-hidden z-50" style={{ background: 'rgba(15, 15, 25, 0.95)', backdropFilter: 'blur(20px)' }}>
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <h4 className="font-bold text-white text-sm">Notifications</h4>
+              <div className="flex items-center justify-between p-4 border-b border-dark/10">
+                <h4 className="font-bold text-black text-sm">Notifications</h4>
                 {notifications.length > 0 && (
                   <button
                     onClick={handleMarkAllRead}
@@ -723,13 +723,13 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               <div className="max-h-64 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center">
-                    <p className="text-sm text-white/30">No new notifications</p>
+                    <p className="text-sm text-black">No new notifications</p>
                   </div>
                 ) : (
                   notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      className="p-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-start gap-3"
+                      className="p-3 border-b border-dark/5 hover:bg-primary/10 transition-colors flex items-start gap-3"
                     >
                       <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
                         <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,12 +737,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white">{notif.title}</p>
-                        <p className="text-[11px] text-white/40 mt-0.5">{notif.message}</p>
+                        <p className="text-xs font-bold text-black">{notif.title}</p>
+                        <p className="text-[11px] text-black mt-0.5">{notif.message}</p>
                       </div>
                       <button
                         onClick={() => handleDismissNotification(notif.id)}
-                        className="text-white/20 hover:text-white/50 transition-colors shrink-0"
+                        className="text-black hover:text-primary transition-colors shrink-0"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -762,7 +762,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'add-rooms' && (
         <div>
-          <h3 className="text-xl font-bold text-white mb-6">Manage Rooms</h3>
+          <h3 className="text-xl font-bold text-black mb-6">Manage Rooms</h3>
 
           {/* ─── Step 0: New Room Button ─────────────────────────── */}
           {addRoomStep === 0 && (
@@ -771,21 +771,21 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                 onClick={() => setAddRoomStep(1)}
                 className="w-full glass-card p-6 !rounded-2xl flex items-center justify-center gap-3 group hover:!border-primary/40 transition-all cursor-pointer"
               >
-                <svg className="w-6 h-6 text-white/40 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-black group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="text-lg font-bold text-white/60 group-hover:text-white transition-colors">
+                <span className="text-lg font-bold text-black group-hover:text-primary transition-colors">
                   New Room
                 </span>
               </button>
 
               <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-white/35">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-black">
                   Active Building
                 </p>
-                <p className="mt-1 text-sm font-bold text-white">{activeBuildingLabel}</p>
+                <p className="mt-1 text-sm font-bold text-black">{activeBuildingLabel}</p>
                 {buildingName && activeBuildingLabel !== buildingName ? (
-                  <p className="mt-1 text-xs text-white/35">{buildingName}</p>
+                  <p className="mt-1 text-xs text-black">{buildingName}</p>
                 ) : null}
               </div>
             </div>
@@ -796,12 +796,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="glass-card p-6 mb-8 !rounded-2xl">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h4 className="text-lg font-bold text-white">Select Floor</h4>
-                  <p className="text-xs text-white/40 mt-0.5">Step 1 of 2 — Choose which floor the room is on</p>
+                  <h4 className="text-lg font-bold text-black">Select Floor</h4>
+                  <p className="text-xs text-black mt-0.5">Step 1 of 2 — Choose which floor the room is on</p>
                 </div>
                 <button
                   onClick={resetAddRoomWizard}
-                  className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                  className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -811,10 +811,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               {/* Progress Bar */}
               <div className="flex gap-2 mb-6">
                 <div className="h-1 flex-1 rounded-full bg-primary" />
-                <div className="h-1 flex-1 rounded-full bg-white/10" />
+                <div className="h-1 flex-1 rounded-full bg-dark/10" />
               </div>
               <div className="mb-6">
-                <label className="block text-xs font-bold text-white/40 mb-1.5">
+                <label className="block text-xs font-bold text-black mb-1.5">
                   Building
                 </label>
                 {managedBuildings.length > 1 ? (
@@ -831,9 +831,9 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   </select>
                 ) : (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    <p className="text-sm font-bold text-white">{activeBuildingLabel}</p>
+                    <p className="text-sm font-bold text-black">{activeBuildingLabel}</p>
                     {buildingName && activeBuildingLabel !== buildingName ? (
-                      <p className="mt-1 text-xs text-white/35">{buildingName}</p>
+                      <p className="mt-1 text-xs text-black">{buildingName}</p>
                     ) : null}
                   </div>
                 )}
@@ -846,7 +846,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       setNewRoomFloor(floorLabel);
                       setAddRoomStep(2);
                     }}
-                    className="glass-card !bg-white/5 p-4 !rounded-xl text-center group hover:!border-primary/40 transition-all cursor-pointer"
+                    className="glass-card !bg-dark/5 p-4 !rounded-xl text-center group hover:!border-primary/40 transition-all cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
                       <span className="text-primary font-bold text-sm">
@@ -857,7 +857,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                             : index}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-white/70 group-hover:text-white transition-colors">{floorLabel}</p>
+                    <p className="text-sm font-bold text-black group-hover:text-primary transition-colors">{floorLabel}</p>
                   </button>
                 ))}
               </div>
@@ -869,15 +869,15 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="glass-card p-6 mb-8 !rounded-2xl">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h4 className="text-lg font-bold text-white">Room Information</h4>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <h4 className="text-lg font-bold text-black">Room Information</h4>
+                  <p className="text-xs text-black mt-0.5">
                     Step 2 of 2 — <span className="text-primary">{newRoomFloor}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setAddRoomStep(1)}
-                    className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                    className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -885,7 +885,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   </button>
                   <button
                     onClick={resetAddRoomWizard}
-                    className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                    className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -900,7 +900,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               </div>
 
               <div className="mb-6">
-                <label className="block text-xs font-bold text-white/40 mb-1.5">
+                <label className="block text-xs font-bold text-black mb-1.5">
                   Building
                 </label>
                 {managedBuildings.length > 1 ? (
@@ -917,9 +917,9 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   </select>
                 ) : (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    <p className="text-sm font-bold text-white">{activeBuildingLabel}</p>
+                    <p className="text-sm font-bold text-black">{activeBuildingLabel}</p>
                     {buildingName && activeBuildingLabel !== buildingName ? (
-                      <p className="mt-1 text-xs text-white/35">{buildingName}</p>
+                      <p className="mt-1 text-xs text-black">{buildingName}</p>
                     ) : null}
                   </div>
                 )}
@@ -929,7 +929,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                 {/* Room Name & Type */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-white/40 mb-1.5">Room Name *</label>
+                    <label className="block text-xs font-bold text-black mb-1.5">Room Name *</label>
                     <input
                       type="text"
                       value={newRoomName}
@@ -939,7 +939,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/40 mb-1.5">Room Type *</label>
+                    <label className="block text-xs font-bold text-black mb-1.5">Room Type *</label>
                     <select
                       value={newRoomType}
                       onChange={(e) => setNewRoomType(e.target.value)}
@@ -957,11 +957,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
                 {/* Facilities Section */}
                 <div>
-                  <h5 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-4">Facilities</h5>
+                  <h5 className="text-sm font-bold text-black uppercase tracking-wider mb-4">Facilities</h5>
 
                   {/* Air Conditioner Status */}
                   <div className="mb-4">
-                    <label className="block text-xs font-bold text-white/40 mb-2">Air Conditioner Status</label>
+                    <label className="block text-xs font-bold text-black mb-2">Air Conditioner Status</label>
                     <div className="flex flex-wrap gap-2">
                       {ROOM_AC_OPTIONS.map((opt) => (
                         <button
@@ -970,7 +970,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           onClick={() => setNewRoomAcStatus(opt)}
                           className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${newRoomAcStatus === opt
                             ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60'
+                            : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
                             }`}
                         >
                           {opt}
@@ -981,7 +981,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
                   {/* Television or Projector Status */}
                   <div className="mb-4">
-                    <label className="block text-xs font-bold text-white/40 mb-2">Television or Projector</label>
+                    <label className="block text-xs font-bold text-black mb-2">Television or Projector</label>
                     <div className="flex flex-wrap gap-2">
                       {ROOM_DISPLAY_OPTIONS.map((opt) => (
                         <button
@@ -990,7 +990,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           onClick={() => setNewRoomTvStatus(opt)}
                           className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${newRoomTvStatus === opt
                             ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60'
+                            : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
                             }`}
                         >
                           {opt}
@@ -1001,7 +1001,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
                   {/* Capacity */}
                   <div>
-                    <label className="block text-xs font-bold text-white/40 mb-1.5">Capacity</label>
+                    <label className="block text-xs font-bold text-black mb-1.5">Capacity</label>
                     <input
                       type="number"
                       value={newRoomCapacity}
@@ -1033,7 +1033,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="mb-6 space-y-4">
               {/* Search Bar */}
               <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -1051,7 +1051,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                     roomFloorFilter === 'all'
                       ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60'
+                      : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
                   }`}
                 >
                   All ({rooms.length})
@@ -1065,7 +1065,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                         roomFloorFilter === floor
                           ? 'bg-primary/20 text-primary border border-primary/40'
-                          : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60'
+                          : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
                       }`}
                     >
                       {floor} ({count})
@@ -1080,14 +1080,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           {rooms.length === 0 && addRoomStep === 0 ? (
             <div className="glass-card p-12 text-center">
               <div className="text-4xl mb-3">🏠</div>
-              <h4 className="text-lg font-bold text-white/60 mb-1">No Rooms Yet</h4>
-              <p className="text-sm text-white/30">Click &quot;New Room&quot; above to add your first room.</p>
+              <h4 className="text-lg font-bold text-black mb-1">No Rooms Yet</h4>
+              <p className="text-sm text-black">Click &quot;New Room&quot; above to add your first room.</p>
             </div>
           ) : filteredRooms.length === 0 && rooms.length > 0 ? (
             <div className="glass-card p-8 text-center">
               <div className="text-3xl mb-3">🔍</div>
-              <h4 className="text-lg font-bold text-white/60 mb-1">No Rooms Found</h4>
-              <p className="text-sm text-white/30">Try adjusting your search or filter.</p>
+              <h4 className="text-lg font-bold text-black mb-1">No Rooms Found</h4>
+              <p className="text-sm text-black">Try adjusting your search or filter.</p>
             </div>
           ) : filteredRooms.length > 0 && (
             <div className="space-y-3">
@@ -1098,7 +1098,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     <div className="space-y-5">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="mb-1.5 block text-xs font-bold text-white/40">
+                          <label className="mb-1.5 block text-xs font-bold text-black">
                             Room Name *
                           </label>
                           <input
@@ -1110,7 +1110,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           />
                         </div>
                         <div>
-                          <label className="mb-1.5 block text-xs font-bold text-white/40">
+                          <label className="mb-1.5 block text-xs font-bold text-black">
                             Floor *
                           </label>
                           <select
@@ -1127,7 +1127,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           </select>
                         </div>
                         <div className="sm:col-span-2">
-                          <label className="mb-1.5 block text-xs font-bold text-white/40">
+                          <label className="mb-1.5 block text-xs font-bold text-black">
                             Room Type *
                           </label>
                           <select
@@ -1146,12 +1146,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       </div>
 
                       <div>
-                        <h5 className="mb-4 text-sm font-bold uppercase tracking-wider text-white/60">
+                        <h5 className="mb-4 text-sm font-bold uppercase tracking-wider text-black">
                           Facilities
                         </h5>
 
                         <div className="mb-4">
-                          <label className="mb-2 block text-xs font-bold text-white/40">
+                          <label className="mb-2 block text-xs font-bold text-black">
                             Air Conditioner Status
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -1163,7 +1163,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                                 className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
                                   editAcStatus === option
                                     ? 'border border-primary/40 bg-primary/20 text-primary'
-                                    : 'border border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                                    : 'border border-dark/10 bg-dark/5 text-black hover:bg-primary/10 hover:text-primary'
                                 }`}
                               >
                                 {option}
@@ -1173,7 +1173,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         </div>
 
                         <div className="mb-4">
-                          <label className="mb-2 block text-xs font-bold text-white/40">
+                          <label className="mb-2 block text-xs font-bold text-black">
                             Television or Projector
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -1185,7 +1185,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                                 className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
                                   editTvStatus === option
                                     ? 'border border-primary/40 bg-primary/20 text-primary'
-                                    : 'border border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+                                    : 'border border-dark/10 bg-dark/5 text-black hover:bg-primary/10 hover:text-primary'
                                 }`}
                               >
                                 {option}
@@ -1195,7 +1195,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         </div>
 
                         <div>
-                          <label className="mb-1.5 block text-xs font-bold text-white/40">
+                          <label className="mb-1.5 block text-xs font-bold text-black">
                             Capacity
                           </label>
                           <input
@@ -1225,7 +1225,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         <button
                           onClick={resetEditRoomForm}
                           disabled={savingRoomId === room.id}
-                          className="px-4 py-2 rounded-xl text-sm font-bold bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition-all"
+                          className="px-4 py-2 rounded-xl text-sm font-bold bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 transition-all"
                         >
                           Cancel
                         </button>
@@ -1239,8 +1239,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           🚪
                         </div>
                         <div>
-                          <h4 className="font-bold text-white text-sm">{room.name}</h4>
-                          <p className="text-xs text-white/40">
+                          <h4 className="font-bold text-black text-sm">{room.name}</h4>
+                          <p className="text-xs text-black">
                             {room.floor} · {room.roomType || 'Room'} · Capacity: {room.capacity}
                           </p>
                         </div>
@@ -1250,14 +1250,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         <button
                           onClick={() => startEditingRoom(room)}
                           disabled={deletingRoomId === room.id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-white/40 hover:text-primary hover:bg-white/5 border border-white/10 transition-all"
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-black hover:text-primary hover:bg-primary/10 border border-dark/10 transition-all"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteRoom(room.id)}
                           disabled={deletingRoomId === room.id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400/60 hover:text-red-300 hover:bg-red-500/10 border border-white/10 transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400/60 hover:text-red-300 hover:bg-red-500/10 border border-dark/10 transition-all disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {deletingRoomId === room.id ? 'Deleting...' : 'Delete'}
                         </button>
@@ -1277,15 +1277,15 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {activeTab === 'feedback' && (
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-white">Room Feedback</h3>
-            <span className="text-sm text-white/30">{feedbackList.length} total</span>
+            <h3 className="text-xl font-bold text-black">Room Feedback</h3>
+            <span className="text-sm text-black">{feedbackList.length} total</span>
           </div>
 
           {feedbackList.length === 0 ? (
             <div className="glass-card p-12 text-center">
               <div className="text-4xl mb-3">💬</div>
-              <h4 className="text-lg font-bold text-white/60 mb-1">No Feedback Yet</h4>
-              <p className="text-sm text-white/30">Feedback from room users will appear here.</p>
+              <h4 className="text-lg font-bold text-black mb-1">No Feedback Yet</h4>
+              <p className="text-sm text-black">Feedback from room users will appear here.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1293,23 +1293,23 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                 <div key={fb.id} className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm">
                         {fb.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm">{fb.userName}</h4>
-                        <p className="text-xs text-white/40">{fb.roomName}</p>
+                        <h4 className="font-bold text-black text-sm">{fb.userName}</h4>
+                        <p className="text-xs text-black">{fb.roomName}</p>
                       </div>
                     </div>
                     <StarRating rating={fb.rating} />
                   </div>
 
-                  <p className="text-sm text-white/70 mb-3 leading-relaxed">{fb.message}</p>
+                  <p className="text-sm text-black mb-3 leading-relaxed">{fb.message}</p>
 
                   {fb.adminResponse ? (
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mt-3">
                       <p className="text-xs font-bold text-primary mb-1">Admin Response</p>
-                      <p className="text-sm text-white/60">{fb.adminResponse}</p>
+                      <p className="text-sm text-black">{fb.adminResponse}</p>
                     </div>
                   ) : (
                     <>
@@ -1325,7 +1325,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           <div className="flex gap-2 justify-end">
                             <button
                               onClick={() => { setRespondingId(null); setResponseText(''); }}
-                              className="px-4 py-2 rounded-xl text-sm font-bold bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition-all"
+                              className="px-4 py-2 rounded-xl text-sm font-bold bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 transition-all"
                             >
                               Cancel
                             </button>
@@ -1365,17 +1365,17 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
         <div>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Total Rooms</p><p className="text-2xl font-bold text-white mt-1">{rooms.length}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Reserved</p><p className="text-2xl font-bold text-blue-400 mt-1">{reservedCount}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Available</p><p className="text-2xl font-bold text-green-400 mt-1">{availableCount}</p></div>
-            <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-white/40 font-bold">Pending Requests</p><p className="text-2xl font-bold text-yellow-400 mt-1">{pendingCount}</p><p className="text-[10px] text-white/20 mt-0.5">Click to review →</p></button>
-            <div className="glass-card p-4"><p className="text-xs text-white/40 font-bold">Ongoing</p><p className="text-2xl font-bold text-orange-400 mt-1">{ongoingCount}</p></div>
+            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Total Rooms</p><p className="text-2xl font-bold text-black mt-1">{rooms.length}</p></div>
+            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Reserved</p><p className="text-2xl font-bold text-blue-400 mt-1">{reservedCount}</p></div>
+            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Available</p><p className="text-2xl font-bold text-green-400 mt-1">{availableCount}</p></div>
+            <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-black font-bold">Pending Requests</p><p className="text-2xl font-bold text-yellow-400 mt-1">{pendingCount}</p><p className="text-[10px] text-black mt-0.5">Click to review →</p></button>
+            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Ongoing</p><p className="text-2xl font-bold text-orange-400 mt-1">{ongoingCount}</p></div>
           </div>
 
           {/* Live Room Status Grid */}
-          <h3 className="text-lg font-bold text-white mb-4">Live Room Status <span className="text-sm text-white/30 font-normal ml-2">({buildingName})</span></h3>
+          <h3 className="text-lg font-bold text-black mb-4">Live Room Status <span className="text-sm text-black font-normal ml-2">({buildingName})</span></h3>
           {rooms.length === 0 ? (
-            <div className="glass-card p-8 text-center mb-8"><p className="text-sm text-white/30">No rooms configured yet.</p></div>
+            <div className="glass-card p-8 text-center mb-8"><p className="text-sm text-black">No rooms configured yet.</p></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
               {rooms.map((room) => {
@@ -1384,10 +1384,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                 return (
                   <div key={room.id} className={`glass-card p-4 border-l-4 ${borderColor}`}>
                     <div className="flex justify-between items-start">
-                      <div><h4 className="font-bold text-white">{room.name}</h4><p className="text-xs text-white/40">{room.floor} · Cap: {room.capacity}</p></div>
+                      <div><h4 className="font-bold text-black">{room.name}</h4><p className="text-xs text-black">{room.floor} · Cap: {room.capacity}</p></div>
                       <StatusBadge status={effective.status} />
                     </div>
-                    {effective.detail && <p className="text-xs text-white/50 mt-2">{effective.detail}</p>}
+                    {effective.detail && <p className="text-xs text-black mt-2">{effective.detail}</p>}
                   </div>
                 );
               })}
@@ -1400,11 +1400,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             return (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-white">Today&apos;s Class Schedules <span className="text-sm text-white/30 font-normal ml-1">({DAY_NAMES[new Date().getDay()]})</span></h3>
-                  <span className="text-xs text-white/30">{todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}</span>
+                  <h3 className="text-lg font-bold text-black">Today&apos;s Class Schedules <span className="text-sm text-black font-normal ml-1">({DAY_NAMES[new Date().getDay()]})</span></h3>
+                  <span className="text-xs text-black">{todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}</span>
                 </div>
                 {todaySchedules.length === 0 ? (
-                  <div className="glass-card p-6 text-center mb-8"><p className="text-sm text-white/30">No classes scheduled for today.</p></div>
+                  <div className="glass-card p-6 text-center mb-8"><p className="text-sm text-black">No classes scheduled for today.</p></div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
                     {todaySchedules.map((s) => {
@@ -1412,12 +1412,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                       const isActive = s.startTime <= currentTime && s.endTime > currentTime;
                       return (
-                        <div key={s.id} className={`glass-card p-4 border-l-4 ${isActive ? 'border-orange-500/60' : 'border-white/10'}`}>
+                        <div key={s.id} className={`glass-card p-4 border-l-4 ${isActive ? 'border-orange-500/60' : 'border-dark/10'}`}>
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="text-sm font-bold text-white">{s.subjectName}</p>
-                              <p className="text-xs text-white/40 mt-0.5">{s.roomName} · {s.instructorName}</p>
-                              <p className="text-xs text-white/50 mt-1">{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
+                              <p className="text-sm font-bold text-black">{s.subjectName}</p>
+                              <p className="text-xs text-black mt-0.5">{s.roomName} · {s.instructorName}</p>
+                              <p className="text-xs text-black mt-1">{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
                             </div>
                             {isActive && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">In Progress</span>}
                           </div>
@@ -1432,7 +1432,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
           {/* Pending Requests Preview */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">Pending Requests</h3>
+            <h3 className="text-lg font-bold text-black">Pending Requests</h3>
             {requests.length > 0 && (
               <button onClick={() => setActiveTab('pending')} className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
                 View all ({requests.length}) →
@@ -1440,7 +1440,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             )}
           </div>
           {requests.length === 0 ? (
-            <div className="glass-card p-8 text-center"><p className="text-sm text-white/30">No requests waiting for approval.</p></div>
+            <div className="glass-card p-8 text-center"><p className="text-sm text-black">No requests waiting for approval.</p></div>
           ) : (
             <div className="space-y-3">
               {requests.slice(0, 3).map((req) => (
@@ -1455,12 +1455,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-white text-sm">{req.userName}</h4>
+                        <h4 className="font-bold text-black text-sm">{req.userName}</h4>
                         <RoleBadge role={req.userRole} />
                       </div>
-                      <p className="text-xs text-white/40 mt-0.5">{req.roomName} · {req.date} · {req.startTime} – {req.endTime}</p>
+                      <p className="text-xs text-black mt-0.5">{req.roomName} · {req.date} · {req.startTime} – {req.endTime}</p>
                     </div>
-                    <svg className="w-5 h-5 text-white/20 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-black shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -1484,14 +1484,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'status-scheduling' && (
         <div>
-          <h3 className="text-xl font-bold text-white mb-6">
+          <h3 className="text-xl font-bold text-black mb-6">
             Room Status Monitor
-            <span className="text-sm text-white/30 font-normal ml-2">({buildingName})</span>
+            <span className="text-sm text-black font-normal ml-2">({buildingName})</span>
           </h3>
 
           {rooms.length === 0 ? (
             <div className="glass-card p-12 text-center">
-              <p className="text-sm text-white/30">No rooms configured. Add rooms first.</p>
+              <p className="text-sm text-black">No rooms configured. Add rooms first.</p>
             </div>
           ) : (
             <div className="space-y-4 mb-8">
@@ -1516,17 +1516,17 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           <div key={room.id} className={`glass-card p-5 border-l-4 ${statusBorder}`}>
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <h4 className="text-lg font-bold text-white">{room.name}</h4>
-                                <p className="text-sm text-white/40">{room.floor} | Cap: {room.capacity}</p>
+                                <h4 className="text-lg font-bold text-black">{room.name}</h4>
+                                <p className="text-sm text-black">{room.floor} | Cap: {room.capacity}</p>
                               </div>
                               <StatusBadge status={effective.status} />
                             </div>
-                            {effective.detail && <p className="text-xs text-white/50 mb-2">{effective.detail}</p>}
-                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5">
-                              <button onClick={() => handleStatusChange(room.id, 'Available')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Available' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-green-500/10 hover:text-green-300'}`}>Available</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Reserved')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Reserved' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-blue-500/10 hover:text-blue-300'}`}>Reserved</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Ongoing')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Ongoing' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-orange-500/10 hover:text-orange-300'}`}>Ongoing</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Unavailable')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Unavailable' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-white/5 text-white/30 border border-white/10 hover:bg-red-500/10 hover:text-red-300'}`}>Unavailable</button>
+                            {effective.detail && <p className="text-xs text-black mb-2">{effective.detail}</p>}
+                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-dark/5">
+                              <button onClick={() => handleStatusChange(room.id, 'Available')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Available' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-dark/5 text-black border border-dark/10 hover:bg-green-500/10 hover:text-green-300'}`}>Available</button>
+                              <button onClick={() => handleStatusChange(room.id, 'Reserved')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Reserved' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-dark/5 text-black border border-dark/10 hover:bg-blue-500/10 hover:text-blue-300'}`}>Reserved</button>
+                              <button onClick={() => handleStatusChange(room.id, 'Ongoing')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Ongoing' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-dark/5 text-black border border-dark/10 hover:bg-orange-500/10 hover:text-orange-300'}`}>Ongoing</button>
+                              <button onClick={() => handleStatusChange(room.id, 'Unavailable')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Unavailable' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-dark/5 text-black border border-dark/10 hover:bg-red-500/10 hover:text-red-300'}`}>Unavailable</button>
                             </div>
                           </div>
                         );
@@ -1541,7 +1541,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           {/* ─── Class Schedule Manager ─────────────────────────────── */}
           <div className="mt-10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Class Schedules</h3>
+              <h3 className="text-xl font-bold text-black">Class Schedules</h3>
               <button onClick={() => {
                 if (showScheduleForm) {
                   setShowScheduleForm(false);
@@ -1564,32 +1564,32 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               <div className="glass-card p-5 mb-6 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">Room</label>
+                    <label className="block text-xs font-bold text-black mb-1">Room</label>
                     <select value={schedRoomId} onChange={(e) => setSchedRoomId(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm">
                       <option value="">Select room...</option>
                       {rooms.map((r) => <option key={r.id} value={r.id}>{r.name} ({r.floor})</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">Day</label>
+                    <label className="block text-xs font-bold text-black mb-1">Day</label>
                     <select value={schedDay} onChange={(e) => setSchedDay(Number(e.target.value))} className="glass-input w-full px-4 py-2.5 text-sm">
                       {DAY_NAMES.map((name, i) => <option key={i} value={i}>{name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">Subject</label>
+                    <label className="block text-xs font-bold text-black mb-1">Subject</label>
                     <input value={schedSubject} onChange={(e) => setSchedSubject(e.target.value)} placeholder="e.g. IT 101" className="glass-input w-full px-4 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">Instructor</label>
+                    <label className="block text-xs font-bold text-black mb-1">Instructor</label>
                     <input value={schedInstructor} onChange={(e) => setSchedInstructor(e.target.value)} placeholder="e.g. Prof. Santos" className="glass-input w-full px-4 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">Start Time</label>
+                    <label className="block text-xs font-bold text-black mb-1">Start Time</label>
                     <input type="time" value={schedStart} onChange={(e) => setSchedStart(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white/50 mb-1">End Time</label>
+                    <label className="block text-xs font-bold text-black mb-1">End Time</label>
                     <input type="time" value={schedEnd} onChange={(e) => setSchedEnd(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm" />
                   </div>
                 </div>
@@ -1600,7 +1600,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             )}
 
             {schedules.length === 0 ? (
-              <div className="glass-card p-8 text-center"><p className="text-sm text-white/30">No class schedules assigned yet.</p></div>
+              <div className="glass-card p-8 text-center"><p className="text-sm text-black">No class schedules assigned yet.</p></div>
             ) : (
               <div className="space-y-4">
                 {[0, 1, 2, 3, 4, 5, 6].map((day) => {
@@ -1608,19 +1608,19 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   if (daySchedules.length === 0) return null;
                   return (
                     <div key={day}>
-                      <h4 className="text-sm font-bold text-white/50 mb-2">{DAY_NAMES[day]}</h4>
+                      <h4 className="text-sm font-bold text-black mb-2">{DAY_NAMES[day]}</h4>
                       <div className="space-y-2">
                         {daySchedules.map((s) => (
                           <div key={s.id} className="glass-card p-4 flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-bold text-white">{s.subjectName}</p>
-                              <p className="text-xs text-white/40">{s.roomName} · {s.instructorName} · {formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
+                              <p className="text-sm font-bold text-black">{s.subjectName}</p>
+                              <p className="text-xs text-black">{s.roomName} · {s.instructorName} · {formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={() => handleEditSchedule(s)} className="p-2 rounded-lg text-white/30 hover:text-primary hover:bg-primary/10 transition-all" title="Edit">
+                              <button onClick={() => handleEditSchedule(s)} className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all" title="Edit">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                               </button>
-                              <button onClick={() => handleDeleteSchedule(s.id)} className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete">
+                              <button onClick={() => handleDeleteSchedule(s.id)} className="p-2 rounded-lg text-black hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                               </button>
                             </div>
@@ -1641,7 +1641,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'room-history' && (
         <div>
-          <h3 className="text-xl font-bold text-white mb-6">Room History</h3>
+          <h3 className="text-xl font-bold text-black mb-6">Room History</h3>
 
           {/* Filters */}
           <div className="glass-card p-4 mb-6">
@@ -1651,7 +1651,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               </div>
               <div className="flex gap-2 flex-wrap items-center">
                 {['all', 'approved', 'rejected', 'active', 'completed', 'cancelled'].map((filter) => (
-                  <button key={filter} onClick={() => setHistoryFilter(filter)} className={`px-3 py-2 rounded-lg text-xs font-bold capitalize transition-all ${historyFilter === filter ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10'}`}>
+                  <button key={filter} onClick={() => setHistoryFilter(filter)} className={`px-3 py-2 rounded-lg text-xs font-bold capitalize transition-all ${historyFilter === filter ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10'}`}>
                     {filter === 'all' ? 'All Status' : filter}
                   </button>
                 ))}
@@ -1662,8 +1662,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           {filteredHistory.length === 0 ? (
             <div className="glass-card p-12 text-center">
               <div className="text-4xl mb-3">📋</div>
-              <h4 className="text-lg font-bold text-white/60 mb-1">No Reservations Found</h4>
-              <p className="text-sm text-white/30">
+              <h4 className="text-lg font-bold text-black mb-1">No Reservations Found</h4>
+              <p className="text-sm text-black">
                 {historySearch || historyFilter !== 'all'
                   ? 'Try adjusting your filters.'
                   : 'Reservation history will appear here.'}
@@ -1675,34 +1675,34 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               <div className="hidden md:block glass-card overflow-hidden !rounded-xl">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Room</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Purpose</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/50 uppercase tracking-wider">Status</th>
+                    <tr className="border-b border-dark/10">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">User</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Room</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Time</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Purpose</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredHistory.map((res) => (
-                      <tr key={res.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <tr key={res.id} className="border-b border-dark/5 hover:bg-primary/10 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white">{res.userName}</span>
+                            <span className="text-sm font-bold text-black">{res.userName}</span>
                             <RoleBadge role={res.userRole} />
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{res.roomName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{res.roomName}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${res.type === 'reservation' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
                             {res.type === 'reservation' ? 'Reservation' : 'Class'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{res.date}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">{res.startTime} – {res.endTime}</td>
-                        <td className="px-6 py-4 text-sm text-white/40 max-w-[200px] truncate">{res.purpose}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{res.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{res.startTime} – {res.endTime}</td>
+                        <td className="px-6 py-4 text-sm text-black max-w-[200px] truncate">{res.purpose}</td>
                         <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={res.status} /></td>
                       </tr>
                     ))}
@@ -1716,33 +1716,33 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   <div key={res.id} className="glass-card p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-sm">{res.userName}</span>
+                        <span className="font-bold text-black text-sm">{res.userName}</span>
                         <RoleBadge role={res.userRole} />
                       </div>
                       <StatusBadge status={res.status} />
                     </div>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-white/40">Room:</span>
-                        <span className="font-bold text-white/70">{res.roomName}</span>
+                        <span className="text-black">Room:</span>
+                        <span className="font-bold text-black">{res.roomName}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/40">Type:</span>
+                        <span className="text-black">Type:</span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${res.type === 'reservation' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30'}`}>
                           {res.type === 'reservation' ? 'Reservation' : 'Class'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/40">Date:</span>
-                        <span className="text-white/70">{res.date}</span>
+                        <span className="text-black">Date:</span>
+                        <span className="text-black">{res.date}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/40">Time:</span>
-                        <span className="text-white/70">{res.startTime} – {res.endTime}</span>
+                        <span className="text-black">Time:</span>
+                        <span className="text-black">{res.startTime} – {res.endTime}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/40">Purpose:</span>
-                        <span className="text-white/70 truncate max-w-[180px]">{res.purpose}</span>
+                        <span className="text-black">Purpose:</span>
+                        <span className="text-black truncate max-w-[180px]">{res.purpose}</span>
                       </div>
                     </div>
                   </div>
@@ -1752,7 +1752,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           )}
 
           <div className="mt-4 text-center">
-            <p className="text-xs text-white/20">Showing {filteredHistory.length} of {roomHistory.length} entries</p>
+            <p className="text-xs text-black">Showing {filteredHistory.length} of {roomHistory.length} entries</p>
           </div>
         </div>
       )}
@@ -1764,7 +1764,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
         <div>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              <h3 className="text-xl font-bold text-black flex items-center gap-3">
                 Pending Reservations
                 {requests.length > 0 && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
@@ -1772,7 +1772,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   </span>
                 )}
               </h3>
-              <p className="text-white/40 mt-1 text-sm">
+              <p className="text-black mt-1 text-sm">
                 Review and approve reservation requests for <span className="text-teal-400 font-bold">{buildingName}</span>
               </p>
             </div>
@@ -1780,11 +1780,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
           {requests.length === 0 ? (
             <div className="glass-card p-12 !rounded-xl text-center">
-              <svg className="w-16 h-16 text-white/8 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-black mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              <p className="text-sm text-white/30 font-bold">All caught up!</p>
-              <p className="text-xs text-white/15 mt-1">No pending reservation requests</p>
+              <p className="text-sm text-black font-bold">All caught up!</p>
+              <p className="text-xs text-black mt-1">No pending reservation requests</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1799,10 +1799,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="font-bold text-white">{req.userName}</h4>
+                            <h4 className="font-bold text-black">{req.userName}</h4>
                             <RoleBadge role={req.userRole} />
                           </div>
-                          <p className="text-xs text-white/40">Reservation Request</p>
+                          <p className="text-xs text-black">Reservation Request</p>
                         </div>
                       </div>
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
@@ -1812,22 +1812,22 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
                     {/* Reservation Details Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Room</p>
-                        <p className="text-sm font-bold text-white">{req.roomName}</p>
-                        <p className="text-xs text-white/30 mt-0.5">{req.buildingName}</p>
+                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Room</p>
+                        <p className="text-sm font-bold text-black">{req.roomName}</p>
+                        <p className="text-xs text-black mt-0.5">{req.buildingName}</p>
                       </div>
-                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Date</p>
-                        <p className="text-sm font-bold text-white">{req.date}</p>
+                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Date</p>
+                        <p className="text-sm font-bold text-black">{req.date}</p>
                       </div>
-                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Time</p>
-                        <p className="text-sm font-bold text-white">{req.startTime} – {req.endTime}</p>
+                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Time</p>
+                        <p className="text-sm font-bold text-black">{req.startTime} – {req.endTime}</p>
                       </div>
-                      <div className="bg-white/3 rounded-xl p-3 border border-white/5">
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Purpose</p>
-                        <p className="text-sm font-bold text-white truncate">{req.purpose || 'Not specified'}</p>
+                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Purpose</p>
+                        <p className="text-sm font-bold text-black truncate">{req.purpose || 'Not specified'}</p>
                       </div>
                     </div>
 
@@ -1835,16 +1835,16 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     {req.equipment && Object.keys(req.equipment).length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                         {req.equipment && Object.keys(req.equipment).length > 0 && (
-                          <div className="bg-white/3 rounded-xl p-3 border border-white/5">
-                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-1">Equipment</p>
-                            <p className="text-sm text-white/70">{Object.entries(req.equipment).map(([k, v]) => `${k} (×${v})`).join(', ')}</p>
+                          <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                            <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Equipment</p>
+                            <p className="text-sm text-black">{Object.entries(req.equipment).map(([k, v]) => `${k} (×${v})`).join(', ')}</p>
                           </div>
                         )}
                       </div>
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-3 pt-4 border-t border-dark/5">
                       <button
                         onClick={() => handleApprove(req.id)}
                         disabled={actionLoading === req.id}
@@ -1916,7 +1916,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <h3 className="text-xl font-bold text-black flex items-center gap-3">
                   Inbox
                   {openCount > 0 && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
@@ -1924,7 +1924,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                     </span>
                   )}
                 </h3>
-                <p className="text-white/40 mt-1 text-sm">
+                <p className="text-black mt-1 text-sm">
                   Messages from users in <span className="text-teal-400 font-bold">{buildingName}</span>
                 </p>
               </div>
@@ -1939,7 +1939,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
                     inboxFilter === f
                       ? 'bg-primary/20 text-primary border border-primary/30'
-                      : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/60'
+                      : 'bg-dark/5 text-black border border-dark/10 hover:text-primary'
                   }`}
                 >
                   {f === 'all' ? `All (${adminRequests.length})` : `${f} (${adminRequests.filter(r => r.status === f).length})`}
@@ -1951,11 +1951,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             <div className="space-y-4">
               {filteredInbox.length === 0 ? (
                 <div className="glass-card p-12 !rounded-xl text-center">
-                  <svg className="w-14 h-14 text-white/8 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                   </svg>
-                  <p className="text-sm text-white/30 font-bold">No messages</p>
-                  <p className="text-xs text-white/15 mt-1">
+                  <p className="text-sm text-black font-bold">No messages</p>
+                  <p className="text-xs text-black mt-1">
                     {inboxFilter === 'all' ? 'Your inbox is empty' : `No ${inboxFilter} messages`}
                   </p>
                 </div>
@@ -1967,16 +1967,16 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       {/* Clickable Header */}
                       <button
                         onClick={() => setInboxExpandedId(isExpanded ? null : req.id)}
-                        className="w-full p-5 text-left hover:bg-white/5 transition-colors"
+                        className="w-full p-5 text-left hover:bg-primary/10 transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm shrink-0">
                               {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-0.5">
-                                <h4 className="text-sm font-bold text-white">{req.userName}</h4>
+                                <h4 className="text-sm font-bold text-black">{req.userName}</h4>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                   req.status === 'open' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
                                   req.status === 'responded' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
@@ -1985,14 +1985,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                                   {req.status}
                                 </span>
                               </div>
-                              <p className="text-xs text-white/40">
+                              <p className="text-xs text-black">
                                 <span className="mr-1">{typeIcon(req.type)}</span>
                                 {req.type} · {req.subject}
-                                {req.createdAt && <span className="ml-2 text-white/25">· {formatDate(req.createdAt)}</span>}
+                                {req.createdAt && <span className="ml-2 text-black">· {formatDate(req.createdAt)}</span>}
                               </p>
                             </div>
                           </div>
-                          <svg className={`w-5 h-5 text-white/30 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-5 h-5 text-black transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </div>
@@ -2000,11 +2000,11 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
                       {/* Expanded Detail */}
                       {isExpanded && (
-                        <div className="border-t border-white/5 px-5 pb-5">
+                        <div className="border-t border-dark/5 px-5 pb-5">
                           {/* User's Message */}
                           <div className="mt-4">
-                            <p className="text-xs font-bold text-white/50 mb-2">Message</p>
-                            <p className="text-sm text-white/70 leading-relaxed bg-white/3 border border-white/5 rounded-xl p-3">{req.message}</p>
+                            <p className="text-xs font-bold text-black mb-2">Message</p>
+                            <p className="text-sm text-black leading-relaxed bg-dark/3 border border-dark/5 rounded-xl p-3">{req.message}</p>
                           </div>
 
                           {/* Admin Response */}
@@ -2012,7 +2012,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                             <div className="mt-4">
                               <p className="text-xs font-bold text-green-400 mb-2">Your Response</p>
                               <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
-                                <p className="text-sm text-white/70 leading-relaxed">{req.adminResponse}</p>
+                                <p className="text-sm text-black leading-relaxed">{req.adminResponse}</p>
                               </div>
                             </div>
                           )}
@@ -2021,7 +2021,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                           {req.status === 'open' && (
                             <>
                               {inboxReplyingTo === req.id ? (
-                                <div className="space-y-3 mt-4 pt-4 border-t border-white/5">
+                                <div className="space-y-3 mt-4 pt-4 border-t border-dark/5">
                                   <textarea
                                     value={inboxReplyText}
                                     onChange={(e) => setInboxReplyText(e.target.value)}
@@ -2037,7 +2037,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                                     >
                                       {inboxSubmitting ? (
                                         <>
-                                          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                          <svg className="animate-spin h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                           </svg>
@@ -2054,7 +2054,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                                     </button>
                                     <button
                                       onClick={() => { setInboxReplyingTo(null); setInboxReplyText(''); }}
-                                      className="px-4 py-2 text-sm font-bold text-white/40 hover:text-white/60 transition-all"
+                                      className="px-4 py-2 text-sm font-bold text-black hover:text-primary transition-all"
                                     >
                                       Cancel
                                     </button>

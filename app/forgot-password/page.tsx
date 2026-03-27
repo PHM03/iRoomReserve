@@ -46,8 +46,8 @@ export default function ForgotPasswordPage() {
       {/* Header */}
       <div className="glass-nav py-4 px-4 relative z-10">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-bold text-white">iRoomReserve</h1>
-          <p className="text-sm text-white/60">St. Dominic College of Asia</p>
+          <h1 className="text-xl font-bold text-black">iRoomReserve</h1>
+          <p className="text-sm text-black">St. Dominic College of Asia</p>
         </div>
       </div>
 
@@ -74,10 +74,10 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-white mb-2 text-center">
+          <h2 className="text-2xl font-bold text-black mb-2 text-center">
             Reset Password
           </h2>
-          <p className="text-sm text-white/50 text-center mb-6">
+          <p className="text-sm text-black text-center mb-6">
             Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
 
@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
                   />
                 </svg>
                 <p className="font-bold">Reset link sent!</p>
-                <p className="mt-1 text-white/50">
+                <p className="mt-1 text-black">
                   Check your email inbox for a password reset link. If you don&apos;t see it, check your spam folder.
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
                 <div>
                   <label
                     htmlFor="reset-email"
-                    className="block text-sm font-bold text-white/70 mb-1.5"
+                    className="block text-sm font-bold text-black mb-1.5"
                   >
                     Email Address
                   </label>
@@ -149,7 +149,7 @@ export default function ForgotPasswordPage() {
                   {loading ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -177,7 +177,7 @@ export default function ForgotPasswordPage() {
               </form>
 
               {/* Back to Login */}
-              <p className="mt-5 text-center text-sm text-white/40">
+              <p className="mt-5 text-center text-sm text-black">
                 Remember your password?{' '}
                 <button
                   type="button"
@@ -194,7 +194,7 @@ export default function ForgotPasswordPage() {
 
       {/* Footer */}
       <div className="glass-nav py-4 relative z-10">
-        <div className="max-w-md mx-auto text-center text-xs text-white/30 font-bold">
+        <div className="max-w-md mx-auto text-center text-xs text-black font-bold">
           iRoomReserve v1.0 — SDCA Capstone Project
         </div>
       </div>

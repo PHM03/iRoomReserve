@@ -19,7 +19,7 @@ function getAccentClass(status: RoomStatusValue) {
     case 'Unavailable':
       return 'border-red-500/45';
     default:
-      return 'border-white/10';
+      return 'border-dark/10';
   }
 }
 
@@ -34,8 +34,8 @@ function getReservationMeta(item: RoomStatusViewItem) {
 export default function RoomList({ items }: RoomListProps) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-        <p className="text-sm text-white/40">
+      <div className="rounded-2xl border border-dark/10 bg-dark/5 p-6 text-center">
+        <p className="text-sm text-black">
           No rooms are configured for this floor yet.
         </p>
       </div>
@@ -53,34 +53,34 @@ export default function RoomList({ items }: RoomListProps) {
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold text-white">{item.room.name}</h3>
-              <p className="text-sm text-white/40">
+              <h3 className="text-lg font-bold text-black">{item.room.name}</h3>
+              <p className="text-sm text-black">
                 {item.room.floor} | Capacity {item.room.capacity}
               </p>
             </div>
             <StatusBadge status={item.resolved.status} />
           </div>
 
-          <p className="text-sm text-white/55 mt-3">{item.resolved.detail}</p>
+          <p className="text-sm text-black mt-3">{item.resolved.detail}</p>
 
-          <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 gap-3 text-xs">
+          <div className="mt-4 pt-4 border-t border-dark/5 grid grid-cols-2 gap-3 text-xs">
             <div>
-              <p className="text-white/25 uppercase tracking-wide">Type</p>
-              <p className="text-white/60 mt-1">{item.room.roomType}</p>
+              <p className="text-black uppercase tracking-wide">Type</p>
+              <p className="text-black mt-1">{item.room.roomType}</p>
             </div>
             <div>
-              <p className="text-white/25 uppercase tracking-wide">Cooling</p>
-              <p className="text-white/60 mt-1">{item.room.acStatus}</p>
+              <p className="text-black uppercase tracking-wide">Cooling</p>
+              <p className="text-black mt-1">{item.room.acStatus}</p>
             </div>
             <div>
-              <p className="text-white/25 uppercase tracking-wide">Display</p>
-              <p className="text-white/60 mt-1">
+              <p className="text-black uppercase tracking-wide">Display</p>
+              <p className="text-black mt-1">
                 {item.room.tvProjectorStatus}
               </p>
             </div>
             <div>
-              <p className="text-white/25 uppercase tracking-wide">Reserved By</p>
-              <p className="text-white/60 mt-1">{getReservationMeta(item)}</p>
+              <p className="text-black uppercase tracking-wide">Reserved By</p>
+              <p className="text-black mt-1">{getReservationMeta(item)}</p>
             </div>
           </div>
         </article>

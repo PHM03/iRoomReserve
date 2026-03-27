@@ -169,10 +169,10 @@ export default function RoomStatusPage() {
     return (
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-black">
             Room Status &amp; Schedule
           </h2>
-          <p className="text-white/40 mt-1">
+          <p className="text-black mt-1">
             No building is assigned to your account yet.
           </p>
         </div>
@@ -184,10 +184,10 @@ export default function RoomStatusPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-black">
             Room Status &amp; Schedule
           </h2>
-          <p className="text-white/40 mt-1">
+          <p className="text-black mt-1">
             Expand a floor to render room cards for{' '}
             <span className="text-teal-400 font-bold">
               {activeCampus?.label ?? 'your assigned campus'}
@@ -195,7 +195,7 @@ export default function RoomStatusPage() {
             .
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/40 max-w-md">
+        <div className="rounded-2xl border border-dark/10 bg-dark/5 px-4 py-3 text-xs text-black max-w-md">
           Floors stay collapsed by default so large buildings remain easy to
           scan without breaking the current reservation and live status flow.
         </div>
@@ -218,23 +218,23 @@ export default function RoomStatusPage() {
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <div className="glass-card p-5">
-          <p className="text-xs text-white/40 font-bold">Total Rooms</p>
-          <p className="text-2xl font-bold text-white mt-1">{rooms.length}</p>
+          <p className="text-xs text-black font-bold">Total Rooms</p>
+          <p className="text-2xl font-bold text-black mt-1">{rooms.length}</p>
         </div>
         <div className="glass-card p-5">
-          <p className="text-xs text-white/40 font-bold">Available</p>
+          <p className="text-xs text-black font-bold">Available</p>
           <p className="text-2xl font-bold text-green-400 mt-1">
             {availableCount}
           </p>
         </div>
         <div className="glass-card p-5">
-          <p className="text-xs text-white/40 font-bold">Reserved</p>
+          <p className="text-xs text-black font-bold">Reserved</p>
           <p className="text-2xl font-bold text-blue-400 mt-1">
             {reservedCount}
           </p>
         </div>
         <div className="glass-card p-5">
-          <p className="text-xs text-white/40 font-bold">Ongoing</p>
+          <p className="text-xs text-black font-bold">Ongoing</p>
           <p className="text-2xl font-bold text-orange-400 mt-1">
             {ongoingCount}
           </p>
@@ -242,11 +242,11 @@ export default function RoomStatusPage() {
       </div>
 
       {roomStatuses.length === 0 ? (
-        <div className="rounded-[20px] border border-white/10 bg-white/5 p-12 text-center backdrop-blur-md">
-          <p className="text-base font-bold text-white">
+        <div className="rounded-[20px] border border-dark/10 bg-dark/5 p-12 text-center backdrop-blur-md">
+          <p className="text-base font-bold text-black">
             No rooms are configured for this campus yet.
           </p>
-          <p className="text-sm text-white/35 mt-2">
+          <p className="text-sm text-black mt-2">
             Once rooms are added, they will be grouped into collapsible floor
             sections automatically.
           </p>

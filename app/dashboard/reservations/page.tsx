@@ -179,8 +179,8 @@ export default function MyReservationsPage() {
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pb-24 md:pb-8">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">My Reservations</h2>
-        <p className="text-white/40 mt-1">
+        <h2 className="text-2xl font-bold text-black">My Reservations</h2>
+        <p className="text-black mt-1">
           View and manage all your room reservations
         </p>
       </div>
@@ -193,7 +193,7 @@ export default function MyReservationsPage() {
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
               activeFilter === filter.key
                 ? 'bg-primary/20 text-primary border border-primary/30'
-                : 'bg-white/5 text-white/40 border border-white/10 hover:text-white/60 hover:bg-white/10'
+                : 'bg-dark/5 text-black border border-dark/10 hover:text-primary hover:bg-primary/10'
             }`}
           >
             {filter.label}
@@ -202,7 +202,7 @@ export default function MyReservationsPage() {
                 className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${
                   activeFilter === filter.key
                     ? 'bg-primary/30 text-primary'
-                    : 'bg-white/10 text-white/30'
+                    : 'bg-dark/10 text-black'
                 }`}
               >
                 {filter.count}
@@ -216,7 +216,7 @@ export default function MyReservationsPage() {
         {filteredReservations.length === 0 ? (
           <div className="glass-card p-12 !rounded-xl text-center">
             <svg
-              className="w-14 h-14 text-white/8 mx-auto mb-3"
+              className="w-14 h-14 text-black mx-auto mb-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -228,7 +228,7 @@ export default function MyReservationsPage() {
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
               />
             </svg>
-            <p className="text-sm text-white/30 font-bold">
+            <p className="text-sm text-black font-bold">
               No {activeFilter === 'all' ? '' : activeFilter} reservations
             </p>
           </div>
@@ -244,19 +244,19 @@ export default function MyReservationsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base font-bold text-white">
+                      <h3 className="text-base font-bold text-black">
                         {reservation.roomName}
                       </h3>
                       <StatusBadge status={reservation.status} />
                       <StatusBadge status={roomStatus} />
                     </div>
-                    <p className="text-sm text-white/40">
+                    <p className="text-sm text-black">
                       {reservation.buildingName}
                     </p>
                     <div className="flex flex-wrap items-center gap-4 mt-2">
                       <div className="flex items-center gap-1.5">
                         <svg
-                          className="w-3.5 h-3.5 text-white/30"
+                          className="w-3.5 h-3.5 text-black"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -268,13 +268,13 @@ export default function MyReservationsPage() {
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />
                         </svg>
-                        <span className="text-xs text-white/40">
+                        <span className="text-xs text-black">
                           {reservation.date}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <svg
-                          className="w-3.5 h-3.5 text-white/30"
+                          className="w-3.5 h-3.5 text-black"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -286,12 +286,12 @@ export default function MyReservationsPage() {
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        <span className="text-xs text-white/40">
+                        <span className="text-xs text-black">
                           {reservation.startTime} - {reservation.endTime}
                         </span>
                       </div>
                     </div>
-                    <p className="text-xs text-white/25 mt-1.5">
+                    <p className="text-xs text-black mt-1.5">
                       {reservation.purpose}
                     </p>
                   </div>
@@ -332,7 +332,7 @@ export default function MyReservationsPage() {
                     <button
                       onClick={() => handleDelete(reservation.id)}
                       disabled={actionLoading === reservation.id}
-                      className="p-2 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-white/10 transition-all disabled:opacity-50"
+                      className="p-2 rounded-xl text-black hover:text-red-400 hover:bg-red-500/10 border border-dark/10 transition-all disabled:opacity-50"
                       title="Delete reservation"
                     >
                       <svg
