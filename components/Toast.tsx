@@ -50,8 +50,8 @@ export default function Toast({ message, type = 'success', show, onClose, durati
 
   const toastStyle = type === 'success'
     ? {
-        container: 'border-green-300/90 bg-[#f5fbf6] text-[#343434] shadow-[0_14px_36px_rgba(52,52,52,0.12)]',
-        iconWrap: 'bg-green-100 text-green-700 border border-green-200',
+        container: 'border-green-500/90 bg-[#dff3e4] text-[#1f3a28] shadow-[0_14px_36px_rgba(52,52,52,0.12)]',
+        iconWrap: 'bg-[#c6e8cf] text-green-950 border border-green-500/70',
       }
     : {
         container: 'border-red-300/90 bg-[#fff6f6] text-[#343434] shadow-[0_14px_36px_rgba(52,52,52,0.12)]',
