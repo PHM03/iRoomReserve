@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Toast from '@/components/Toast';
 import { loginWithEmail, loginWithGoogle, saveUserProfile, getAuthErrorMessage, resendVerificationEmail, getUserProfile, logout } from '@/lib/auth';
@@ -17,8 +17,71 @@ function LoginForm() {
   const [toastMessage, setToastMessage] = useState('Login successful!');
   const [showResendButton, setShowResendButton] = useState(false);
   const router = useRouter();
+  const vantaRef = useRef<HTMLDivElement | null>(null);
+  const vantaEffectRef = useRef<any>(null);
 
   const handleToastClose = useCallback(() => setShowToast(false), []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function setupVanta() {
+      const [birdsModule, THREE] = await Promise.all([
+        import('vanta/dist/vanta.birds.min'),
+        import('three'),
+      ]);
+
+      const BIRDS =
+        (birdsModule as { default?: { default?: unknown } | unknown }).default &&
+        typeof (birdsModule as { default?: { default?: unknown } | unknown }).default === 'object' &&
+        (birdsModule as { default?: { default?: unknown } }).default &&
+        'default' in ((birdsModule as { default?: { default?: unknown } }).default ?? {})
+          ? ((birdsModule as { default?: { default?: unknown } }).default as { default?: unknown }).default
+          : (birdsModule as { default?: unknown }).default ?? birdsModule;
+
+      if (!isMounted || !vantaRef.current || vantaEffectRef.current) {
+        return;
+      }
+
+      if (typeof BIRDS !== 'function') {
+        console.error('Unexpected Vanta Birds module shape:', birdsModule);
+        return;
+      }
+
+      (window as Window & { THREE?: unknown }).THREE = THREE;
+
+      vantaEffectRef.current = BIRDS({
+        el: vantaRef.current,
+        THREE,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200,
+        minWidth: 200,
+        scale: 1,
+        scaleMobile: 1,
+        backgroundColor: 0xa12124,
+        color2: 0xffffff,
+        colorMode: 'lerpGradient',
+        birdSize: 2,
+        wingSpan: 19,
+        speedLimit: 2,
+        separation: 67,
+        cohesion: 41,
+      });
+    }
+
+    setupVanta();
+
+    return () => {
+      isMounted = false;
+
+      if (vantaEffectRef.current) {
+        vantaEffectRef.current.destroy();
+        vantaEffectRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,14 +178,10 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <Toast message={toastMessage} type="success" show={showToast} onClose={handleToastClose} />
+      <div ref={vantaRef} className="absolute inset-0 z-0" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/30 via-black/20 to-black/35" />
 
-      {/* Decorative background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-secondary/10 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
-      </div>
+      <Toast message={toastMessage} type="success" show={showToast} onClose={handleToastClose} />
 
       {/* Header */}
       <div className="glass-nav py-4 px-4 relative z-10">

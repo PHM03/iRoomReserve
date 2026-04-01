@@ -73,7 +73,7 @@ textarea {
 }
 
 .glass-card {
-  background: rgba(241, 241, 241, 0.92);
+  background: rgba(241, 241, 241, 0.97);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(52, 52, 52, 0.1);
@@ -83,7 +83,7 @@ textarea {
 }
 
 .glass-card:hover {
-  background: rgba(238, 238, 238, 0.98);
+  background: rgba(238, 238, 238, 0.995);
   border-color: rgba(161, 33, 36, 0.28);
   box-shadow: 0 12px 28px rgba(161, 33, 36, 0.12);
   transform: translateY(-2px);
