@@ -86,7 +86,10 @@ const reservationCommonSchema = z.object({
   campus: reservationCampusSchema,
   startTime: timeString,
   endTime: timeString,
+  programDepartmentOrganization: nonEmptyString,
   purpose: nonEmptyString,
+  approvalDocumentName: nonEmptyString.optional(),
+  approvalDocumentUrl: z.string().trim().url().optional(),
   equipment: equipmentSchema.optional(),
 });
 

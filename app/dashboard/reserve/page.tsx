@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getBuildings, Building } from '@/lib/buildings';
 import { type ReservationCampus } from '@/lib/campuses';
 import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
 import { createReservation, createRecurringReservation } from '@/lib/reservations';
-import { onAvailableRoomsByBuilding } from '@/lib/rooms';
+import { storage } from '@/lib/firebase';
+import { onRoomsByBuilding } from '@/lib/rooms';
 
 interface Room {
   id: string;
@@ -17,15 +19,70 @@ interface Room {
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MAIN_APPROVAL_EMAIL_FIELDS = [
-  { key: 'advisorEmail', label: 'Advisor Email' },
-  { key: 'dsasEmail', label: 'DSAS Email' },
-  { key: 'registrarEmail', label: 'Registrar Email' },
-  { key: 'buildingAdminEmail', label: 'Building Admin Email' },
+const CAMPUS_TIME_RANGES: Record<ReservationCampus, { endMinutes: number; startMinutes: number }> = {
+  digi: { startMinutes: 7 * 60, endMinutes: 17 * 60 },
+  main: { startMinutes: 7 * 60, endMinutes: 21 * 60 },
+};
+const APPROVAL_EMAIL_FIELDS = [
+  { key: 'advisorEmail', label: 'Email of Adviser / Dept. Head / Professor' },
 ] as const;
-const DIGI_APPROVAL_EMAIL_FIELDS = [
-  { key: 'buildingAdminEmail', label: 'Building Admin Email' },
-] as const;
+
+function timeStringToMinutes(value: string): number {
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTimeString(value: number): string {
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function formatTimeLabel(value: string): string {
+  const minutes = timeStringToMinutes(value);
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${normalizedHour}:${mins.toString().padStart(2, '0')} ${suffix}`;
+}
+
+function getCampusTimeOptions(campus: ReservationCampus | null): string[] {
+  if (!campus) {
+    return [];
+  }
+
+  const { startMinutes, endMinutes } = CAMPUS_TIME_RANGES[campus];
+  const options: string[] = [];
+
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+    options.push(minutesToTimeString(minutes));
+  }
+
+  return options;
+}
+
+function isTimeRangeValid(
+  campus: ReservationCampus | null,
+  startTime: string,
+  endTime: string
+): boolean {
+  if (!campus || !startTime || !endTime) {
+    return false;
+  }
+
+  const { startMinutes, endMinutes } = CAMPUS_TIME_RANGES[campus];
+  const start = timeStringToMinutes(startTime);
+  const end = timeStringToMinutes(endTime);
+
+  return (
+    start >= startMinutes &&
+    end <= endMinutes &&
+    start % 30 === 0 &&
+    end % 30 === 0 &&
+    end - start >= 60
+  );
+}
 
 export default function ReserveRoomPage() {
   const { firebaseUser, profile } = useAuth();
@@ -43,11 +100,14 @@ export default function ReserveRoomPage() {
   const [reservationDate, setReservationDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [programDepartmentOrganization, setProgramDepartmentOrganization] = useState('');
   const [purpose, setPurpose] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [createdCount, setCreatedCount] = useState(0);
+  const [approvalDocument, setApprovalDocument] = useState<File | null>(null);
+  const [approvalDocumentError, setApprovalDocumentError] = useState('');
 
   // Recurring state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -82,14 +142,16 @@ export default function ReserveRoomPage() {
       return;
     }
 
-    const unsubscribe = onAvailableRoomsByBuilding(selectedBuildingId, (nextRooms) => {
+    const unsubscribe = onRoomsByBuilding(selectedBuildingId, (nextRooms) => {
       setRooms(
-        nextRooms.map((room) => ({
-          id: room.id,
-          name: room.name,
-          floor: room.floor,
-          status: room.status,
-        }))
+        nextRooms
+          .filter((room) => room.status === 'Available')
+          .map((room) => ({
+            id: room.id,
+            name: room.name,
+            floor: room.floor,
+            status: room.status,
+          }))
       );
       setRoomsLoading(false);
     });
@@ -99,7 +161,53 @@ export default function ReserveRoomPage() {
     };
   }, [selectedBuildingId]);
 
+  useEffect(() => {
+    if (!selectedCampus) {
+      return;
+    }
+
+    if (startTime && endTime && isTimeRangeValid(selectedCampus, startTime, endTime)) {
+      return;
+    }
+
+    if (startTime && !getCampusTimeOptions(selectedCampus).includes(startTime)) {
+      setStartTime('');
+    }
+
+    if (endTime && !getCampusTimeOptions(selectedCampus).includes(endTime)) {
+      setEndTime('');
+    }
+
+    if (
+      startTime &&
+      endTime &&
+      !isTimeRangeValid(selectedCampus, startTime, endTime)
+    ) {
+      setEndTime('');
+    }
+  }, [selectedCampus, startTime, endTime]);
+
   const availableRooms = selectedBuildingId ? rooms : [];
+  const campusTimeOptions = getCampusTimeOptions(selectedCampus);
+  const startTimeOptions = selectedCampus
+    ? campusTimeOptions.filter((time) => {
+        const optionMinutes = timeStringToMinutes(time);
+        return optionMinutes <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes - 60;
+      })
+    : [];
+  const endTimeOptions = selectedCampus
+    ? campusTimeOptions.filter((time) => {
+        if (!startTime) {
+          return false;
+        }
+
+        const optionMinutes = timeStringToMinutes(time);
+        return (
+          optionMinutes >= timeStringToMinutes(startTime) + 60 &&
+          optionMinutes <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes
+        );
+      })
+    : [];
 
   // Handlers
   const handleBuildingSelect = (buildingId: string) => {
@@ -109,6 +217,12 @@ export default function ReserveRoomPage() {
     setSelectedBuildingId(buildingId);
     setSelectedBuildingName(building?.name || '');
     setSelectedCampus(building?.campus ?? null);
+    setStartTime('');
+    setEndTime('');
+    setProgramDepartmentOrganization('');
+    setPurpose('');
+    setApprovalDocument(null);
+    setApprovalDocumentError('');
     setApprovalEmailError('');
     setApprovalEmails({
       advisorEmail: '',
@@ -163,34 +277,56 @@ export default function ReserveRoomPage() {
   };
 
   const canProceedStep3 = (): boolean => {
-    if (!startTime || !endTime || !purpose) return false;
+    if (!startTime || !endTime || !programDepartmentOrganization || !purpose || !isTimeRangeValid(selectedCampus, startTime, endTime)) return false;
     if (isRecurring) {
       return !!reservationDate && !!recurringEndDate && selectedDays.length > 0;
     }
     return !!reservationDate;
   };
 
+  const uploadApprovalDocument = async () => {
+    if (!approvalDocument || !firebaseUser) {
+      return null;
+    }
+
+    const sanitizedName = approvalDocument.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storageRef = ref(
+      storage,
+      `reservation-approval-documents/${firebaseUser.uid}/${Date.now()}-${sanitizedName}`
+    );
+
+    await uploadBytes(storageRef, approvalDocument);
+    const downloadUrl = await getDownloadURL(storageRef);
+
+    return {
+      approvalDocumentName: approvalDocument.name,
+      approvalDocumentUrl: downloadUrl,
+    };
+  };
+
   const handleSubmitReservation = async () => {
-    if (!firebaseUser || !selectedBuildingId || !selectedRoomId || !selectedCampus || !startTime || !endTime || !purpose) return;
+    if (!firebaseUser || !selectedBuildingId || !selectedRoomId || !selectedCampus || !startTime || !endTime || !programDepartmentOrganization || !purpose) return;
+    if (!isTimeRangeValid(selectedCampus, startTime, endTime)) return;
+    if (!approvalDocument) {
+      setApprovalDocumentError('Please upload your concept paper or letter of approval.');
+      return;
+    }
 
     const requiredApprovalFields =
-      selectedCampus === 'digi'
-        ? DIGI_APPROVAL_EMAIL_FIELDS
-        : MAIN_APPROVAL_EMAIL_FIELDS;
+      APPROVAL_EMAIL_FIELDS;
     const hasInvalidApprovalEmail = requiredApprovalFields.some(({ key }) => {
       const value = approvalEmails[key];
       return !value.trim() || !validateEmail(value);
     });
     if (hasInvalidApprovalEmail) {
       setApprovalEmailError(
-        selectedCampus === 'digi'
-          ? 'Enter a valid building admin email for Digi Campus.'
-          : 'Enter a valid email for each Main Campus approval step.'
+        'Enter a valid email for your adviser, department head, or professor.'
       );
       return;
     }
     setSubmitting(true);
     try {
+      const uploadedApprovalDocument = await uploadApprovalDocument();
       const displayName = firebaseUser.displayName || 'Student';
       const normalizedUserRole = normalizeRole(profile?.role) ?? USER_ROLES.STUDENT;
       const sharedData = {
@@ -203,18 +339,21 @@ export default function ReserveRoomPage() {
         buildingName: selectedBuildingName,
         startTime,
         endTime,
+        programDepartmentOrganization,
         purpose,
+        ...(uploadedApprovalDocument ?? {}),
         equipment,
       };
 
       if (selectedCampus === 'main') {
+        const primaryApprovalEmail = approvalEmails.advisorEmail.trim().toLowerCase();
         const reservationData = {
           ...sharedData,
           campus: 'main' as const,
-          advisorEmail: approvalEmails.advisorEmail.trim().toLowerCase(),
-          dsasEmail: approvalEmails.dsasEmail.trim().toLowerCase(),
-          registrarEmail: approvalEmails.registrarEmail.trim().toLowerCase(),
-          buildingAdminEmail: approvalEmails.buildingAdminEmail.trim().toLowerCase(),
+          advisorEmail: primaryApprovalEmail,
+          dsasEmail: primaryApprovalEmail,
+          registrarEmail: primaryApprovalEmail,
+          buildingAdminEmail: primaryApprovalEmail,
         };
 
         if (isRecurring && selectedDays.length > 0 && recurringEndDate) {
@@ -230,10 +369,11 @@ export default function ReserveRoomPage() {
           setCreatedCount(1);
         }
       } else {
+        const primaryApprovalEmail = approvalEmails.advisorEmail.trim().toLowerCase();
         const reservationData = {
           ...sharedData,
           campus: 'digi' as const,
-          buildingAdminEmail: approvalEmails.buildingAdminEmail.trim().toLowerCase(),
+          buildingAdminEmail: primaryApprovalEmail,
         };
 
         if (isRecurring && selectedDays.length > 0 && recurringEndDate) {
@@ -563,29 +703,74 @@ export default function ReserveRoomPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-black mb-1.5">Start Time</label>
-                      <input
-                        type="time"
+                      <select
                         value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
+                        onChange={(e) => {
+                          const nextStartTime = e.target.value;
+                          setStartTime(nextStartTime);
+
+                          if (
+                            endTime &&
+                            selectedCampus &&
+                            !isTimeRangeValid(selectedCampus, nextStartTime, endTime)
+                          ) {
+                            setEndTime('');
+                          }
+                        }}
                         className="glass-input w-full px-4 py-3"
-                      />
+                      >
+                        <option value="">Select start time</option>
+                        {startTimeOptions.map((time) => (
+                          <option key={time} value={time}>
+                            {formatTimeLabel(time)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-black mb-1.5">End Time</label>
-                      <input
-                        type="time"
+                      <select
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
+                        disabled={!startTime}
                         className="glass-input w-full px-4 py-3"
-                      />
+                      >
+                        <option value="">{startTime ? 'Select end time' : 'Choose start time first'}</option>
+                        {endTimeOptions.map((time) => (
+                          <option key={time} value={time}>
+                            {formatTimeLabel(time)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
+                  <p className="text-[11px] text-black -mt-2">
+                    {selectedCampus === 'digi'
+                      ? 'Digital Campus reservations can be booked from 7:00 AM to 5:00 PM in 30-minute intervals, with at least 1 hour between start and end time.'
+                      : selectedCampus === 'main'
+                        ? 'Main Campus reservations can be booked from 7:00 AM to 9:00 PM in 30-minute intervals, with at least 1 hour between start and end time.'
+                        : 'Choose a building to load the allowed reservation hours.'}
+                  </p>
+
                   {/* Purpose */}
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1.5">Purpose</label>
-                    <input
-                      type="text"
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-1.5">
+                        Program/Department/Organization
+                      </label>
+                      <input
+                        type="text"
+                        value={programDepartmentOrganization}
+                        onChange={(e) => setProgramDepartmentOrganization(e.target.value)}
+                        className="glass-input w-full px-4 py-3"
+                        placeholder="Enter your program, department, or organization"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-1.5">Purpose</label>
+                      <input
+                        type="text"
                       value={purpose}
                       onChange={(e) => setPurpose(e.target.value)}
                       className="glass-input w-full px-4 py-3"
@@ -682,10 +867,7 @@ export default function ReserveRoomPage() {
                   <div>
                     <h5 className="text-sm font-bold text-black uppercase tracking-wider mb-3">Approval Routing</h5>
                     <div className="space-y-3">
-                      {(selectedCampus === 'digi'
-                        ? DIGI_APPROVAL_EMAIL_FIELDS
-                        : MAIN_APPROVAL_EMAIL_FIELDS
-                      ).map((field) => (
+                      {APPROVAL_EMAIL_FIELDS.map((field) => (
                         <div key={field.key}>
                           <label className="block text-xs font-bold text-black mb-1.5">
                             {field.label}
@@ -709,12 +891,34 @@ export default function ReserveRoomPage() {
                       ))}
                     </div>
                     <p className="text-[11px] text-black mt-2">
-                      {selectedCampus === 'digi'
-                        ? 'Digi Campus uses a single-step building admin approval.'
-                        : 'Main Campus uses advisor, DSAS, registrar, then building admin approval.'}
+                      The same contact email will be used for the current approval routing behind the scenes.
                     </p>
                     {approvalEmailError && (
                       <p className="text-xs ui-text-red mt-1.5 font-bold">{approvalEmailError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1.5">
+                      Concept Paper / Letter of Approval
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        const nextFile = e.target.files?.[0] ?? null;
+                        setApprovalDocument(nextFile);
+                        if (approvalDocumentError) setApprovalDocumentError('');
+                      }}
+                      className={`glass-input w-full px-4 py-3 ${
+                        approvalDocumentError ? '!border-red-500/60' : ''
+                      }`}
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                    />
+                    <p className="text-[11px] text-black mt-2">
+                      Accepted files: PDF, DOC, DOCX, PNG, JPG, JPEG.
+                    </p>
+                    {approvalDocumentError && (
+                      <p className="text-xs ui-text-red mt-1.5 font-bold">{approvalDocumentError}</p>
                     )}
                   </div>
 

@@ -4,6 +4,7 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
+import { getStorage } from "firebase/storage";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -24,6 +25,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
+const storage = getStorage(app);
 
 // Analytics (only runs in the browser, not during server-side rendering)
 const analytics =
@@ -31,4 +33,4 @@ const analytics =
     ? isSupported().then((yes) => (yes ? getAnalytics(app) : null))
     : null;
 
-export { app, auth, db, rtdb, analytics };
+export { app, auth, db, rtdb, storage, analytics };

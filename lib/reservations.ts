@@ -33,7 +33,10 @@ export interface Reservation {
   date: string;
   startTime: string;
   endTime: string;
+  programDepartmentOrganization?: string;
   purpose: string;
+  approvalDocumentName?: string;
+  approvalDocumentUrl?: string;
   equipment?: Record<string, number>;
   approvalFlow: ReservationApprovalStep[];
   currentStep: number;

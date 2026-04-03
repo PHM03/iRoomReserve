@@ -61,7 +61,10 @@ interface ReservationRecord {
   date: string;
   startTime: string;
   endTime: string;
+  programDepartmentOrganization?: string;
   purpose: string;
+  approvalDocumentName?: string;
+  approvalDocumentUrl?: string;
   equipment?: Record<string, number>;
   approvalFlow: ReservationApprovalStep[];
   currentStep: number;
@@ -87,7 +90,10 @@ interface ReservationCreateBaseInput {
   date: string;
   startTime: string;
   endTime: string;
+  programDepartmentOrganization: string;
   purpose: string;
+  approvalDocumentName?: string;
+  approvalDocumentUrl?: string;
   equipment?: Record<string, number>;
 }
 
@@ -380,7 +386,12 @@ export async function createReservationRecord(data: ReservationCreateInput) {
     date: data.date,
     startTime: data.startTime,
     endTime: data.endTime,
+    programDepartmentOrganization: data.programDepartmentOrganization,
     purpose: data.purpose,
+    ...(data.approvalDocumentName
+      ? { approvalDocumentName: data.approvalDocumentName }
+      : {}),
+    ...(data.approvalDocumentUrl ? { approvalDocumentUrl: data.approvalDocumentUrl } : {}),
     ...(data.equipment ? { equipment: data.equipment } : {}),
     approvalFlow,
     currentStep: 0,
@@ -452,7 +463,12 @@ export async function createRecurringReservationRecord(
       campus,
       startTime: data.startTime,
       endTime: data.endTime,
+      programDepartmentOrganization: data.programDepartmentOrganization,
       purpose: data.purpose,
+      ...(data.approvalDocumentName
+        ? { approvalDocumentName: data.approvalDocumentName }
+        : {}),
+      ...(data.approvalDocumentUrl ? { approvalDocumentUrl: data.approvalDocumentUrl } : {}),
       ...(data.equipment ? { equipment: data.equipment } : {}),
       approvalFlow,
       currentStep: 0,

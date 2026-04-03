@@ -155,7 +155,7 @@ const ROOM_TYPE_LABELS: Record<(typeof ROOM_TYPE_OPTIONS)[number], string> = {
   'Conference Room': 'Conference Room',
   'Glass Room': 'Glass Room',
   Classroom: 'Classroom',
-  'Specialized Room': 'Specialized Room (e.g., Computer Lab)',
+  'Specialized Room': 'Specialized Room (Computer Lab, Studio Theatre, DRA Hall, etc.)',
   Gymnasium: 'Gymnasium',
 };
 
