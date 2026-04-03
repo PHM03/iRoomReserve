@@ -53,6 +53,7 @@ import {
   onAdminRequestsByBuilding,
   respondToAdminRequest,
 } from '@/lib/adminRequests';
+import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 
 // ─── Helpers ────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string }) {
@@ -207,20 +208,20 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const { firebaseUser, profile } = useAuth();
   const { setActiveTab } = useAdminTab();
   const managedBuildings = useMemo(
-    () => profile?.assignedBuildings ?? [],
-    [profile?.assignedBuildings]
+    () => getManagedBuildingsForCampus(profile?.campus),
+    [profile?.campus]
   );
   const [selectedManagedBuildingId, setSelectedManagedBuildingId] = useState('');
   const effectiveManagedBuildingId = managedBuildings.some(
     (building) => building.id === selectedManagedBuildingId
   )
     ? selectedManagedBuildingId
-    : managedBuildings[0]?.id ?? profile?.assignedBuildingId ?? '';
+    : managedBuildings[0]?.id ?? '';
   const selectedManagedBuilding = managedBuildings.find(
     (building) => building.id === effectiveManagedBuildingId
   ) ?? managedBuildings[0];
-  const buildingId = selectedManagedBuilding?.id ?? profile?.assignedBuildingId;
-  const buildingName = selectedManagedBuilding?.name ?? profile?.assignedBuilding;
+  const buildingId = selectedManagedBuilding?.id;
+  const buildingName = selectedManagedBuilding?.name;
   const activeBuildingLabel = getManagedBuildingDisplayLabel({
     id: buildingId,
     name: buildingName,

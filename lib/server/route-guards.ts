@@ -1,6 +1,7 @@
 import type { RequestAuthContext } from "@/lib/server/request-auth";
-import { USER_ROLES, type UserRole } from "@/lib/domain/roles";
-import { ApiError } from "@/lib/server/api-error";
+import { USER_ROLES, type UserRole } from "../domain/roles";
+import { ApiError } from "./api-error";
+import { isCampusManagedBuilding } from "../campusAssignments";
 
 export function assertAuthenticated(context: RequestAuthContext) {
   if (!context.uid) {
@@ -48,9 +49,10 @@ export function assertCanManageBuilding(
   }
 
   if (
+    !isCampusManagedBuilding(context.campus, buildingId) &&
     !context.assignedBuildingIds.includes(buildingId) &&
     (!context.assignedBuildingId || context.assignedBuildingId !== buildingId)
   ) {
-    throw new ApiError(403, "forbidden", "You can only manage resources for your assigned building.");
+    throw new ApiError(403, "forbidden", "You can only manage resources for your assigned campus.");
   }
 }

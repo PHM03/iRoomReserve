@@ -5,6 +5,7 @@ import { USER_ROLES } from "@/lib/domain/roles";
 import { handleApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated, assertRole } from "@/lib/server/route-guards";
+import { reservationCampusSchema } from "@/lib/server/schemas";
 import {
   approveManagedUserProfile,
   approveUserProfile,
@@ -20,14 +21,7 @@ const managedApprovalSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("approve-managed"),
-    buildings: z
-      .array(
-        z.object({
-          id: z.string().trim().min(1),
-          name: z.string().trim().min(1),
-        })
-      )
-      .min(1),
+    campus: reservationCampusSchema,
     role: z.enum([USER_ROLES.ADMIN, USER_ROLES.UTILITY]),
   }),
   z.object({
@@ -58,7 +52,7 @@ export async function PATCH(
         await approveUserProfile(uid);
         break;
       case "approve-managed":
-        await approveManagedUserProfile(uid, payload.role, payload.buildings);
+        await approveManagedUserProfile(uid, payload.role, payload.campus);
         break;
       case "reject":
         await rejectUserProfile(uid);

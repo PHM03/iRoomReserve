@@ -6,6 +6,7 @@ import CampusSelector from '@/components/room-status/CampusSelector';
 import FloorAccordion from '@/components/room-status/FloorAccordion';
 import RoomList from '@/components/room-status/RoomList';
 import { useAuth } from '@/context/AuthContext';
+import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import { onBuildings, type Building } from '@/lib/buildings';
 import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/campuses';
 import { onRoomsByBuildingIds, Room } from '@/lib/rooms';
@@ -28,7 +29,7 @@ import { resolveRoomStatus } from '@/lib/roomStatus';
 
 export default function RoomStatusPage() {
   const { firebaseUser, profile } = useAuth();
-  const managedBuildings = profile?.assignedBuildings ?? [];
+  const managedBuildings = getManagedBuildingsForCampus(profile?.campus);
   const [buildingRecords, setBuildingRecords] = useState<Building[]>([]);
   const [selectedCampusId, setSelectedCampusId] = useState<ReservationCampus | ''>('');
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -36,15 +37,8 @@ export default function RoomStatusPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
   const managedBuildingIds = useMemo(
-    () => [
-      ...new Set(
-        [
-          ...(profile?.assignedBuildings ?? []).map((building) => building.id),
-          profile?.assignedBuildingId ?? '',
-        ].filter(Boolean)
-      ),
-    ],
-    [profile]
+    () => [...new Set(managedBuildings.map((building) => building.id))],
+    [managedBuildings]
   );
 
   useEffect(() => {
@@ -67,10 +61,6 @@ export default function RoomStatusPage() {
   const fallbackNames = new Map(
     managedBuildings.map((building) => [building.id, building.name])
   );
-
-  if (profile?.assignedBuildingId && profile.assignedBuilding) {
-    fallbackNames.set(profile.assignedBuildingId, profile.assignedBuilding);
-  }
 
   const managedBuildingOptions = managedBuildingIds.map((buildingId) => {
     const liveBuilding = liveById.get(buildingId);
@@ -173,7 +163,7 @@ export default function RoomStatusPage() {
             Room Status &amp; Schedule
           </h2>
           <p className="text-black mt-1">
-            No building is assigned to your account yet.
+            No campus is assigned to your account yet.
           </p>
         </div>
       </main>

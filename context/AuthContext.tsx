@@ -4,7 +4,8 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile, logout as firebaseLogout } from '@/lib/auth';
-import { type AssignedBuildingReference } from '@/lib/assignedBuildings';
+import { type CampusName } from '@/lib/campusAssignments';
+import { type ReservationCampus } from '@/lib/campuses';
 
 interface UserProfile {
   firstName: string;
@@ -12,10 +13,8 @@ interface UserProfile {
   email: string;
   role: string;
   status: string;
-  assignedBuilding?: string;
-  assignedBuildingId?: string;
-  assignedBuildings?: AssignedBuildingReference[];
-  assignedBuildingIds?: string[];
+  campus?: ReservationCampus | null;
+  campusName?: CampusName | null;
 }
 
 interface AuthContextType {
@@ -59,10 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: data.email,
             role: data.role || 'Student',
             status: data.status || 'approved',
-            assignedBuilding: (data as Record<string, unknown>).assignedBuilding as string | undefined,
-            assignedBuildingId: (data as Record<string, unknown>).assignedBuildingId as string | undefined,
-            assignedBuildings: (data as Record<string, unknown>).assignedBuildings as AssignedBuildingReference[] | undefined,
-            assignedBuildingIds: (data as Record<string, unknown>).assignedBuildingIds as string[] | undefined,
+            campus: (data as Record<string, unknown>).campus as ReservationCampus | null | undefined,
+            campusName: (data as Record<string, unknown>).campusName as CampusName | null | undefined,
           });
         } else {
           setProfile(null);

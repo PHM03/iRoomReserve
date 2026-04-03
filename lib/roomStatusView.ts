@@ -1,4 +1,5 @@
 import type { Building } from "@/lib/buildings";
+import { getCampusName } from "./campusAssignments";
 import type { ReservationCampus } from "@/lib/campuses";
 import type { Room } from "@/lib/rooms";
 import type { ResolvedRoomStatus, RoomStatusValue } from "@/lib/roomStatus";
@@ -43,11 +44,6 @@ export const ROOM_STATUS_FILTER_OPTIONS = [
 }>;
 
 const CAMPUS_ORDER: ReservationCampus[] = ["main", "digi"];
-
-const CAMPUS_LABELS: Record<ReservationCampus, string> = {
-  digi: "SDCA Digital Campus",
-  main: "SDCA Main Campus",
-};
 
 const MAIN_CAMPUS_BUILDING_METADATA = {
   gd1: {
@@ -183,7 +179,7 @@ export function groupRoomStatusesByFloor(
 }
 
 export function getCampusLabel(campus: ReservationCampus) {
-  return CAMPUS_LABELS[campus];
+  return getCampusName(campus);
 }
 
 export function buildCampusOptions(buildings: Building[]): CampusOption[] {

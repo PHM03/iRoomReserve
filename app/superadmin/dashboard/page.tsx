@@ -13,8 +13,8 @@ import {
   enableUserAccount,
   ManagedUser,
 } from '@/lib/auth';
-import { type AssignedBuildingReference } from '@/lib/assignedBuildings';
-import { getBuildings, Building } from '@/lib/buildings';
+import { getCampusName } from '@/lib/campusAssignments';
+import { type ReservationCampus } from '@/lib/campuses';
 import { USER_ROLES } from '@/lib/domain/roles';
 import { seedBuildings } from '@/lib/seedBuildings';
 
@@ -30,8 +30,7 @@ export default function SuperAdminDashboard() {
   // ─── Approval Modal State ─────────────────────────────────────
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
-  const [availableBuildings, setAvailableBuildings] = useState<Building[]>([]);
-  const [selectedBuildingIds, setSelectedBuildingIds] = useState<string[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<ReservationCampus | ''>('');
   const [modalLoading, setModalLoading] = useState(false);
 
   // ─── Delete Confirmation State ─────────────────────────────────
@@ -82,31 +81,22 @@ export default function SuperAdminDashboard() {
   // ─── Handlers ─────────────────────────────────────────────────
   const openApprovalModal = async (user: ManagedUser) => {
     setSelectedUser(user);
-    setSelectedBuildingIds(user.assignedBuildingIds ?? []);
+    setSelectedCampus(user.campus ?? '');
     setShowApprovalModal(true);
-    try {
-      setAvailableBuildings(await getBuildings());
-    } catch (err) {
-      console.warn('Failed to fetch buildings:', err);
-      setAvailableBuildings([]);
-    }
   };
 
-  const handleApproveWithBuilding = async () => {
-    if (!selectedUser || selectedBuildingIds.length === 0) return;
+  const handleApproveWithCampus = async () => {
+    if (!selectedUser || !selectedCampus) return;
     setModalLoading(true);
     try {
-      const selectedBuildings: AssignedBuildingReference[] = availableBuildings
-        .filter((building) => selectedBuildingIds.includes(building.id))
-        .map((building) => ({ id: building.id, name: building.name }));
-      if (selectedBuildings.length === 0) return;
-      await approveAdmin(selectedUser.uid, selectedBuildings, selectedUser.role);
+      await approveAdmin(selectedUser.uid, selectedCampus, selectedUser.role);
     } catch (err) {
       console.warn('Failed to approve admin:', err);
     }
     setModalLoading(false);
     setShowApprovalModal(false);
     setSelectedUser(null);
+    setSelectedCampus('');
   };
 
   const handleApprove = async (uid: string) => {
@@ -216,17 +206,24 @@ export default function SuperAdminDashboard() {
     { key: 'admins', label: 'Admins', count: administrators.length },
   ];
 
-  // Helper to check if a user needs building assignment during approval
+  // Helper to check if a user needs campus assignment during approval
   const needsBuildingAssignment = (user: ManagedUser) =>
     user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.UTILITY;
 
+  const campusOptions: ReservationCampus[] = ['main', 'digi'];
+  const availableBuildings = campusOptions.map((campus) => ({
+    id: campus,
+    name: getCampusName(campus),
+    code: campus === 'main' ? 'GD1-GD3' : 'DIGI',
+    floors: campus === 'main' ? 3 : 1,
+  }));
+  const selectedBuildingIds = selectedCampus ? [selectedCampus] : [];
   const toggleSelectedBuilding = (buildingId: string) => {
-    setSelectedBuildingIds((current) =>
-      current.includes(buildingId)
-        ? current.filter((id) => id !== buildingId)
-        : [...current, buildingId]
+    setSelectedCampus((current) =>
+      current === buildingId ? '' : (buildingId as ReservationCampus)
     );
   };
+  const handleApproveWithBuilding = handleApproveWithCampus;
 
   return (
     <div className="min-h-screen relative isolate">
@@ -458,23 +455,14 @@ export default function SuperAdminDashboard() {
                       {user.status}
                     </span>
 
-                    {/* Building badge for assigned admins */}
-                    {(user.assignedBuildings?.length
-                      ? user.assignedBuildings
-                      : user.assignedBuilding
-                        ? [{ id: user.assignedBuildingId ?? user.assignedBuilding, name: user.assignedBuilding }]
-                        : []
-                    ).map((building) => (
-                      <span
-                        key={`${user.uid}-${building.id}`}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-blue"
-                      >
+                    {user.campusName && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-blue">
                         <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10l9-6 9 6-9 6-9-6zm2 3.5v4.5l7 4 7-4v-4.5" />
                         </svg>
-                        {building.name}
+                        {user.campusName}
                       </span>
-                    ))}
+                    )}
 
                     {/* ─── Action Buttons ────────────────────────── */}
 
@@ -596,8 +584,8 @@ export default function SuperAdminDashboard() {
             onClick={() => !modalLoading && setShowApprovalModal(false)}
           />
           <div className="glass-card !bg-white/95 p-6 sm:p-8 w-full max-w-md relative z-10 !rounded-2xl border-primary/20">
-            <h2 className="text-xl font-bold text-black mb-1">Approve & Assign Buildings</h2>
-            <p className="text-sm text-black mb-6">Choose one or more buildings for this person to manage.</p>
+            <h2 className="text-xl font-bold text-black mb-1">Approve & Assign Campus</h2>
+            <p className="text-sm text-black mb-6">Choose which campus this person will manage.</p>
 
             <div className="flex items-center space-x-4 glass-card !bg-dark/5 p-4 !rounded-xl mb-6">
               <div className="w-11 h-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-bold text-sm shrink-0">
@@ -610,14 +598,19 @@ export default function SuperAdminDashboard() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-bold text-black mb-2">Assign Buildings</label>
-              <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border border-dark/10 bg-dark/5 p-3">
-                {availableBuildings.map((building) => {
-                  const checked = selectedBuildingIds.includes(building.id);
+              <label className="block text-sm font-bold text-black mb-2">Assign Campus</label>
+              <div className="space-y-2 rounded-xl border border-dark/10 bg-dark/5 p-3">
+                {campusOptions.map((campus) => {
+                  const checked = selectedCampus === campus;
+                  const building = availableBuildings.find((option) => option.id === campus);
+
+                  if (!building) {
+                    return null;
+                  }
 
                   return (
                     <label
-                      key={building.id}
+                      key={campus}
                       className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all ${
                         checked
                           ? 'border-primary/40 bg-primary/10 text-primary'
@@ -625,7 +618,7 @@ export default function SuperAdminDashboard() {
                       }`}
                     >
                       <div>
-                        <p className="text-sm font-bold">{building.name}</p>
+                        <p className="text-sm font-bold">{getCampusName(campus)}</p>
                         <p className="text-xs text-black">
                           {building.code ? `${building.code} · ` : ''}{building.floors} floors
                         </p>

@@ -23,9 +23,10 @@ import {
 
 import { apiRequest } from "@/lib/api/client";
 import {
-  normalizeAssignedBuildings,
-  type AssignedBuildingReference,
-} from "@/lib/assignedBuildings";
+  getCampusName,
+  resolveCampusAssignment,
+  type CampusName,
+} from "./campusAssignments";
 import {
   ALLOWED_EMAIL_DOMAIN,
   SUPERADMIN_EMAIL,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/domain/auth-constants";
 import { normalizeRole, USER_ROLES } from "@/lib/domain/roles";
 import { auth, db } from "@/lib/firebase";
+import { type ReservationCampus } from "@/lib/campuses";
 
 const MANAGED_ROLE_QUERY_VALUES = [
   USER_ROLES.STUDENT,
@@ -287,21 +289,20 @@ export async function getUserProfile(uid: string) {
     email: string;
     role?: string;
     status?: string;
+    campus?: string;
+    campusName?: string;
     assignedBuilding?: string;
     assignedBuildingId?: string;
-    assignedBuildings?: AssignedBuildingReference[];
+    assignedBuildings?: unknown;
     assignedBuildingIds?: string[];
   };
-
-  const assignedBuildings = normalizeAssignedBuildings(data);
+  const { campus, campusName } = resolveCampusAssignment(data);
 
   return {
     ...data,
     role: normalizeRole(data.role) ?? data.role,
-    assignedBuilding: assignedBuildings[0]?.name ?? data.assignedBuilding,
-    assignedBuildingId: assignedBuildings[0]?.id ?? data.assignedBuildingId,
-    assignedBuildings,
-    assignedBuildingIds: assignedBuildings.map((building) => building.id),
+    campus,
+    campusName,
   };
 }
 
@@ -339,10 +340,8 @@ export async function saveUserProfile(
     email: string;
     role?: string;
     status?: string;
-    assignedBuilding?: string | null;
-    assignedBuildingId?: string | null;
-    assignedBuildings?: AssignedBuildingReference[] | null;
-    assignedBuildingIds?: string[] | null;
+    campus?: ReservationCampus | null;
+    campusName?: CampusName | null;
   }
 ) {
   await setDoc(
@@ -351,6 +350,9 @@ export async function saveUserProfile(
       ...data,
       email: data.email.toLowerCase(),
       ...(data.role ? { role: normalizeRole(data.role) ?? data.role } : {}),
+      ...(data.campus
+        ? { campusName: data.campusName ?? getCampusName(data.campus) }
+        : {}),
       updatedAt: serverTimestamp(),
     },
     { merge: true }
@@ -364,10 +366,8 @@ export interface ManagedUser {
   email: string;
   role: string;
   status: string;
-  assignedBuilding?: string;
-  assignedBuildingId?: string;
-  assignedBuildings?: AssignedBuildingReference[];
-  assignedBuildingIds?: string[];
+  campus?: ReservationCampus | null;
+  campusName?: CampusName | null;
   updatedAt?: { seconds: number; nanoseconds: number };
 }
 
@@ -382,7 +382,7 @@ function mapManagedUser(
     email: String(data.email || ""),
     role: normalizeRole(String(data.role || "")) ?? String(data.role || ""),
     status: String(data.status || ""),
-    assignedBuilding: normalizeAssignedBuildings({
+    ...resolveCampusAssignment({
       assignedBuilding:
         typeof data.assignedBuilding === "string"
           ? data.assignedBuilding
@@ -393,43 +393,9 @@ function mapManagedUser(
           : undefined,
       assignedBuildings: data.assignedBuildings,
       assignedBuildingIds: data.assignedBuildingIds,
-    })[0]?.name,
-    assignedBuildingId: normalizeAssignedBuildings({
-      assignedBuilding:
-        typeof data.assignedBuilding === "string"
-          ? data.assignedBuilding
-          : undefined,
-      assignedBuildingId:
-        typeof data.assignedBuildingId === "string"
-          ? data.assignedBuildingId
-          : undefined,
-      assignedBuildings: data.assignedBuildings,
-      assignedBuildingIds: data.assignedBuildingIds,
-    })[0]?.id,
-    assignedBuildings: normalizeAssignedBuildings({
-      assignedBuilding:
-        typeof data.assignedBuilding === "string"
-          ? data.assignedBuilding
-          : undefined,
-      assignedBuildingId:
-        typeof data.assignedBuildingId === "string"
-          ? data.assignedBuildingId
-          : undefined,
-      assignedBuildings: data.assignedBuildings,
-      assignedBuildingIds: data.assignedBuildingIds,
+      campus: typeof data.campus === "string" ? data.campus : undefined,
+      campusName: typeof data.campusName === "string" ? data.campusName : undefined,
     }),
-    assignedBuildingIds: normalizeAssignedBuildings({
-      assignedBuilding:
-        typeof data.assignedBuilding === "string"
-          ? data.assignedBuilding
-          : undefined,
-      assignedBuildingId:
-        typeof data.assignedBuildingId === "string"
-          ? data.assignedBuildingId
-          : undefined,
-      assignedBuildings: data.assignedBuildings,
-      assignedBuildingIds: data.assignedBuildingIds,
-    }).map((building) => building.id),
     updatedAt: data.updatedAt as { seconds: number; nanoseconds: number } | undefined,
   };
 }
@@ -482,14 +448,14 @@ export async function approveUser(uid: string) {
 
 export async function approveAdmin(
   uid: string,
-  buildings: AssignedBuildingReference[],
+  campus: ReservationCampus,
   role: string = USER_ROLES.ADMIN
 ) {
   const normalizedRole = normalizeRole(role);
   await apiRequest(`/api/admin/users/${uid}`, {
     body: {
       action: "approve-managed",
-      buildings,
+      campus,
       role:
         normalizedRole === USER_ROLES.UTILITY
           ? USER_ROLES.UTILITY

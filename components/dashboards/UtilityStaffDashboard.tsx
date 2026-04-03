@@ -28,6 +28,7 @@ import {
   getLocalDateString,
   resolveRoomStatus,
 } from '@/lib/roomStatus';
+import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 
 interface UtilityStaffDashboardProps {
   firstName: string;
@@ -37,18 +38,18 @@ export default function UtilityStaffDashboard({
   firstName,
 }: UtilityStaffDashboardProps) {
   const { firebaseUser, profile } = useAuth();
-  const managedBuildings = profile?.assignedBuildings ?? [];
+  const managedBuildings = getManagedBuildingsForCampus(profile?.campus);
   const [selectedManagedBuildingId, setSelectedManagedBuildingId] = useState('');
   const effectiveManagedBuildingId = managedBuildings.some(
     (building) => building.id === selectedManagedBuildingId
   )
     ? selectedManagedBuildingId
-    : managedBuildings[0]?.id ?? profile?.assignedBuildingId ?? '';
+    : managedBuildings[0]?.id ?? '';
   const selectedManagedBuilding = managedBuildings.find(
     (building) => building.id === effectiveManagedBuildingId
   ) ?? managedBuildings[0];
-  const buildingId = selectedManagedBuilding?.id ?? profile?.assignedBuildingId;
-  const buildingName = selectedManagedBuilding?.name ?? profile?.assignedBuilding;
+  const buildingId = selectedManagedBuilding?.id;
+  const buildingName = selectedManagedBuilding?.name;
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -136,10 +137,10 @@ export default function UtilityStaffDashboard({
             </svg>
           </div>
           <h3 className="text-lg font-bold text-black mb-2">
-            No Building Assigned
+            No Campus Assigned
           </h3>
           <p className="text-sm text-black max-w-sm mx-auto">
-            Your account has been approved, but no building has been assigned to
+            Your account has been approved, but no campus has been assigned to
             you yet. Please contact the Super Admin.
           </p>
         </div>

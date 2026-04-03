@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getBuildings, Building } from '@/lib/buildings';
+import { getCampusName, getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import { type ReservationCampus } from '@/lib/campuses';
 import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
 import {
@@ -90,7 +90,6 @@ export default function ReserveRoomPage() {
 
   // Form state
   const [formStep, setFormStep] = useState(1);
-  const [buildings, setBuildings] = useState<Building[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState('');
   const [selectedBuildingName, setSelectedBuildingName] = useState('');
@@ -129,11 +128,6 @@ export default function ReserveRoomPage() {
     advisorEmail: '',
   });
 
-  // Load buildings on mount
-  useEffect(() => {
-    getBuildings().then(setBuildings).catch(console.error);
-  }, []);
-
   // Load rooms when building selected
   useEffect(() => {
     if (!selectedBuildingId) {
@@ -159,32 +153,6 @@ export default function ReserveRoomPage() {
     };
   }, [selectedBuildingId]);
 
-  useEffect(() => {
-    if (!selectedCampus) {
-      return;
-    }
-
-    if (startTime && endTime && isTimeRangeValid(selectedCampus, startTime, endTime)) {
-      return;
-    }
-
-    if (startTime && !getCampusTimeOptions(selectedCampus).includes(startTime)) {
-      setStartTime('');
-    }
-
-    if (endTime && !getCampusTimeOptions(selectedCampus).includes(endTime)) {
-      setEndTime('');
-    }
-
-    if (
-      startTime &&
-      endTime &&
-      !isTimeRangeValid(selectedCampus, startTime, endTime)
-    ) {
-      setEndTime('');
-    }
-  }, [selectedCampus, startTime, endTime]);
-
   const availableRooms = selectedBuildingId ? rooms : [];
   const campusTimeOptions = getCampusTimeOptions(selectedCampus);
   const startTimeOptions = selectedCampus
@@ -206,15 +174,15 @@ export default function ReserveRoomPage() {
         );
       })
     : [];
+  const mainCampusBuildings = getManagedBuildingsForCampus('main');
+  const buildings = mainCampusBuildings.map((building) => ({
+    ...building,
+    code: '',
+    floors: 0,
+  }));
 
-  // Handlers
-  const handleBuildingSelect = (buildingId: string) => {
-    const building = buildings.find((b) => b.id === buildingId);
+  const resetReservationDetails = () => {
     setRooms([]);
-    setRoomsLoading(Boolean(buildingId));
-    setSelectedBuildingId(buildingId);
-    setSelectedBuildingName(building?.name || '');
-    setSelectedCampus(building?.campus ?? null);
     setStartTime('');
     setEndTime('');
     setProgramDepartmentOrganization('');
@@ -225,6 +193,39 @@ export default function ReserveRoomPage() {
     });
     setSelectedRoomId('');
     setSelectedRoomName('');
+  };
+
+  // Handlers
+  const handleCampusChange = (campusValue: string) => {
+    const nextCampus = campusValue ? (campusValue as ReservationCampus) : null;
+    const nextBuilding =
+      nextCampus === 'digi'
+        ? getManagedBuildingsForCampus('digi')[0]
+        : null;
+
+    resetReservationDetails();
+    setSelectedCampus(nextCampus);
+    setSelectedBuildingId(nextBuilding?.id ?? '');
+    setSelectedBuildingName(nextBuilding?.name ?? '');
+    setRoomsLoading(Boolean(nextBuilding?.id));
+    setFormStep(1);
+  };
+
+  const handleBuildingSelect = (buildingId: string) => {
+    const building = mainCampusBuildings.find((item) => item.id === buildingId);
+    resetReservationDetails();
+    setRoomsLoading(Boolean(buildingId));
+    setSelectedBuildingId(buildingId);
+    setSelectedBuildingName(building?.name || '');
+    setSelectedCampus('main');
+    setFormStep(1);
+  };
+
+  const handleProceedToRooms = () => {
+    if (!selectedBuildingId) {
+      return;
+    }
+
     setFormStep(2);
   };
 
@@ -441,7 +442,7 @@ export default function ReserveRoomPage() {
                 <h3 className="text-lg font-bold text-black">New Reservation</h3>
                 <p className="text-xs text-black mt-0.5">
                   Step {formStep} of 4 — {
-                    formStep === 1 ? 'Select Building' :
+                    formStep === 1 ? 'Select Campus & Building' :
                     formStep === 2 ? 'Select Room' :
                     formStep === 3 ? 'Schedule & Purpose' :
                     'Equipment & Approval'
@@ -470,18 +471,65 @@ export default function ReserveRoomPage() {
               ))}
             </div>
 
-            {/* Step 1: Select Building */}
+            {/* Step 1: Select Campus & Building */}
             {formStep === 1 && (
               <div>
                 <h4 className="text-sm font-bold text-black mb-3">Where would you like to book?</h4>
-                {buildings.length === 0 ? (
-                  <div className="text-center py-8">
-                    <svg className="animate-spin h-6 w-6 text-black mx-auto mb-3" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    <p className="text-sm text-black">Loading buildings...</p>
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1.5">Campus</label>
+                    <select
+                      value={selectedCampus ?? ''}
+                      onChange={(event) => handleCampusChange(event.target.value)}
+                      className="glass-input w-full px-4 py-3"
+                    >
+                      <option value="">Select campus</option>
+                      <option value="main">{getCampusName('main')}</option>
+                      <option value="digi">{getCampusName('digi')}</option>
+                    </select>
                   </div>
+
+                  {selectedCampus === 'main' && (
+                    <div>
+                      <label className="block text-sm font-bold text-black mb-1.5">Building</label>
+                      <select
+                        value={selectedBuildingId}
+                        onChange={(event) => handleBuildingSelect(event.target.value)}
+                        className="glass-input w-full px-4 py-3"
+                      >
+                        <option value="">Select building</option>
+                        {mainCampusBuildings.map((building) => (
+                          <option key={building.id} value={building.id}>
+                            {building.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {selectedCampus === 'digi' && (
+                    <div className="glass-card !bg-dark/5 p-4 !rounded-xl border-primary/20">
+                      <p className="text-xs font-bold uppercase tracking-wide text-black mb-1">Building</p>
+                      <p className="text-sm font-bold text-black">{selectedBuildingName}</p>
+                      <p className="text-[11px] text-black mt-1">
+                        Digi Campus reservations automatically use SDCA Digital Campus.
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleProceedToRooms}
+                    disabled={!selectedBuildingId}
+                    className="btn-primary w-full py-3 px-4 flex items-center justify-center"
+                  >
+                    Next: Select Room
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                {true ? (
+                  <></>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {buildings.map((building) => (

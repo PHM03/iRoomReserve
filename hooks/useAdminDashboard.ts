@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import type { AdminTab } from '@/components/NavBar';
+import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import {
   onPendingReservationsByBuilding,
   onReservationsByBuilding,
@@ -57,8 +58,9 @@ interface UseAdminDashboardOptions {
 export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
   const { firebaseUser, profile } = useAuth();
   const { setActiveTab } = useAdminTab();
-  const buildingId = profile?.assignedBuildingId;
-  const buildingName = profile?.assignedBuilding;
+  const managedBuildings = getManagedBuildingsForCampus(profile?.campus);
+  const buildingId = managedBuildings[0]?.id;
+  const buildingName = managedBuildings[0]?.name;
 
   const [requests, setRequests] = useState<Reservation[]>([]);
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);

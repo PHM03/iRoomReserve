@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   collection,
+  deleteField,
   doc,
   getDocs,
   query,
@@ -10,17 +11,34 @@ import {
   writeBatch,
 } from "firebase/firestore";
 
+import { getCampusName, resolveCampusAssignment } from "../../campusAssignments";
 import { normalizeRole } from "@/lib/domain/roles";
 import { serverClientDb } from "@/lib/server/firebase-client";
 
 const DEFAULT_BUILDINGS = [
   {
-    id: "sdca-main-campus",
-    name: "SDCA Main Campus",
-    code: "MAIN",
+    id: "gd1",
+    name: "GD1",
+    code: "GD1",
     campus: "main",
     address: "Emilio Aguinaldo Highway, Bacoor, Cavite",
-    floors: 5,
+    floors: 9,
+  },
+  {
+    id: "gd2",
+    name: "GD2",
+    code: "GD2",
+    campus: "main",
+    address: "Emilio Aguinaldo Highway, Bacoor, Cavite",
+    floors: 10,
+  },
+  {
+    id: "gd3",
+    name: "GD3",
+    code: "GD3",
+    campus: "main",
+    address: "Emilio Aguinaldo Highway, Bacoor, Cavite",
+    floors: 10,
   },
   {
     id: "sdca-digital-campus",
@@ -79,4 +97,76 @@ export async function migrateUserRoles() {
   }
 
   return { updated };
+}
+
+export async function migrateUserCampusAssignments() {
+  const usersSnapshot = await getDocs(query(collection(serverClientDb, "users")));
+  let batch = writeBatch(serverClientDb);
+  let operationCount = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  const commitBatch = async () => {
+    if (operationCount === 0) {
+      return;
+    }
+
+    await batch.commit();
+    batch = writeBatch(serverClientDb);
+    operationCount = 0;
+  };
+
+  for (const userDoc of usersSnapshot.docs) {
+    const userData = userDoc.data() as {
+      campus?: string | null;
+      campusName?: string | null;
+      assignedBuilding?: string | null;
+      assignedBuildingId?: string | null;
+      assignedBuildingIds?: string[];
+      assignedBuildings?: unknown;
+    };
+    const { campus, campusName } = resolveCampusAssignment(userData);
+
+    if (!campus || !campusName) {
+      skipped += 1;
+      continue;
+    }
+
+    const currentCampus = resolveCampusAssignment({
+      campus: userData.campus,
+      campusName: userData.campusName,
+    });
+    const needsUpdate =
+      currentCampus.campus !== campus ||
+      userData.campusName !== getCampusName(campus) ||
+      typeof userData.assignedBuilding === "string" ||
+      typeof userData.assignedBuildingId === "string" ||
+      Array.isArray(userData.assignedBuildingIds) ||
+      Array.isArray(userData.assignedBuildings);
+
+    if (!needsUpdate) {
+      skipped += 1;
+      continue;
+    }
+
+    batch.update(userDoc.ref, {
+      campus,
+      campusName,
+      assignedBuilding: deleteField(),
+      assignedBuildingId: deleteField(),
+      assignedBuildingIds: deleteField(),
+      assignedBuildings: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+    operationCount += 1;
+    updated += 1;
+
+    if (operationCount >= 400) {
+      await commitBatch();
+    }
+  }
+
+  await commitBatch();
+
+  return { skipped, updated };
 }

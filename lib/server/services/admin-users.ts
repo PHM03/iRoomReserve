@@ -2,24 +2,27 @@ import "server-only";
 
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
   query,
   serverTimestamp,
-  where,
   writeBatch,
+  where,
 } from "firebase/firestore";
 
 import {
-  normalizeAssignedBuildings,
-  type AssignedBuildingReference,
-} from "@/lib/assignedBuildings";
+  getCampusName,
+  getManagedBuildingIdsForCampus,
+  resolveCampusAssignment,
+} from "../../campusAssignments";
 import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/domain/roles";
+import { type ReservationCampus } from "@/lib/campuses";
 import { serverClientDb } from "@/lib/server/firebase-client";
 import { getOptionalAdminAuth } from "@/lib/server/firebase-admin";
 
-async function clearAssignedBuildingIfNeeded(uid: string) {
+async function clearManagedCampusIfNeeded(uid: string) {
   const userSnapshot = await getDoc(doc(serverClientDb, "users", uid));
   if (!userSnapshot.exists()) {
     return null;
@@ -27,20 +30,22 @@ async function clearAssignedBuildingIfNeeded(uid: string) {
 
   const userData = userSnapshot.data() as {
     role?: string;
+    campus?: string | null;
+    campusName?: string | null;
     assignedBuilding?: string | null;
     assignedBuildingId?: string | null;
     assignedBuildingIds?: string[];
-    assignedBuildings?: AssignedBuildingReference[];
+    assignedBuildings?: unknown;
   };
 
-  const assignedBuildings = normalizeAssignedBuildings(userData);
+  const { campus } = resolveCampusAssignment(userData);
   const normalizedRole = normalizeRole(userData.role);
-  const shouldClearBuilding =
-    assignedBuildings.length > 0 &&
+  const shouldClearManagedCampus =
+    campus &&
     (normalizedRole === USER_ROLES.ADMIN ||
       normalizedRole === USER_ROLES.UTILITY);
 
-  if (!shouldClearBuilding) {
+  if (!shouldClearManagedCampus) {
     return null;
   }
 
@@ -52,7 +57,7 @@ async function clearAssignedBuildingIfNeeded(uid: string) {
   );
 
   return {
-    assignedBuildingIds: assignedBuildings.map((building) => building.id),
+    campus,
     buildingRefs: buildingsSnapshot.docs.map((buildingDoc) => buildingDoc.ref),
   };
 }
@@ -69,24 +74,24 @@ export async function approveUserProfile(uid: string) {
 export async function approveManagedUserProfile(
   uid: string,
   role: UserRole,
-  buildings: AssignedBuildingReference[]
+  campus: ReservationCampus
 ) {
-  const assignedBuildings = normalizeAssignedBuildings({
-    assignedBuildings: buildings,
-  });
-  if (assignedBuildings.length === 0) {
-    throw new Error("At least one building is required.");
+  const managedBuildingIds = getManagedBuildingIdsForCampus(campus);
+  if (managedBuildingIds.length === 0) {
+    throw new Error("A managed campus is required.");
   }
 
-  const existingAssignment = await clearAssignedBuildingIfNeeded(uid);
+  const existingAssignment = await clearManagedCampusIfNeeded(uid);
   const batch = writeBatch(serverClientDb);
   batch.update(doc(serverClientDb, "users", uid), {
     status: "approved",
     role,
-    assignedBuilding: assignedBuildings[0].name,
-    assignedBuildingId: assignedBuildings[0].id,
-    assignedBuildings,
-    assignedBuildingIds: assignedBuildings.map((building) => building.id),
+    campus,
+    campusName: getCampusName(campus),
+    assignedBuilding: deleteField(),
+    assignedBuildingId: deleteField(),
+    assignedBuildings: deleteField(),
+    assignedBuildingIds: deleteField(),
     updatedAt: serverTimestamp(),
   });
   existingAssignment?.buildingRefs.forEach((buildingRef) => {
@@ -95,8 +100,8 @@ export async function approveManagedUserProfile(
       updatedAt: serverTimestamp(),
     });
   });
-  assignedBuildings.forEach((building) => {
-    batch.update(doc(serverClientDb, "buildings", building.id), {
+  managedBuildingIds.forEach((buildingId) => {
+    batch.update(doc(serverClientDb, "buildings", buildingId), {
       assignedAdminUid: uid,
       updatedAt: serverTimestamp(),
     });
@@ -105,17 +110,19 @@ export async function approveManagedUserProfile(
 }
 
 export async function rejectUserProfile(uid: string) {
-  const assignedBuilding = await clearAssignedBuildingIfNeeded(uid);
+  const managedCampus = await clearManagedCampusIfNeeded(uid);
   const batch = writeBatch(serverClientDb);
   batch.update(doc(serverClientDb, "users", uid), {
     status: "rejected",
-    assignedBuilding: null,
-    assignedBuildingId: null,
-    assignedBuildings: [],
-    assignedBuildingIds: [],
+    campus: deleteField(),
+    campusName: deleteField(),
+    assignedBuilding: deleteField(),
+    assignedBuildingId: deleteField(),
+    assignedBuildings: deleteField(),
+    assignedBuildingIds: deleteField(),
     updatedAt: serverTimestamp(),
   });
-  assignedBuilding?.buildingRefs.forEach((buildingRef) => {
+  managedCampus?.buildingRefs.forEach((buildingRef) => {
     batch.update(buildingRef, {
       assignedAdminUid: null,
       updatedAt: serverTimestamp(),
@@ -143,10 +150,10 @@ export async function enableUserProfile(uid: string) {
 }
 
 export async function deleteUserProfile(uid: string) {
-  const assignedBuilding = await clearAssignedBuildingIfNeeded(uid);
+  const managedCampus = await clearManagedCampusIfNeeded(uid);
   const batch = writeBatch(serverClientDb);
   batch.delete(doc(serverClientDb, "users", uid));
-  assignedBuilding?.buildingRefs.forEach((buildingRef) => {
+  managedCampus?.buildingRefs.forEach((buildingRef) => {
     batch.update(buildingRef, {
       assignedAdminUid: null,
       updatedAt: serverTimestamp(),
