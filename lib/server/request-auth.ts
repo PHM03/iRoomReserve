@@ -8,7 +8,7 @@ import { type ReservationCampus } from "@/lib/campuses";
 import { normalizeRole, type UserRole } from "@/lib/domain/roles";
 import { resolveCampusAssignment } from "../campusAssignments";
 import { serverClientDb } from "@/lib/server/firebase-client";
-import { getOptionalAdminAuth } from "@/lib/server/firebase-admin";
+import { getOptionalAdminAuth, getOptionalAdminDb } from "@/lib/server/firebase-admin";
 
 export interface RequestAuthContext {
   uid: string | null;
@@ -20,9 +20,34 @@ export interface RequestAuthContext {
   verified: boolean;
 }
 
+interface UserProfileData {
+  role?: string;
+  email?: string | null;
+  campus?: string | null;
+  campusName?: string | null;
+  assignedBuildingId?: string | null;
+  assignedBuilding?: string | null;
+  assignedBuildingIds?: string[];
+  assignedBuildings?: unknown;
+}
+
 async function getProfileContext(uid: string) {
-  const profileSnapshot = await getDoc(doc(serverClientDb, "users", uid));
-  if (!profileSnapshot.exists()) {
+  const adminDb = getOptionalAdminDb();
+  let profileData: UserProfileData | null = null;
+
+  if (adminDb) {
+    const profileSnapshot = await adminDb.collection("users").doc(uid).get();
+    if (profileSnapshot.exists) {
+      profileData = profileSnapshot.data() as UserProfileData;
+    }
+  } else {
+    const profileSnapshot = await getDoc(doc(serverClientDb, "users", uid));
+    if (profileSnapshot.exists()) {
+      profileData = profileSnapshot.data() as UserProfileData;
+    }
+  }
+
+  if (!profileData) {
     return {
       role: null,
       email: null,
@@ -31,17 +56,6 @@ async function getProfileContext(uid: string) {
       assignedBuildingIds: [],
     };
   }
-
-  const profileData = profileSnapshot.data() as {
-    role?: string;
-    email?: string | null;
-    campus?: string | null;
-    campusName?: string | null;
-    assignedBuildingId?: string | null;
-    assignedBuilding?: string | null;
-    assignedBuildingIds?: string[];
-    assignedBuildings?: unknown;
-  };
 
   const assignedBuildings = normalizeAssignedBuildings(profileData);
   const { campus } = resolveCampusAssignment(profileData);

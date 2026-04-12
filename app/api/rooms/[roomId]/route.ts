@@ -1,22 +1,27 @@
-import { doc, getDoc } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/domain/roles";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
-import { serverClientDb } from "@/lib/server/firebase-client";
+import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
   assertCanManageBuilding,
   assertRole,
 } from "@/lib/server/route-guards";
-import { getRoomById } from "@/lib/rooms";
 import { roomUpdateSchema } from "@/lib/server/schemas";
 import { deleteRoomRecord, updateRoomRecord } from "@/lib/server/services/rooms";
 
 async function getRoomBuildingId(roomId: string) {
-  const roomSnapshot = await getDoc(doc(serverClientDb, "rooms", roomId));
-  if (!roomSnapshot.exists()) {
+  const adminDb = getOptionalAdminDb();
+  if (!adminDb) {
+    throw new Error(
+      "Firebase Admin Firestore is not configured. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY."
+    );
+  }
+
+  const roomSnapshot = await adminDb.collection("rooms").doc(roomId).get();
+  if (!roomSnapshot.exists) {
     throw new ApiError(404, "not_found", "Room not found.");
   }
 
@@ -32,11 +37,48 @@ export async function GET(
     assertAuthenticated(authContext);
 
     const { roomId } = await params;
-    const room = await getRoomById(roomId);
+    const adminDb = getOptionalAdminDb();
 
-    if (!room) {
+    if (!adminDb) {
+      throw new Error(
+        "Firebase Admin Firestore is not configured. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY."
+      );
+    }
+
+    const roomSnapshot = await adminDb.collection("rooms").doc(roomId).get();
+
+    if (!roomSnapshot.exists) {
       throw new ApiError(404, "not_found", "Room not found.");
     }
+
+    const data = roomSnapshot.data() as {
+      name?: string;
+      floor?: string;
+      roomType?: string;
+      acStatus?: string;
+      tvProjectorStatus?: string;
+      capacity?: number;
+      status?: string;
+      buildingId?: string;
+      buildingName?: string;
+      reservedBy?: string | null;
+      activeReservationId?: string | null;
+    };
+
+    const room = {
+      id: roomSnapshot.id,
+      name: data.name ?? "",
+      floor: data.floor ?? "",
+      roomType: data.roomType ?? "",
+      acStatus: data.acStatus ?? "",
+      tvProjectorStatus: data.tvProjectorStatus ?? "",
+      capacity: data.capacity ?? 0,
+      status: data.status ?? "Available",
+      buildingId: data.buildingId ?? "",
+      buildingName: data.buildingName ?? "",
+      reservedBy: data.reservedBy ?? null,
+      activeReservationId: data.activeReservationId ?? null,
+    };
 
     return NextResponse.json(room);
   } catch (error) {
