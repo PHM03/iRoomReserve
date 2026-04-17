@@ -1,12 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+
 import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
 
-// ─── Admin Tab Type ──────────────────────────────────────────────
-export type AdminTab = 'dashboard' | 'add-rooms' | 'feedback' | 'status-scheduling' | 'room-history' | 'inbox' | 'pending';
+export type AdminTab =
+  | 'dashboard'
+  | 'add-rooms'
+  | 'feedback'
+  | 'status-scheduling'
+  | 'room-history'
+  | 'inbox'
+  | 'pending';
 
 interface NavBarProps {
   user: {
@@ -19,20 +26,95 @@ interface NavBarProps {
   onTabChange?: (tab: AdminTab) => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange }) => {
+const adminLinks: Array<{ label: string; tab: AdminTab }> = [
+  { label: 'Dashboard', tab: 'dashboard' },
+  { label: 'Pending', tab: 'pending' },
+  { label: 'Add Rooms', tab: 'add-rooms' },
+  { label: 'Feedback', tab: 'feedback' },
+  { label: 'Room History', tab: 'room-history' },
+  { label: 'Inbox', tab: 'inbox' },
+];
+
+const statusSchedulingLinks = [
+  { label: 'Room Status Monitor', href: '/admin/room-status' },
+  { label: 'BLE Beacon Status', href: '/admin/ble-status' },
+  { label: 'Class Schedules', href: '/admin/class-schedules' },
+];
+
+const navItemBaseClasses =
+  'font-ui-bold rounded-lg bg-transparent text-[0.95rem] uppercase tracking-tight whitespace-nowrap leading-none transition-colors duration-200 ease-in-out';
+const navItemActiveClasses = 'bg-transparent text-[#a12124] shadow-none';
+const navItemInactiveClasses =
+  'bg-transparent text-[#343434] hover:bg-transparent hover:text-[#a12124] hover:shadow-none';
+
+function ChevronDownIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 9l-7 7-7-7"
+      />
+    </svg>
+  );
+}
+
+const NavBar: React.FC<NavBarProps> = ({
+  user,
+  onLogout,
+  activeTab,
+  onTabChange,
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const [isMobileStatusMenuOpen, setIsMobileStatusMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        event.target instanceof Node &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setIsStatusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, []);
 
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
     }
+
     router.push('/');
   };
 
+  const normalizedRole = normalizeRole(user.role);
+  const isFacultyRole = normalizedRole === USER_ROLES.FACULTY;
+  const isUtilityRole = normalizedRole === USER_ROLES.UTILITY;
+  const isStudentRole = normalizedRole === USER_ROLES.STUDENT;
+  const isAdmin = normalizedRole === USER_ROLES.ADMIN;
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isStatusSchedulingActive =
+    isAdminRoute || activeTab === 'status-scheduling';
+
   const getRoleBadgeStyle = () => {
-    switch (normalizeRole(user.role)) {
+    switch (normalizedRole) {
       case USER_ROLES.STUDENT:
         return 'bg-blue-100/90 text-blue-800 border-blue-300/80';
       case USER_ROLES.FACULTY:
@@ -47,79 +129,6 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
         return 'bg-dark/10 text-black border-dark/20';
     }
   };
-
-  // ─── Admin-specific nav links ─────────────────────────────────
-  const adminLinks: { label: string; tab: AdminTab; icon: React.ReactNode }[] = [
-    {
-      label: 'Dashboard',
-      tab: 'dashboard',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Pending',
-      tab: 'pending',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Add Rooms',
-      tab: 'add-rooms',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Feedback',
-      tab: 'feedback',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Status & Scheduling',
-      tab: 'status-scheduling',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Room History',
-      tab: 'room-history',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Inbox',
-      tab: 'inbox',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-  ];
-
-  // ─── Non-admin (Student/Faculty/Utility) nav links ────────────
-  const normalizedRole = normalizeRole(user.role);
-  const isFacultyRole = normalizedRole === USER_ROLES.FACULTY;
-  const isUtilityRole = normalizedRole === USER_ROLES.UTILITY;
-  const isStudentRole = normalizedRole === USER_ROLES.STUDENT;
 
   const defaultLinks = isUtilityRole
     ? [
@@ -137,55 +146,107 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
         ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
       ];
 
-  const isAdmin = normalizedRole === USER_ROLES.ADMIN;
-  const navItemBaseClasses =
-    'font-ui-bold rounded-lg bg-transparent text-[0.95rem] uppercase tracking-tight whitespace-nowrap leading-none transition-colors duration-200 ease-in-out';
-  const navItemActiveClasses =
-    'bg-transparent text-[#a12124] shadow-none';
-  const navItemInactiveClasses =
-    'bg-transparent text-[#343434] hover:bg-transparent hover:text-[#a12124] hover:shadow-none';
   const getNavItemClasses = (isActive: boolean) =>
     `${navItemBaseClasses} ${isActive ? navItemActiveClasses : navItemInactiveClasses}`;
   const navIconButtonClasses =
     'rounded-lg bg-transparent p-2 text-[#343434] transition-colors duration-200 ease-in-out hover:bg-transparent hover:text-[#a12124]';
   const defaultLinkPaddingClasses = isStudentRole ? 'px-5' : 'px-3';
   const navCenterPaddingClasses = isAdmin ? 'px-3' : 'px-10';
-  const adminLinkPaddingClasses = isAdmin ? 'px-2.5' : 'px-2.5';
+  const adminLinkPaddingClasses = 'px-2.5';
   const navbarBoldStyle = {
     fontFamily: 'var(--font-century-gothic-bold)',
     fontWeight: 700 as const,
+  };
+
+  const closeMenus = () => {
+    setIsStatusMenuOpen(false);
+    setIsMenuOpen(false);
+    setIsMobileStatusMenuOpen(false);
+  };
+
+  const handleAdminTabClick = (tab: AdminTab) => {
+    onTabChange?.(tab);
+    closeMenus();
+
+    if (pathname !== '/dashboard') {
+      router.push('/dashboard');
+    }
   };
 
   return (
     <nav className="glass-nav sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between py-5">
-          {/* Left: Logo */}
           <div className="flex items-center">
-            <h1 className="text-xl text-[#343434]" style={navbarBoldStyle}>iRoomReserve</h1>
+            <h1 className="text-xl text-[#343434]" style={navbarBoldStyle}>
+              iRoomReserve
+            </h1>
           </div>
 
-          {/* Center: Desktop Navigation */}
-          <div className={`hidden md:flex flex-1 items-center justify-center gap-2 ${navCenterPaddingClasses}`}>
+          <div
+            className={`hidden md:flex flex-1 items-center justify-center gap-2 ${navCenterPaddingClasses}`}
+          >
             {isAdmin ? (
-              adminLinks.map((link) => (
-                <button
-                  key={link.tab}
-                  onClick={() => onTabChange?.(link.tab)}
-                  className={`flex shrink-0 items-center ${adminLinkPaddingClasses} py-2 ${getNavItemClasses(
-                    activeTab === link.tab
-                  )}`}
-                  style={navbarBoldStyle}
-                >
-                  <span className="whitespace-nowrap" style={navbarBoldStyle}>{link.label}</span>
-                </button>
-              ))
+              <>
+                {adminLinks.map((link) => (
+                  <button
+                    key={link.tab}
+                    onClick={() => handleAdminTabClick(link.tab)}
+                    className={`flex shrink-0 items-center ${adminLinkPaddingClasses} py-2 ${getNavItemClasses(
+                      !isAdminRoute && activeTab === link.tab
+                    )}`}
+                    style={navbarBoldStyle}
+                  >
+                    <span className="whitespace-nowrap" style={navbarBoldStyle}>
+                      {link.label}
+                    </span>
+                  </button>
+                ))}
+
+                <div ref={dropdownRef} className="relative flex shrink-0 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsStatusMenuOpen((current) => !current)}
+                    className={`flex items-center gap-2 ${adminLinkPaddingClasses} py-2 ${getNavItemClasses(
+                      isStatusSchedulingActive
+                    )}`}
+                    style={navbarBoldStyle}
+                    aria-haspopup="menu"
+                    aria-expanded={isStatusMenuOpen}
+                  >
+                    <span className="whitespace-nowrap" style={navbarBoldStyle}>
+                      Status & Scheduling
+                    </span>
+                    <ChevronDownIcon open={isStatusMenuOpen} />
+                  </button>
+
+                  {isStatusMenuOpen ? (
+                    <div className="absolute left-0 top-full mt-2 w-64 glass-card !rounded-2xl p-2 shadow-xl">
+                      {statusSchedulingLinks.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={closeMenus}
+                          className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm ${getNavItemClasses(
+                            pathname === link.href
+                          )}`}
+                          style={navbarBoldStyle}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </>
             ) : (
               defaultLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`shrink-0 ${defaultLinkPaddingClasses} py-2 whitespace-nowrap ${getNavItemClasses(pathname === link.href)}`}
+                  className={`shrink-0 ${defaultLinkPaddingClasses} py-2 whitespace-nowrap ${getNavItemClasses(
+                    pathname === link.href
+                  )}`}
                   style={navbarBoldStyle}
                 >
                   <span style={navbarBoldStyle}>{link.label}</span>
@@ -194,38 +255,53 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
             )}
           </div>
 
-          {/* Right: User Info & Logout */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
-              <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm" style={navbarBoldStyle}>
+              <div
+                className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm"
+                style={navbarBoldStyle}
+              >
                 {user.initials}
               </div>
-              <span className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs border ${getRoleBadgeStyle()}`} style={navbarBoldStyle}>
+              <span
+                className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs border ${getRoleBadgeStyle()}`}
+                style={navbarBoldStyle}
+              >
                 {user.role}
               </span>
             </div>
-            <button
-              onClick={handleLogout}
-              className={navIconButtonClasses}
-              title="Logout"
-            >
+            <button onClick={handleLogout} className={navIconButtonClasses} title="Logout">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
             </button>
 
-            {/* Mobile menu button */}
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => setIsMenuOpen((current) => !current)}
               className={`md:hidden ${navIconButtonClasses}`}
             >
               {isMenuOpen ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               ) : (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 </svg>
               )}
             </button>
@@ -233,25 +309,58 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
+      {isMenuOpen ? (
         <div className="md:hidden border-t border-[#343434]/8 bg-[#f5f5f5]/80 backdrop-blur-xl">
           <div className="px-3 py-2 space-y-1">
             {isAdmin ? (
-              adminLinks.map((link) => (
-                <button
-                  key={link.tab}
-                  onClick={() => {
-                    onTabChange?.(link.tab);
-                    setIsMenuOpen(false);
-                  }}
-                  className={`flex w-full items-center px-3 py-2.5 text-left ${getNavItemClasses(
-                    activeTab === link.tab
-                  )}`}
-                >
-                  {link.label}
-                </button>
-              ))
+              <>
+                {adminLinks.map((link) => (
+                  <button
+                    key={link.tab}
+                    onClick={() => handleAdminTabClick(link.tab)}
+                    className={`flex w-full items-center px-3 py-2.5 text-left ${getNavItemClasses(
+                      !isAdminRoute && activeTab === link.tab
+                    )}`}
+                    style={navbarBoldStyle}
+                  >
+                    {link.label}
+                  </button>
+                ))}
+
+                <div className="rounded-xl border border-dark/5 bg-white/50">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsMobileStatusMenuOpen((current) => !current)
+                    }
+                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left ${getNavItemClasses(
+                      isStatusSchedulingActive
+                    )}`}
+                    style={navbarBoldStyle}
+                  >
+                    <span>Status & Scheduling</span>
+                    <ChevronDownIcon open={isMobileStatusMenuOpen} />
+                  </button>
+
+                  {isMobileStatusMenuOpen ? (
+                    <div className="px-2 pb-2">
+                      {statusSchedulingLinks.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={closeMenus}
+                          className={`block rounded-xl px-3 py-2.5 text-sm ${getNavItemClasses(
+                            pathname === link.href
+                          )}`}
+                          style={navbarBoldStyle}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </>
             ) : (
               defaultLinks.map((link) => (
                 <Link
@@ -259,6 +368,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-2.5 ${getNavItemClasses(pathname === link.href)}`}
+                  style={navbarBoldStyle}
                 >
                   {link.label}
                 </Link>
@@ -266,7 +376,7 @@ const NavBar: React.FC<NavBarProps> = ({ user, onLogout, activeTab, onTabChange 
             )}
           </div>
         </div>
-      )}
+      ) : null}
     </nav>
   );
 };

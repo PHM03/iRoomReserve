@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import NavBar from '@/components/NavBar';
-import { AdminTabProvider, useAdminTab } from '@/context/AdminTabContext';
+import { useAdminTab } from '@/context/AdminTabContext';
 import { USER_ROLES } from '@/lib/domain/roles';
 import Link from 'next/link';
 
@@ -203,9 +203,5 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AdminTabProvider>
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
-    </AdminTabProvider>
-  );
+  return <DashboardLayoutInner>{children}</DashboardLayoutInner>;
 }

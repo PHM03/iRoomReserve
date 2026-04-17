@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
 import BleAdminMonitor from '@/components/BleAdminMonitor';
 import BleSummaryCard from '@/components/BleSummaryCard';
-import FloorAccordion from '@/components/room-status/FloorAccordion';
+import AdminRoomStatusSection from '@/components/admin/AdminRoomStatusSection';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import type { AdminTab } from '@/components/NavBar';
@@ -209,16 +210,15 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ firstName, activeTab }: AdminDashboardProps) {
   const { firebaseUser, profile } = useAuth();
-  const { setActiveTab } = useAdminTab();
+  const { setActiveTab, selectedBuildingId, setSelectedBuildingId } = useAdminTab();
   const managedBuildings = useMemo(
     () => getManagedBuildingsForCampus(profile?.campus),
     [profile?.campus]
   );
-  const [selectedManagedBuildingId, setSelectedManagedBuildingId] = useState('');
   const effectiveManagedBuildingId = managedBuildings.some(
-    (building) => building.id === selectedManagedBuildingId
+    (building) => building.id === selectedBuildingId
   )
-    ? selectedManagedBuildingId
+    ? selectedBuildingId
     : managedBuildings[0]?.id ?? '';
   const selectedManagedBuilding = managedBuildings.find(
     (building) => building.id === effectiveManagedBuildingId
@@ -427,7 +427,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       return;
     }
 
-    setSelectedManagedBuildingId(nextBuildingId);
+    setSelectedBuildingId(nextBuildingId);
     setNewRoomFloor('');
 
     if (addRoomStep === 2) {
@@ -737,7 +737,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               </label>
               <select
                 value={buildingId ?? ''}
-                onChange={(event) => setSelectedManagedBuildingId(event.target.value)}
+                onChange={(event) => setSelectedBuildingId(event.target.value)}
                 className="glass-input w-full px-4 py-3 bg-dark/6 appearance-none cursor-pointer"
                 style={{ backgroundImage: 'none' }}
               >
@@ -1490,7 +1490,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           <BleSummaryCard
             buildingName={buildingName}
             className="mb-8"
-            onViewDetails={() => setActiveTab('status-scheduling')}
+            detailsHref="/admin/ble-status"
           />
 
           {/* Today's Class Schedules */}
@@ -1583,59 +1583,45 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'status-scheduling' && (
         <div>
-          <h3 className="text-xl font-bold text-black mb-6">
-            Room Status Monitor
-            <span className="text-sm text-black font-normal ml-2">({buildingName})</span>
-          </h3>
-
-          {rooms.length === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <p className="text-sm text-black">No rooms configured. Add rooms first.</p>
+          <div className="glass-card p-5 mb-8 !rounded-2xl border border-yellow-500/20 bg-yellow-500/5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide ui-text-yellow">
+                  Deprecated View
+                </p>
+                <p className="mt-1 text-sm text-black">
+                  Status and scheduling tools now have dedicated admin pages. This combined
+                  view is kept for backward compatibility.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/admin/room-status" className="btn-primary px-4 py-2 text-sm">
+                  Room Status Monitor
+                </Link>
+                <Link
+                  href="/admin/ble-status"
+                  className="ui-button-gray px-4 py-2 text-sm rounded-xl"
+                >
+                  BLE Beacon Status
+                </Link>
+                <Link
+                  href="/admin/class-schedules"
+                  className="ui-button-gray px-4 py-2 text-sm rounded-xl"
+                >
+                  Class Schedules
+                </Link>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4 mb-8">
-              {statusMonitorFloorGroups.map((floorGroup) => (
-                <FloorAccordion
-                  key={floorGroup.floor}
-                  floor={floorGroup.floor}
-                  roomCount={floorGroup.rooms.length}
-                  renderContent={() => (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {floorGroup.rooms.map((room) => {
-                        const effective = computeEffectiveStatus(room);
-                        const statusBorder = effective.status === 'Ongoing'
-                          ? 'border-orange-500/40'
-                          : effective.status === 'Reserved'
-                            ? 'border-blue-500/40'
-                            : effective.status === 'Unavailable'
-                              ? 'border-red-500/40'
-                              : 'border-green-500/40';
+          </div>
 
-                        return (
-                          <div key={room.id} className={`glass-card p-5 border-l-4 ${statusBorder}`}>
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h4 className="text-lg font-bold text-black">{room.name}</h4>
-                                <p className="text-sm text-black">{room.floor} | Cap: {room.capacity}</p>
-                              </div>
-                              <StatusBadge status={effective.status} />
-                            </div>
-                            {effective.detail && <p className="text-xs text-black mb-2">{effective.detail}</p>}
-                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-dark/5">
-                              <button onClick={() => handleStatusChange(room.id, 'Available')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Available' ? 'ui-button-green' : 'ui-button-gray'}`}>Available</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Reserved')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Reserved' ? 'ui-button-blue' : 'ui-button-gray'}`}>Reserved</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Ongoing')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Ongoing' ? 'ui-button-orange' : 'ui-button-gray'}`}>Ongoing</button>
-                              <button onClick={() => handleStatusChange(room.id, 'Unavailable')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${room.status === 'Unavailable' ? 'ui-button-red' : 'ui-button-gray'}`}>Unavailable</button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                />
-              ))}
-            </div>
-          )}
+          <AdminRoomStatusSection
+            buildingName={buildingName}
+            rooms={rooms}
+            statusMonitorFloorGroups={statusMonitorFloorGroups}
+            computeEffectiveStatus={computeEffectiveStatus}
+            onStatusChange={handleStatusChange}
+            className="mb-10"
+          />
 
           {/* ─── Class Schedule Manager ─────────────────────────────── */}
           <BleAdminMonitor
