@@ -1,23 +1,12 @@
 import "server-only";
 
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-  writeBatch,
-} from "firebase/firestore";
-
+import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
 import {
   normalizeRoomCheckInMethod,
   normalizeRoomStatus,
   type RoomCheckInMethod,
   type RoomStatusValue,
 } from "@/lib/roomStatus";
-import { serverClientDb } from "@/lib/server/firebase-client";
 
 export interface RoomCreateInput {
   name: string;
@@ -62,8 +51,8 @@ function resolveBeaconId(input: {
 }
 
 export async function createRoomRecord(data: RoomCreateInput) {
-  const roomRef = doc(collection(serverClientDb, "rooms"));
-  const batch = writeBatch(serverClientDb);
+  const roomRef = db.collection("rooms").doc();
+  const batch = db.batch();
   const beaconId = resolveBeaconId(data);
 
   batch.set(roomRef, {
@@ -90,8 +79,8 @@ export async function updateRoomRecord(
   roomId: string,
   data: Partial<RoomCreateInput>
 ) {
-  const batch = writeBatch(serverClientDb);
-  const roomRef = doc(serverClientDb, "rooms", roomId);
+  const batch = db.batch();
+  const roomRef = db.collection("rooms").doc(roomId);
   const beaconIdProvided =
     data.beaconId !== undefined || data.bleBeaconId !== undefined;
   const normalizedBeaconId = beaconIdProvided ? resolveBeaconId(data) : undefined;
@@ -109,9 +98,10 @@ export async function updateRoomRecord(
   });
 
   if (data.name) {
-    const scheduleSnapshot = await getDocs(
-      query(collection(serverClientDb, "schedules"), where("roomId", "==", roomId))
-    );
+    const scheduleSnapshot = await db
+      .collection("schedules")
+      .where("roomId", "==", roomId)
+      .get();
 
     scheduleSnapshot.docs.forEach((scheduleDoc) => {
       batch.update(scheduleDoc.ref, {
@@ -125,11 +115,12 @@ export async function updateRoomRecord(
 }
 
 export async function deleteRoomRecord(roomId: string) {
-  const batch = writeBatch(serverClientDb);
-  const roomRef = doc(serverClientDb, "rooms", roomId);
-  const scheduleSnapshot = await getDocs(
-    query(collection(serverClientDb, "schedules"), where("roomId", "==", roomId))
-  );
+  const batch = db.batch();
+  const roomRef = db.collection("rooms").doc(roomId);
+  const scheduleSnapshot = await db
+    .collection("schedules")
+    .where("roomId", "==", roomId)
+    .get();
 
   batch.delete(roomRef);
   scheduleSnapshot.docs.forEach((scheduleDoc) => {
@@ -148,7 +139,7 @@ export async function updateRoomStatusRecord(
       ? undefined
       : normalizeRoomCheckInMethod(data.checkInMethod);
 
-  await updateDoc(doc(serverClientDb, "rooms", roomId), {
+  await db.collection("rooms").doc(roomId).update({
     ...data,
     ...(normalizedCheckInMethod !== undefined
       ? { checkInMethod: normalizedCheckInMethod }

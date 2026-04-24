@@ -1,9 +1,8 @@
-import { doc, getDoc } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/domain/roles";
+import { db } from "@/lib/configs/firebase-admin";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
-import { serverClientDb } from "@/lib/server/firebase-client";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -14,8 +13,8 @@ import { roomStatusUpdateSchema } from "@/lib/server/schemas";
 import { updateRoomStatusRecord } from "@/lib/server/services/rooms";
 
 async function getRoomBuildingId(roomId: string) {
-  const roomSnapshot = await getDoc(doc(serverClientDb, "rooms", roomId));
-  if (!roomSnapshot.exists()) {
+  const roomSnapshot = await db.collection("rooms").doc(roomId).get();
+  if (!roomSnapshot.exists) {
     throw new ApiError(404, "not_found", "Room not found.");
   }
 

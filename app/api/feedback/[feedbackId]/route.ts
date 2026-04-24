@@ -1,9 +1,8 @@
-import { doc, getDoc } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/domain/roles";
+import { db } from "@/lib/configs/firebase-admin";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
-import { serverClientDb } from "@/lib/server/firebase-client";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -14,8 +13,8 @@ import { feedbackRespondSchema } from "@/lib/server/schemas";
 import { respondToFeedbackRecord } from "@/lib/server/services/feedback";
 
 async function getFeedbackBuildingId(feedbackId: string) {
-  const feedbackSnapshot = await getDoc(doc(serverClientDb, "feedback", feedbackId));
-  if (!feedbackSnapshot.exists()) {
+  const feedbackSnapshot = await db.collection("feedback").doc(feedbackId).get();
+  if (!feedbackSnapshot.exists) {
     throw new ApiError(404, "not_found", "Feedback entry not found.");
   }
 

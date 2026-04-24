@@ -1,9 +1,8 @@
-import { doc, getDoc } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/domain/roles";
+import { db } from "@/lib/configs/firebase-admin";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
-import { serverClientDb } from "@/lib/server/firebase-client";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -17,8 +16,8 @@ import {
 } from "@/lib/server/services/schedules";
 
 async function getScheduleBuildingId(scheduleId: string) {
-  const scheduleSnapshot = await getDoc(doc(serverClientDb, "schedules", scheduleId));
-  if (!scheduleSnapshot.exists()) {
+  const scheduleSnapshot = await db.collection("schedules").doc(scheduleId).get();
+  if (!scheduleSnapshot.exists) {
     throw new ApiError(404, "not_found", "Schedule not found.");
   }
 

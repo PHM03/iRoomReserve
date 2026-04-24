@@ -1,14 +1,12 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
-import { doc, getDoc } from "firebase/firestore";
 
 import { normalizeAssignedBuildings } from "@/lib/assignedBuildings";
 import { type ReservationCampus } from "@/lib/campuses";
+import { auth as adminAuth, db } from "@/lib/configs/firebase-admin";
 import { normalizeRole, type UserRole } from "@/lib/domain/roles";
 import { resolveCampusAssignment } from "../campusAssignments";
-import { serverClientDb } from "@/lib/server/firebase-client";
-import { getOptionalAdminAuth, getOptionalAdminDb } from "@/lib/server/firebase-admin";
 
 export interface RequestAuthContext {
   uid: string | null;
@@ -31,30 +29,29 @@ interface UserProfileData {
   assignedBuildings?: unknown;
 }
 
-async function getProfileContext(uid: string) {
-  const adminDb = getOptionalAdminDb();
-  let profileData: UserProfileData | null = null;
+interface GetRequestAuthContextOptions {
+  includeProfile?: boolean;
+}
 
-  if (adminDb) {
-    const profileSnapshot = await adminDb.collection("users").doc(uid).get();
-    if (profileSnapshot.exists) {
-      profileData = profileSnapshot.data() as UserProfileData;
-    }
-  } else {
-    const profileSnapshot = await getDoc(doc(serverClientDb, "users", uid));
-    if (profileSnapshot.exists()) {
-      profileData = profileSnapshot.data() as UserProfileData;
-    }
+function getEmptyProfileContext() {
+  return {
+    role: null,
+    email: null,
+    campus: null,
+    assignedBuildingId: null,
+    assignedBuildingIds: [] as string[],
+  };
+}
+
+async function getProfileContext(uid: string) {
+  let profileData: UserProfileData | null = null;
+  const profileSnapshot = await db.collection("users").doc(uid).get();
+  if (profileSnapshot.exists) {
+    profileData = profileSnapshot.data() as UserProfileData;
   }
 
   if (!profileData) {
-    return {
-      role: null,
-      email: null,
-      campus: null,
-      assignedBuildingId: null,
-      assignedBuildingIds: [],
-    };
+    return getEmptyProfileContext();
   }
 
   const assignedBuildings = normalizeAssignedBuildings(profileData);
@@ -71,44 +68,38 @@ async function getProfileContext(uid: string) {
 }
 
 export async function getRequestAuthContext(
-  request: NextRequest
+  request: NextRequest,
+  options: GetRequestAuthContextOptions = {}
 ): Promise<RequestAuthContext> {
+  const { includeProfile = true } = options;
   const fallbackUid = request.headers.get("x-user-id");
   const fallbackRole = normalizeRole(request.headers.get("x-user-role"));
   const authHeader = request.headers.get("authorization");
 
   if (authHeader?.startsWith("Bearer ")) {
-    const adminAuth = getOptionalAdminAuth();
-
-    if (adminAuth) {
-      try {
-        const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
-        const profileContext = await getProfileContext(decoded.uid);
-        return {
-          uid: decoded.uid,
-          role: profileContext.role ?? fallbackRole,
-          email: profileContext.email ?? decoded.email?.trim().toLowerCase() ?? null,
-          campus: profileContext.campus,
-          assignedBuildingId: profileContext.assignedBuildingId,
-          assignedBuildingIds: profileContext.assignedBuildingIds,
-          verified: true,
-        };
-      } catch {
-        // Fall through to compatibility headers so the current project keeps working
-        // until Firebase Admin credentials are configured.
-      }
+    try {
+      const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
+      const profileContext = includeProfile
+        ? await getProfileContext(decoded.uid)
+        : getEmptyProfileContext();
+      return {
+        uid: decoded.uid,
+        role: profileContext.role ?? fallbackRole,
+        email: profileContext.email ?? decoded.email?.trim().toLowerCase() ?? null,
+        campus: profileContext.campus,
+        assignedBuildingId: profileContext.assignedBuildingId,
+        assignedBuildingIds: profileContext.assignedBuildingIds,
+        verified: true,
+      };
+    } catch {
+      // Fall through to compatibility headers when the bearer token is invalid.
     }
   }
 
-  const fallbackProfileContext = fallbackUid
-    ? await getProfileContext(fallbackUid)
-    : {
-        role: null,
-        email: null,
-        campus: null,
-        assignedBuildingId: null,
-        assignedBuildingIds: [],
-      };
+  const fallbackProfileContext =
+    includeProfile && fallbackUid
+      ? await getProfileContext(fallbackUid)
+      : getEmptyProfileContext();
 
   return {
     uid: fallbackUid,

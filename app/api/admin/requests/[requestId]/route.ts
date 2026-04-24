@@ -1,9 +1,8 @@
-import { doc, getDoc } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/domain/roles";
+import { db } from "@/lib/configs/firebase-admin";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
-import { serverClientDb } from "@/lib/server/firebase-client";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -14,10 +13,8 @@ import { adminRequestRespondSchema } from "@/lib/server/schemas";
 import { respondToAdminRequestRecord } from "@/lib/server/services/admin-requests";
 
 async function getRequestBuildingId(requestId: string) {
-  const requestSnapshot = await getDoc(
-    doc(serverClientDb, "adminRequests", requestId)
-  );
-  if (!requestSnapshot.exists()) {
+  const requestSnapshot = await db.collection("adminRequests").doc(requestId).get();
+  if (!requestSnapshot.exists) {
     throw new ApiError(404, "not_found", "Admin request not found.");
   }
 

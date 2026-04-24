@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase/firestore";
+import type { FirestoreTimestampLike } from "@/lib/firestore-types";
 
 export const ROOM_STATUS_VALUES = ["Available", "Reserved", "Ongoing"] as const;
 export const ROOM_CHECK_IN_METHODS = ["manual", "bluetooth"] as const;
@@ -25,7 +25,7 @@ export interface RoomStatusReservationLike {
   startTime: string;
   endTime: string;
   status: string;
-  checkedInAt?: Timestamp | null;
+  checkedInAt?: FirestoreTimestampLike | null;
   checkInMethod?: RoomCheckInMethod | null;
 }
 

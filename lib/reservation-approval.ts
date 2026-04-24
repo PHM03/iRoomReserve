@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase/firestore";
+import type { FirestoreTimestampLike } from "@/lib/firestore-types";
 
 import { type ReservationCampus } from "@/lib/campuses";
 
@@ -16,7 +16,7 @@ export interface ReservationApprovalStep {
 }
 
 export interface ReservationApprovalRecord extends ReservationApprovalStep {
-  date: Timestamp;
+  date: FirestoreTimestampLike;
   status: "approved";
 }
 

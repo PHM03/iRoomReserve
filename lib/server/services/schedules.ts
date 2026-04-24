@@ -1,15 +1,6 @@
 import "server-only";
 
-import {
-  collection,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  updateDoc,
-  writeBatch,
-} from "firebase/firestore";
-
-import { serverClientDb } from "@/lib/server/firebase-client";
+import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
 
 export interface ScheduleCreateInput {
   roomId: string;
@@ -24,8 +15,8 @@ export interface ScheduleCreateInput {
 }
 
 export async function createScheduleRecord(data: ScheduleCreateInput) {
-  const scheduleRef = doc(collection(serverClientDb, "schedules"));
-  const batch = writeBatch(serverClientDb);
+  const scheduleRef = db.collection("schedules").doc();
+  const batch = db.batch();
   batch.set(scheduleRef, {
     ...data,
     createdAt: serverTimestamp(),
@@ -39,12 +30,12 @@ export async function updateScheduleRecord(
   scheduleId: string,
   data: Partial<ScheduleCreateInput>
 ) {
-  await updateDoc(doc(serverClientDb, "schedules", scheduleId), {
+  await db.collection("schedules").doc(scheduleId).update({
     ...data,
     updatedAt: serverTimestamp(),
   });
 }
 
 export async function deleteScheduleRecord(scheduleId: string) {
-  await deleteDoc(doc(serverClientDb, "schedules", scheduleId));
+  await db.collection("schedules").doc(scheduleId).delete();
 }

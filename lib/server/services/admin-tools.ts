@@ -1,19 +1,12 @@
 import "server-only";
 
-import {
-  collection,
-  deleteField,
-  doc,
-  getDocs,
-  query,
-  serverTimestamp,
-  setDoc,
-  writeBatch,
-} from "firebase/firestore";
-
 import { getCampusName, resolveCampusAssignment } from "../../campusAssignments";
+import {
+  db,
+  deleteField,
+  serverTimestamp,
+} from "@/lib/configs/firebase-admin";
 import { normalizeRole } from "@/lib/domain/roles";
-import { serverClientDb } from "@/lib/server/firebase-client";
 
 const DEFAULT_BUILDINGS = [
   {
@@ -51,7 +44,7 @@ const DEFAULT_BUILDINGS = [
 ] as const;
 
 export async function seedDefaultBuildings() {
-  const existingSnapshot = await getDocs(query(collection(serverClientDb, "buildings")));
+  const existingSnapshot = await db.collection("buildings").get();
   const existingIds = new Set(existingSnapshot.docs.map((buildingDoc) => buildingDoc.id));
   const created: string[] = [];
   const skipped: string[] = [];
@@ -62,7 +55,7 @@ export async function seedDefaultBuildings() {
       continue;
     }
 
-    await setDoc(doc(serverClientDb, "buildings", building.id), {
+    await db.collection("buildings").doc(building.id).set({
       ...building,
       assignedAdminUid: null,
       createdAt: serverTimestamp(),
@@ -75,8 +68,8 @@ export async function seedDefaultBuildings() {
 }
 
 export async function migrateUserRoles() {
-  const usersSnapshot = await getDocs(query(collection(serverClientDb, "users")));
-  const batch = writeBatch(serverClientDb);
+  const usersSnapshot = await db.collection("users").get();
+  const batch = db.batch();
   let updated = 0;
 
   usersSnapshot.docs.forEach((userDoc) => {
@@ -100,8 +93,8 @@ export async function migrateUserRoles() {
 }
 
 export async function migrateUserCampusAssignments() {
-  const usersSnapshot = await getDocs(query(collection(serverClientDb, "users")));
-  let batch = writeBatch(serverClientDb);
+  const usersSnapshot = await db.collection("users").get();
+  let batch = db.batch();
   let operationCount = 0;
   let updated = 0;
   let skipped = 0;
@@ -112,7 +105,7 @@ export async function migrateUserCampusAssignments() {
     }
 
     await batch.commit();
-    batch = writeBatch(serverClientDb);
+    batch = db.batch();
     operationCount = 0;
   };
 

@@ -1,14 +1,6 @@
 import "server-only";
 
-import {
-  collection,
-  doc,
-  getDoc,
-  serverTimestamp,
-  writeBatch,
-} from "firebase/firestore";
-
-import { serverClientDb } from "@/lib/server/firebase-client";
+import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
 export interface AdminRequestCreateInput {
@@ -25,8 +17,8 @@ export interface AdminRequestCreateInput {
 export async function createAdminRequestRecord(data: AdminRequestCreateInput) {
   const adminIds = await getAssignedManagerIds(data.buildingId);
 
-  const requestRef = doc(collection(serverClientDb, "adminRequests"));
-  const batch = writeBatch(serverClientDb);
+  const requestRef = db.collection("adminRequests").doc();
+  const batch = db.batch();
 
   batch.set(requestRef, {
     ...data,
@@ -36,7 +28,7 @@ export async function createAdminRequestRecord(data: AdminRequestCreateInput) {
   });
 
   adminIds.forEach((adminUid) => {
-    const notificationRef = doc(collection(serverClientDb, "notifications"));
+    const notificationRef = db.collection("notifications").doc();
     batch.set(notificationRef, {
       recipientUid: adminUid,
       type: "system",
@@ -59,9 +51,9 @@ export async function respondToAdminRequestRecord(
   requestId: string,
   responseText: string
 ) {
-  const requestRef = doc(serverClientDb, "adminRequests", requestId);
-  const requestSnapshot = await getDoc(requestRef);
-  if (!requestSnapshot.exists()) {
+  const requestRef = db.collection("adminRequests").doc(requestId);
+  const requestSnapshot = await requestRef.get();
+  if (!requestSnapshot.exists) {
     throw new Error("Admin request not found.");
   }
 
@@ -71,13 +63,13 @@ export async function respondToAdminRequestRecord(
     buildingId: string;
   };
 
-  const batch = writeBatch(serverClientDb);
+  const batch = db.batch();
   batch.update(requestRef, {
     adminResponse: responseText,
     status: "responded",
   });
 
-  const notificationRef = doc(collection(serverClientDb, "notifications"));
+  const notificationRef = db.collection("notifications").doc();
   batch.set(notificationRef, {
     recipientUid: requestData.userId,
     type: "system",

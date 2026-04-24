@@ -12,6 +12,26 @@ const validateApproverSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
 
+function getErrorLogDetails(error: unknown) {
+  if (error instanceof Error) {
+    const errorWithCode = error as Error & { code?: unknown };
+
+    return {
+      error,
+      message: error.message,
+      code: errorWithCode.code,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    error,
+    message: String(error),
+    code: undefined,
+    stack: undefined,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -25,6 +45,11 @@ export async function POST(request: NextRequest) {
       ok: true,
     });
   } catch (error) {
+    console.error(
+      "[API] POST /api/reservation-approvers/validate failed",
+      getErrorLogDetails(error)
+    );
+
     return handleApiError(error);
   }
 }

@@ -1,14 +1,7 @@
 import "server-only";
 
-import {
-  collection,
-  doc,
-  serverTimestamp,
-  writeBatch,
-} from "firebase/firestore";
-
 import { analyzeSentiment, getSentimentLabel } from "@/lib/sentiment";
-import { serverClientDb } from "@/lib/server/firebase-client";
+import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
 export interface FeedbackCreateInput {
@@ -29,8 +22,8 @@ export async function createFeedbackRecord(data: FeedbackCreateInput) {
   const sentiment = analyzeSentiment(feedbackText);
   const sentimentLabel = getSentimentLabel(sentiment.compound);
 
-  const feedbackRef = doc(collection(serverClientDb, "feedback"));
-  const batch = writeBatch(serverClientDb);
+  const feedbackRef = db.collection("feedback").doc();
+  const batch = db.batch();
 
   batch.set(feedbackRef, {
     ...data,
@@ -47,7 +40,7 @@ export async function createFeedbackRecord(data: FeedbackCreateInput) {
   });
 
   adminIds.forEach((adminUid) => {
-    const notificationRef = doc(collection(serverClientDb, "notifications"));
+    const notificationRef = db.collection("notifications").doc();
     batch.set(notificationRef, {
       recipientUid: adminUid,
       type: "feedback",
@@ -68,8 +61,8 @@ export async function createFeedbackRecord(data: FeedbackCreateInput) {
 }
 
 export async function respondToFeedbackRecord(feedbackId: string, response: string) {
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "feedback", feedbackId), {
+  const batch = db.batch();
+  batch.update(db.collection("feedback").doc(feedbackId), {
     adminResponse: response,
     respondedAt: serverTimestamp(),
   });

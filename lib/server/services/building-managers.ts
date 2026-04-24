@@ -1,26 +1,21 @@
 import "server-only";
 
-import { collection, getDocs, query, where } from "firebase/firestore";
-
 import { resolveCampusAssignment } from "../../campusAssignments";
 import { inferCampusFromBuilding } from "@/lib/campuses";
+import { db } from "@/lib/configs/firebase-admin";
 import { normalizeRole, USER_ROLES } from "@/lib/domain/roles";
-import { serverClientDb } from "@/lib/server/firebase-client";
 
 export async function getAssignedManagerIds(buildingId: string) {
   const campus = inferCampusFromBuilding({ id: buildingId });
   const [campusSnapshot, legacySnapshot, multiSnapshot] = await Promise.all([
     campus
-      ? getDocs(
-          query(collection(serverClientDb, "users"), where("campus", "==", campus))
-        )
+      ? db.collection("users").where("campus", "==", campus).get()
       : Promise.resolve(null),
-    getDocs(
-      query(collection(serverClientDb, "users"), where("assignedBuildingId", "==", buildingId))
-    ),
-    getDocs(
-      query(collection(serverClientDb, "users"), where("assignedBuildingIds", "array-contains", buildingId))
-    ),
+    db.collection("users").where("assignedBuildingId", "==", buildingId).get(),
+    db
+      .collection("users")
+      .where("assignedBuildingIds", "array-contains", buildingId)
+      .get(),
   ]);
 
   const candidateDocs = [

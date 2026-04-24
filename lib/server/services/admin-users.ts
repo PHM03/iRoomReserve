@@ -1,30 +1,22 @@
 import "server-only";
 
 import {
-  collection,
-  deleteField,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  writeBatch,
-  where,
-} from "firebase/firestore";
-
-import {
   getCampusName,
   getManagedBuildingIdsForCampus,
   resolveCampusAssignment,
 } from "../../campusAssignments";
 import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/domain/roles";
 import { type ReservationCampus } from "@/lib/campuses";
-import { serverClientDb } from "@/lib/server/firebase-client";
-import { getOptionalAdminAuth } from "@/lib/server/firebase-admin";
+import {
+  auth as adminAuth,
+  db,
+  deleteField,
+  serverTimestamp,
+} from "@/lib/configs/firebase-admin";
 
 async function clearManagedCampusIfNeeded(uid: string) {
-  const userSnapshot = await getDoc(doc(serverClientDb, "users", uid));
-  if (!userSnapshot.exists()) {
+  const userSnapshot = await db.collection("users").doc(uid).get();
+  if (!userSnapshot.exists) {
     return null;
   }
 
@@ -49,12 +41,10 @@ async function clearManagedCampusIfNeeded(uid: string) {
     return null;
   }
 
-  const buildingsSnapshot = await getDocs(
-    query(
-      collection(serverClientDb, "buildings"),
-      where("assignedAdminUid", "==", uid)
-    )
-  );
+  const buildingsSnapshot = await db
+    .collection("buildings")
+    .where("assignedAdminUid", "==", uid)
+    .get();
 
   return {
     campus,
@@ -63,8 +53,8 @@ async function clearManagedCampusIfNeeded(uid: string) {
 }
 
 export async function approveUserProfile(uid: string) {
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "users", uid), {
+  const batch = db.batch();
+  batch.update(db.collection("users").doc(uid), {
     status: "approved",
     updatedAt: serverTimestamp(),
   });
@@ -82,8 +72,8 @@ export async function approveManagedUserProfile(
   }
 
   const existingAssignment = await clearManagedCampusIfNeeded(uid);
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "users", uid), {
+  const batch = db.batch();
+  batch.update(db.collection("users").doc(uid), {
     status: "approved",
     role,
     campus,
@@ -101,7 +91,7 @@ export async function approveManagedUserProfile(
     });
   });
   managedBuildingIds.forEach((buildingId) => {
-    batch.update(doc(serverClientDb, "buildings", buildingId), {
+    batch.update(db.collection("buildings").doc(buildingId), {
       assignedAdminUid: uid,
       updatedAt: serverTimestamp(),
     });
@@ -111,8 +101,8 @@ export async function approveManagedUserProfile(
 
 export async function rejectUserProfile(uid: string) {
   const managedCampus = await clearManagedCampusIfNeeded(uid);
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "users", uid), {
+  const batch = db.batch();
+  batch.update(db.collection("users").doc(uid), {
     status: "rejected",
     campus: deleteField(),
     campusName: deleteField(),
@@ -132,8 +122,8 @@ export async function rejectUserProfile(uid: string) {
 }
 
 export async function disableUserProfile(uid: string) {
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "users", uid), {
+  const batch = db.batch();
+  batch.update(db.collection("users").doc(uid), {
     status: "disabled",
     updatedAt: serverTimestamp(),
   });
@@ -141,8 +131,8 @@ export async function disableUserProfile(uid: string) {
 }
 
 export async function enableUserProfile(uid: string) {
-  const batch = writeBatch(serverClientDb);
-  batch.update(doc(serverClientDb, "users", uid), {
+  const batch = db.batch();
+  batch.update(db.collection("users").doc(uid), {
     status: "approved",
     updatedAt: serverTimestamp(),
   });
@@ -151,8 +141,8 @@ export async function enableUserProfile(uid: string) {
 
 export async function deleteUserProfile(uid: string) {
   const managedCampus = await clearManagedCampusIfNeeded(uid);
-  const batch = writeBatch(serverClientDb);
-  batch.delete(doc(serverClientDb, "users", uid));
+  const batch = db.batch();
+  batch.delete(db.collection("users").doc(uid));
   managedCampus?.buildingRefs.forEach((buildingRef) => {
     batch.update(buildingRef, {
       assignedAdminUid: null,
@@ -161,12 +151,9 @@ export async function deleteUserProfile(uid: string) {
   });
   await batch.commit();
 
-  const adminAuth = getOptionalAdminAuth();
-  if (adminAuth) {
-    try {
-      await adminAuth.deleteUser(uid);
-    } catch {
-      // Firestore deletion remains the compatibility fallback when Admin SDK is unavailable.
-    }
+  try {
+    await adminAuth.deleteUser(uid);
+  } catch {
+    // Firestore deletion remains completed even if Auth deletion fails.
   }
 }
