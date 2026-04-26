@@ -10,6 +10,7 @@ const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD date.");
 const emailString = z.string().trim().toLowerCase().email();
+const positiveInteger = z.number().int().positive();
 const nullableBeaconIdSchema = z.preprocess(
   (value) => {
     if (typeof value !== "string") {
@@ -132,6 +133,9 @@ const reservationCommonSchema = z.object({
   purpose: nonEmptyString,
   approvalDocumentName: nonEmptyString.optional(),
   approvalDocumentUrl: z.string().trim().url().optional(),
+  approvalDocumentPath: nonEmptyString.optional(),
+  approvalDocumentMimeType: nonEmptyString.optional(),
+  approvalDocumentSize: positiveInteger.optional(),
   equipment: equipmentSchema.optional(),
 });
 

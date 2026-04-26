@@ -54,6 +54,9 @@ interface ReservationRecord {
   purpose: string;
   approvalDocumentName?: string;
   approvalDocumentUrl?: string;
+  approvalDocumentPath?: string;
+  approvalDocumentMimeType?: string;
+  approvalDocumentSize?: number;
   equipment?: Record<string, number>;
   approvalFlow: ReservationApprovalStep[];
   currentStep: number;
@@ -83,6 +86,9 @@ interface ReservationCreateBaseInput {
   purpose: string;
   approvalDocumentName?: string;
   approvalDocumentUrl?: string;
+  approvalDocumentPath?: string;
+  approvalDocumentMimeType?: string;
+  approvalDocumentSize?: number;
   equipment?: Record<string, number>;
 }
 
