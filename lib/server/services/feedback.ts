@@ -1,6 +1,10 @@
 import "server-only";
 
-import { analyzeSentiment, getSentimentLabel } from "@/lib/sentiment";
+import {
+  analyzeSentiment,
+  averageSentimentScores,
+  getSentimentLabel,
+} from "@/lib/sentiment";
 import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
@@ -58,6 +62,26 @@ export async function createFeedbackRecord(data: FeedbackCreateInput) {
 
   await batch.commit();
   return feedbackRef.id;
+}
+
+export async function getAverageFeedbackSentiment(roomId: string) {
+  const normalizedRoomId = roomId.trim();
+
+  if (!normalizedRoomId) {
+    return 0;
+  }
+
+  const snapshot = await db
+    .collection("feedback")
+    .where("roomId", "==", normalizedRoomId)
+    .get();
+
+  return averageSentimentScores(
+    snapshot.docs.map((feedbackDoc) => {
+      const data = feedbackDoc.data() as { compoundScore?: unknown };
+      return typeof data.compoundScore === "number" ? data.compoundScore : null;
+    })
+  );
 }
 
 export async function respondToFeedbackRecord(feedbackId: string, response: string) {

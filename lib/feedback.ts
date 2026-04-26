@@ -14,11 +14,10 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { db } from "@/lib/configs/firebase";
+import { auth, db } from "@/lib/configs/firebase";
 import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
 import {
   analyzeSentiment,
-  averageSentimentScores,
   getSentimentLabel,
   type SentimentAnalysis,
   type SentimentLabel,
@@ -124,6 +123,7 @@ export async function submitFeedback(
 ): Promise<SubmitFeedbackResult> {
   const normalizedRoomId = roomId.trim();
   const text = feedbackText.trim();
+  const currentUser = auth.currentUser;
 
   if (!normalizedRoomId) {
     throw new Error("A room id is required to submit feedback.");
@@ -133,16 +133,26 @@ export async function submitFeedback(
     throw new Error("Feedback text cannot be empty.");
   }
 
+  if (!currentUser) {
+    throw new Error("You must be signed in to submit feedback.");
+  }
+
   const sentiment = analyzeSentiment(text);
   const sentimentLabel = getSentimentLabel(sentiment.compound);
   const feedbackRef = await addDoc(collection(db, "feedback"), {
     roomId: normalizedRoomId,
+    userId: currentUser.uid,
+    userName: currentUser.displayName?.trim() ?? "",
     text,
+    message: text,
+    rating: 0,
     compoundScore: sentiment.compound,
     positiveScore: sentiment.positive,
     neutralScore: sentiment.neutral,
     negativeScore: sentiment.negative,
     sentimentLabel,
+    adminResponse: null,
+    respondedAt: null,
     createdAt: serverTimestamp(),
   });
 
@@ -231,16 +241,10 @@ export async function getAverageSentiment(roomId: string): Promise<number> {
     return 0;
   }
 
-  const sentimentQuery = query(
-    collection(db, "feedback"),
-    where("roomId", "==", normalizedRoomId)
-  );
-  const snapshot = await getDocs(sentimentQuery);
+  const payload = await apiRequest<{ average: number }>("/api/feedback/average", {
+    method: "GET",
+    params: { roomId: normalizedRoomId },
+  });
 
-  return averageSentimentScores(
-    snapshot.docs.map((feedbackDoc) => {
-      const data = feedbackDoc.data() as { compoundScore?: unknown };
-      return typeof data.compoundScore === "number" ? data.compoundScore : null;
-    })
-  );
+  return payload.average;
 }

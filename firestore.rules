@@ -32,6 +32,57 @@ service cloud.firestore {
         ];
     }
 
+    function hasUserProfile() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isApprovedFeedbackStaff() {
+      return hasUserProfile() &&
+        userProfile().status == "approved" &&
+        userProfile().role in [
+          "Administrator",
+          "Utility Staff",
+          "Super Admin",
+          "admin",
+          "utility",
+          "super_admin",
+          "Admin",
+          "Utility"
+        ];
+    }
+
+    function canReadBuildingFeedback(buildingId) {
+      return isApprovedFeedbackStaff() && (
+        userProfile().role in ["Super Admin", "super_admin"] ||
+        userProfile().assignedBuildingId == buildingId ||
+        (
+          userProfile().assignedBuildingIds is list &&
+          buildingId in userProfile().assignedBuildingIds
+        ) ||
+        (
+          userProfile().campus == "main" &&
+          buildingId in ["gd1", "gd2", "gd3"]
+        ) ||
+        (
+          userProfile().campus == "digi" &&
+          buildingId == "sdca-digital-campus"
+        ) ||
+        (
+          userProfile().campusName == "SDCA Main Campus" &&
+          buildingId in ["gd1", "gd2", "gd3"]
+        ) ||
+        (
+          userProfile().campusName == "SDCA Digi Campus" &&
+          buildingId == "sdca-digital-campus"
+        )
+      );
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isPrivilegedUser());
       allow create, update: if isSignedIn() && request.auth.uid == userId;
@@ -47,8 +98,22 @@ service cloud.firestore {
     }
 
     match /feedback/{docId} {
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(["roomId", "userId"]) &&
+        request.resource.data.roomId is string &&
+        request.resource.data.userId == request.auth.uid &&
+        (
+          request.resource.data.text is string ||
+          request.resource.data.message is string
+        );
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        (
+          resource.data.buildingId is string &&
+          canReadBuildingFeedback(resource.data.buildingId)
+        )
+      );
+      allow update, delete: if false;
     }
 
     match /buildings/{docId} {
