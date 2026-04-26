@@ -272,21 +272,14 @@ export function onAvailableRoomsByBuilding(
 }
 
 export async function getRoomsByBuilding(buildingId: string): Promise<Room[]> {
-  const roomQuery = query(
-    collection(db, "rooms"),
-    where("buildingId", "==", buildingId),
-    orderBy("floor"),
-    orderBy("name")
-  );
-  const snapshot = await getDocs(roomQuery);
+  const payload = await apiRequest<Room[]>("/api/rooms", {
+    method: "GET",
+    params: { buildingId },
+    userId: auth.currentUser?.uid,
+  });
 
-  return snapshot.docs.map((roomDoc) =>
-    mapRoom(
-      roomDoc.id,
-      roomDoc.data() as Omit<Room, "id" | "status"> & {
-        status?: string | null;
-      }
-    )
+  return payload.map((room) =>
+    mapRoom(room.id, room as Omit<Room, "id" | "status"> & { status?: string | null })
   );
 }
 
@@ -313,17 +306,25 @@ export async function getAvailableRoomsByBuilding(
 }
 
 export async function getRoomById(roomId: string): Promise<Room | null> {
-  const snapshot = await getDoc(doc(db, "rooms", roomId));
-  if (!snapshot.exists()) {
-    return null;
-  }
+  try {
+    const payload = await apiRequest<Room>(`/api/rooms/${roomId}`, {
+      method: "GET",
+      userId: auth.currentUser?.uid,
+    });
 
-  return mapRoom(
-    snapshot.id,
-    snapshot.data() as Omit<Room, "id" | "status"> & {
-      status?: string | null;
+    return mapRoom(
+      payload.id,
+      payload as Omit<Room, "id" | "status"> & {
+        status?: string | null;
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("not found")) {
+      return null;
     }
-  );
+
+    throw error;
+  }
 }
 
 export async function getRoomsByIds(roomIds: string[]): Promise<Room[]> {
@@ -332,25 +333,22 @@ export async function getRoomsByIds(roomIds: string[]): Promise<Room[]> {
     return [];
   }
 
-  const roomIdChunks = chunkValues(uniqueRoomIds, 10);
-  const chunkResults = await Promise.all(
-    roomIdChunks.map(async (roomIdChunk) => {
-      const snapshot = await getDocs(
-        query(collection(db, "rooms"), where(documentId(), "in", roomIdChunk))
-      );
+  const payload = await apiRequest<Room[]>("/api/rooms", {
+    method: "GET",
+    params: { roomIds: uniqueRoomIds.join(",") },
+    userId: auth.currentUser?.uid,
+  });
 
-      return snapshot.docs.map((roomDoc) =>
-        mapRoom(
-          roomDoc.id,
-          roomDoc.data() as Omit<Room, "id" | "status"> & {
-            status?: string | null;
-          }
-        )
-      );
-    })
-  );
-
-  return chunkResults.flat().sort(sortRooms);
+  return payload
+    .map((room) =>
+      mapRoom(
+        room.id,
+        room as Omit<Room, "id" | "status"> & {
+          status?: string | null;
+        }
+      )
+    )
+    .sort(sortRooms);
 }
 
 export function onRoomsByIds(

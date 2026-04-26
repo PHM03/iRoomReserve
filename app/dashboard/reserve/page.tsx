@@ -13,7 +13,7 @@ import {
   createRecurringReservation,
   validateReservationApprover,
 } from '@/lib/reservations';
-import { onRoomsByBuildingIds, type Room } from '@/lib/rooms';
+import { getRoomsByBuilding, type Room } from '@/lib/rooms';
 
 type CampusFilter = ReservationCampus | 'all';
 type DetailsStep = 2 | 3;
@@ -173,6 +173,7 @@ export default function ReserveRoomPage() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
+  const [roomsError, setRoomsError] = useState('');
   const [activeCampusFilter, setActiveCampusFilter] = useState<CampusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRoomFilters, setActiveRoomFilters] = useState<RoomFilterKey[]>([]);
@@ -200,15 +201,43 @@ export default function ReserveRoomPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = onRoomsByBuildingIds(ALL_MANAGED_BUILDING_IDS, (nextRooms) => {
-      setRooms(nextRooms);
-      setRoomsLoading(false);
-    });
+    if (!firebaseUser) {
+      return;
+    }
+
+    let active = true;
+
+    setRoomsLoading(true);
+    setRoomsError('');
+
+    Promise.all(ALL_MANAGED_BUILDING_IDS.map((buildingId) => getRoomsByBuilding(buildingId)))
+      .then((roomGroups) => {
+        if (!active) {
+          return;
+        }
+
+        setRooms(roomGroups.flat());
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+
+        setRooms([]);
+        setRoomsError(
+          error instanceof Error ? error.message : 'Failed to load rooms.'
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setRoomsLoading(false);
+        }
+      });
 
     return () => {
-      unsubscribe();
+      active = false;
     };
-  }, []);
+  }, [firebaseUser]);
 
   const selectedRoom = selectedRoomParam
     ? rooms.find((room) => room.id === selectedRoomParam) ?? null
@@ -722,6 +751,18 @@ export default function ReserveRoomPage() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     <p className="text-sm text-black">Loading rooms...</p>
+                  </div>
+                ) : roomsError ? (
+                  <div className="rounded-2xl border border-red-500/20 bg-red-50/80 p-8 text-center">
+                    <p className="text-sm font-bold text-black">Rooms could not be loaded.</p>
+                    <p className="mt-1 text-xs text-black">{roomsError}</p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="mt-4 text-sm font-bold text-primary transition-colors hover:text-primary-hover"
+                    >
+                      Retry
+                    </button>
                   </div>
                 ) : filteredRooms.length === 0 ? (
                   <div className="rounded-2xl border border-dark/10 bg-dark/5 p-8 text-center">

@@ -2,37 +2,85 @@ import "server-only";
 
 import admin from "firebase-admin";
 
-// Required in .env.local for all backend API routes:
-// FIREBASE_PROJECT_ID
-// FIREBASE_CLIENT_EMAIL
-// FIREBASE_PRIVATE_KEY
-const REQUIRED_FIREBASE_ADMIN_ENV_KEYS = [
-  "FIREBASE_PROJECT_ID",
-  "FIREBASE_CLIENT_EMAIL",
-  "FIREBASE_PRIVATE_KEY",
-] as const;
+const FIREBASE_ADMIN_ENV_ALIASES = {
+  FIREBASE_PROJECT_ID: [
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_ADMIN_PROJECT_ID",
+  ],
+  FIREBASE_CLIENT_EMAIL: [
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+  ],
+  FIREBASE_PRIVATE_KEY: [
+    "FIREBASE_PRIVATE_KEY",
+    "FIREBASE_ADMIN_PRIVATE_KEY",
+  ],
+} as const;
+
+function clearInvalidProxyEnv() {
+  const proxyKeys = [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+  ] as const;
+
+  proxyKeys.forEach((key) => {
+    const value = process.env[key]?.trim();
+
+    if (
+      value === "http://127.0.0.1:9" ||
+      value === "https://127.0.0.1:9"
+    ) {
+      delete process.env[key];
+    }
+  });
+}
 
 function getFirebaseAdminEnvPresence() {
   return {
-    FIREBASE_PROJECT_ID: Boolean(process.env.FIREBASE_PROJECT_ID?.trim()),
-    FIREBASE_CLIENT_EMAIL: Boolean(process.env.FIREBASE_CLIENT_EMAIL?.trim()),
-    FIREBASE_PRIVATE_KEY: Boolean(process.env.FIREBASE_PRIVATE_KEY?.trim()),
+    FIREBASE_PROJECT_ID: FIREBASE_ADMIN_ENV_ALIASES.FIREBASE_PROJECT_ID.some(
+      (key) => Boolean(process.env[key]?.trim())
+    ),
+    FIREBASE_CLIENT_EMAIL: FIREBASE_ADMIN_ENV_ALIASES.FIREBASE_CLIENT_EMAIL.some(
+      (key) => Boolean(process.env[key]?.trim())
+    ),
+    FIREBASE_PRIVATE_KEY: FIREBASE_ADMIN_ENV_ALIASES.FIREBASE_PRIVATE_KEY.some(
+      (key) => Boolean(process.env[key]?.trim())
+    ),
   };
 }
 
 function getRequiredEnvValue(
-  key: (typeof REQUIRED_FIREBASE_ADMIN_ENV_KEYS)[number]
+  key: keyof typeof FIREBASE_ADMIN_ENV_ALIASES
 ) {
-  const value = process.env[key]?.trim();
-  if (!value) {
+  const matchedKey = FIREBASE_ADMIN_ENV_ALIASES[key].find(
+    (envKey) => process.env[envKey]?.trim()
+  );
+
+  if (!matchedKey) {
     throw new Error(
-      `Firebase Admin SDK requires ${REQUIRED_FIREBASE_ADMIN_ENV_KEYS.join(
-        ", "
-      )} in .env.local. Missing: ${key}.`
+      `Firebase Admin SDK requires one of these env vars: ${FIREBASE_ADMIN_ENV_ALIASES[
+        key
+      ].join(", ")}. Missing: ${key}.`
     );
   }
 
-  return value;
+  const rawValue = process.env[matchedKey]?.trim() ?? "";
+
+  if (key !== "FIREBASE_PRIVATE_KEY") {
+    return rawValue;
+  }
+
+  const unwrappedValue =
+    (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+    (rawValue.startsWith("'") && rawValue.endsWith("'"))
+      ? rawValue.slice(1, -1)
+      : rawValue;
+
+  return unwrappedValue;
 }
 
 function getFirebaseAdminConfig() {
@@ -47,6 +95,8 @@ function getFirebaseAdminConfig() {
 }
 
 if (!admin.apps.length) {
+  clearInvalidProxyEnv();
+
   console.info(
     "[firebase-admin] Environment variable presence",
     getFirebaseAdminEnvPresence()
