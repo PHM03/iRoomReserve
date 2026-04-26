@@ -1089,6 +1089,9 @@ export async function completeReservationRecord(
     if (reservation.userId !== userId) {
       throw new ApiError(403, "forbidden", "You cannot complete this reservation.");
     }
+    if (reservation.status === "completed") {
+      return;
+    }
     if (reservation.status !== "approved") {
       throw new ApiError(
         400,
@@ -1105,6 +1108,8 @@ export async function completeReservationRecord(
 
     batch.update(reservationRef, {
       status: "completed",
+      checkedInAt: null,
+      checkInMethod: null,
       updatedAt: serverTimestamp(),
     });
 

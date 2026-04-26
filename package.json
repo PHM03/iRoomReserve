@@ -10,6 +10,7 @@
     "test": "vitest run --pool=threads"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "firebase": "^12.10.0",
     "next": "16.1.6",
     "react": "19.2.3",

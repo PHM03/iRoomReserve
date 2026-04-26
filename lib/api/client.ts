@@ -2,38 +2,27 @@
 
 import { auth } from "@/lib/configs/firebase";
 import type { UserRole } from "@/lib/domain/roles";
+import { buildUrl, type QueryParams } from "@/lib/utils/buildUrl";
 
 interface ApiRequestOptions {
   body?: unknown;
   method?: "GET" | "POST" | "PATCH" | "DELETE";
-  params?: Record<string, string | number | boolean | null | undefined>;
+  params?: QueryParams;
   role?: UserRole | null;
   userId?: string | null;
 }
 
-function buildUrl(
-  input: string,
-  params?: ApiRequestOptions["params"]
-) {
-  if (!params || Object.keys(params).length === 0) {
-    return input;
-  }
-
-  const url =
-    typeof window === "undefined"
-      ? new URL(input, "http://localhost")
-      : new URL(input, window.location.origin);
-
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      url.searchParams.set(key, String(value));
-    }
-  });
-
-  return typeof window === "undefined"
-    ? `${url.pathname}${url.search}`
-    : url.toString();
+interface ApiErrorResponse {
+  error?: {
+    message?: string;
+  };
 }
+
+type ApiRequestError = Error & {
+  contentType?: string;
+  responseBody?: string;
+  status?: number;
+};
 
 export async function apiRequest<T>(
   input: string,
@@ -53,12 +42,37 @@ export async function apiRequest<T>(
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
-  const payload = (await response.json().catch(() => null)) as
-    | { error?: { message?: string } }
-    | null;
+  const responseText = await response.text();
+  let payload: ApiErrorResponse | T | null = null;
+
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText) as ApiErrorResponse | T;
+    } catch {
+      payload = null;
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(payload?.error?.message ?? "The request failed.");
+    const contentType = response.headers.get("content-type") ?? "";
+    const responseBody = responseText.trim();
+    const isHtmlResponse =
+      contentType.includes("text/html") ||
+      responseBody.startsWith("<!DOCTYPE") ||
+      responseBody.startsWith("<html");
+
+    const error = new Error(
+      (payload as ApiErrorResponse | null)?.error?.message ??
+        (!isHtmlResponse && responseBody.length > 0
+          ? responseBody
+          : `The request failed (status ${response.status}).`)
+    ) as ApiRequestError;
+
+    error.status = response.status;
+    error.responseBody = responseBody;
+    error.contentType = contentType;
+
+    throw error;
   }
 
   return payload as T;

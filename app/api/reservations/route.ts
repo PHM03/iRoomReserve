@@ -9,6 +9,8 @@ import {
   createReservationRecord,
 } from "@/lib/server/services/reservations";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
