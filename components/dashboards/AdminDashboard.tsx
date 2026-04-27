@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BleAdminMonitor from '@/components/BleAdminMonitor';
 import BleSummaryCard from '@/components/BleSummaryCard';
 import AdminRoomStatusSection from '@/components/admin/AdminRoomStatusSection';
@@ -10,14 +10,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import type { AdminTab } from '@/components/NavBar';
 import {
-  onPendingReservationsByBuilding,
-  onReservationsByBuilding,
   approveReservation,
   rejectReservation,
   Reservation,
 } from '@/lib/reservations';
 import {
-  onUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   Notification,
@@ -29,11 +26,9 @@ import {
   updateRoom,
   deleteRoom,
   updateRoomStatus,
-  onRoomsByBuilding,
 } from '@/lib/rooms';
 import {
   Feedback,
-  onFeedbackByBuilding,
   respondToFeedback,
 } from '@/lib/feedback';
 import { getBuildingById } from '@/lib/buildings';
@@ -43,20 +38,16 @@ import {
   addSchedule,
   updateSchedule,
   deleteSchedule,
-  onSchedulesByBuilding,
   isRoomInClass,
   DAY_NAMES,
   formatTime12h,
 } from '@/lib/schedules';
-import {
-  RoomHistoryEntry,
-  onRoomHistoryByBuilding,
-} from '@/lib/roomHistory';
+import { RoomHistoryEntry } from '@/lib/roomHistory';
 import {
   AdminRequest,
-  onAdminRequestsByBuilding,
   respondToAdminRequest,
 } from '@/lib/adminRequests';
+import { fetchAdminDashboardSnapshot } from '@/lib/adminDashboard';
 import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import { normalizeRoomCheckInMethod } from '@/lib/roomStatus';
 
@@ -302,62 +293,45 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const [inboxReplyText, setInboxReplyText] = useState('');
   const [inboxSubmitting, setInboxSubmitting] = useState(false);
   const [inboxExpandedId, setInboxExpandedId] = useState<string | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
   useEffect(() => {
     // Selected building is derived from the current profile and local picker state.
   }, [managedBuildings]);
 
   // ─── Real-time Listeners ────────────────────────────────────
-  useEffect(() => {
+  const reloadDashboard = useCallback(async () => {
     if (!buildingId || !firebaseUser?.uid) return;
 
-    let cancelled = false;
+    setDashboardLoading(true);
+    try {
+      const snapshot = await fetchAdminDashboardSnapshot(buildingId);
+      setAdminRequests(snapshot.adminRequests);
+      setAllReservations(snapshot.allReservations);
+      setFeedbackList(snapshot.feedbackList);
+      setNotifications(snapshot.notifications);
+      setRequests(snapshot.requests);
+      setRoomHistory(snapshot.roomHistory);
+      setRooms(snapshot.rooms);
+      setSchedules(snapshot.schedules);
+    } catch (error) {
+      console.warn('Failed to load admin dashboard snapshot:', error);
+      setAdminRequests([]);
+      setAllReservations([]);
+      setFeedbackList([]);
+      setNotifications([]);
+      setRequests([]);
+      setRoomHistory([]);
+      setRooms([]);
+      setSchedules([]);
+    } finally {
+      setDashboardLoading(false);
+    }
+  }, [buildingId, firebaseUser?.uid, setDashboardLoading]);
 
-    const unsubReservations = onPendingReservationsByBuilding(buildingId, (nextRequests) => {
-      if (cancelled) return;
-      setRequests(nextRequests);
-    });
-    const unsubAllReservations = onReservationsByBuilding(buildingId, (nextReservations) => {
-      if (cancelled) return;
-      setAllReservations(nextReservations);
-    });
-    const unsubRooms = onRoomsByBuilding(buildingId, (nextRooms) => {
-      if (cancelled) return;
-      setRooms(nextRooms);
-    });
-    const unsubFeedback = onFeedbackByBuilding(buildingId, (nextFeedback) => {
-      if (cancelled) return;
-      setFeedbackList(nextFeedback);
-    });
-    const unsubNotifs = onUnreadNotifications(firebaseUser.uid, (nextNotifications) => {
-      if (cancelled) return;
-      setNotifications(nextNotifications);
-    });
-    const unsubSchedules = onSchedulesByBuilding(buildingId, (nextSchedules) => {
-      if (cancelled) return;
-      setSchedules(nextSchedules);
-    });
-    const unsubHistory = onRoomHistoryByBuilding(buildingId, (nextHistory) => {
-      if (cancelled) return;
-      setRoomHistory(nextHistory);
-    });
-    const unsubAdminRequests = onAdminRequestsByBuilding(buildingId, (nextAdminRequests) => {
-      if (cancelled) return;
-      setAdminRequests(nextAdminRequests);
-    });
-
-    return () => {
-      cancelled = true;
-      unsubReservations();
-      unsubAllReservations();
-      unsubRooms();
-      unsubFeedback();
-      unsubNotifs();
-      unsubSchedules();
-      unsubHistory();
-      unsubAdminRequests();
-    };
-  }, [buildingId, firebaseUser?.uid]);
+  useEffect(() => {
+    void reloadDashboard();
+  }, [reloadDashboard]);
 
   // Load building floors when on add-rooms tab
   useEffect(() => {
@@ -376,6 +350,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     setActionLoading(id);
     try {
       await approveReservation(id, approverEmail);
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to approve:', err);
       setReservationActionError(
@@ -398,6 +373,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       await rejectReservation(id, approverEmail, rejectReason.trim());
       setRejectingReservationId(null);
       setRejectReason('');
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to reject:', err);
       setReservationActionError(
@@ -410,10 +386,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const handleMarkAllRead = async () => {
     if (!firebaseUser) return;
     await markAllNotificationsRead(firebaseUser.uid);
+    await reloadDashboard();
   };
 
   const handleDismissNotification = async (notifId: string) => {
     await markNotificationRead(notifId);
+    await reloadDashboard();
   };
 
   const resetAddRoomWizard = () => {
@@ -480,6 +458,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       };
       await addRoom(data);
       resetAddRoomWizard();
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to add room:', err);
     }
@@ -502,12 +481,8 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       };
 
       await updateRoom(roomId, payload);
-      setRooms((currentRooms) =>
-        currentRooms.map((room) =>
-          room.id === roomId ? { ...room, ...payload } : room
-        )
-      );
       resetEditRoomForm();
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to update room:', err);
       alert('Failed to update room. Please try again.');
@@ -522,11 +497,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
     try {
       await deleteRoom(roomId);
-      setRooms((currentRooms) => currentRooms.filter((room) => room.id !== roomId));
-      setSchedules((currentSchedules) =>
-        currentSchedules.filter((schedule) => schedule.roomId !== roomId)
-      );
-
       if (editingRoomId === roomId) {
         resetEditRoomForm();
       }
@@ -534,6 +504,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       if (schedRoomId === roomId) {
         setSchedRoomId('');
       }
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to delete:', err);
       alert(
@@ -549,6 +520,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const handleStatusChange = async (roomId: string, status: Room['status']) => {
     try {
       await updateRoomStatus(roomId, status);
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to update status:', err);
       alert('Failed to update room status. Check the console for details.');
@@ -561,6 +533,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       await respondToFeedback(feedbackId, responseText.trim());
       setRespondingId(null);
       setResponseText('');
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to respond:', err);
     }
@@ -603,6 +576,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       setSchedDay(1);
       setSchedStart('');
       setSchedEnd('');
+      await reloadDashboard();
     } catch (err) {
       console.warn('Failed to save schedule:', err);
       alert('Failed to save schedule. Check the console for details.');
@@ -623,7 +597,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
   const handleDeleteSchedule = async (id: string) => {
     if (!confirm('Delete this schedule?')) return;
-    try { await deleteSchedule(id); } catch (err) { console.warn('Failed to delete schedule:', err); }
+    try {
+      await deleteSchedule(id);
+      await reloadDashboard();
+    } catch (err) {
+      console.warn('Failed to delete schedule:', err);
+    }
   };
 
   // ─── Computed Values ────────────────────────────────────────
@@ -1182,7 +1161,12 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
           )}
 
           {/* Room List */}
-          {rooms.length === 0 && addRoomStep === 0 ? (
+          {dashboardLoading && rooms.length === 0 && addRoomStep === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <h4 className="text-lg font-bold text-black mb-1">Loading rooms...</h4>
+              <p className="text-sm text-black">Fetching the latest building snapshot.</p>
+            </div>
+          ) : rooms.length === 0 && addRoomStep === 0 ? (
             <div className="glass-card p-12 text-center">
               <div className="text-4xl mb-3">🏠</div>
               <h4 className="text-lg font-bold text-black mb-1">No Rooms Yet</h4>
@@ -2049,6 +2033,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             await respondToAdminRequest(requestId, inboxReplyText.trim());
             setInboxReplyingTo(null);
             setInboxReplyText('');
+            await reloadDashboard();
           } catch (err) {
             console.error('Failed to respond:', err);
           }
