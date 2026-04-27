@@ -323,7 +323,10 @@ async function getReservationApproverInput(
   campus: ReservationCampus
 ): Promise<ReservationApproverInput> {
   if (campus === "digi") {
-    if (!("buildingAdminEmail" in input)) {
+    const buildingAdminEmail =
+      "buildingAdminEmail" in input ? input.buildingAdminEmail?.trim() : "";
+
+    if (!buildingAdminEmail) {
       throw new ApiError(
         400,
         "missing_approvers",
@@ -333,7 +336,7 @@ async function getReservationApproverInput(
 
     return {
       campus,
-      buildingAdminEmail: input.buildingAdminEmail,
+      buildingAdminEmail,
     };
   }
 
