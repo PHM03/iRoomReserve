@@ -24,23 +24,36 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [loading, firebaseUser, profile, router]);
 
- useEffect(() => {
-  console.log("activeTab changed:", activeTab); // ← ADD THIS
-
-  const tabTitles: Record<string, string> = {
-    dashboard: "IRoomReserve | Dashboard",
-    pending: "IRoomReserve | Pending",
-    "add-rooms": "IRoomReserve | Add Rooms",
-    feedback: "IRoomReserve | Feedback",
-    "room-history": "IRoomReserve | Room History",
-    inbox: "IRoomReserve | Inbox",
-    "status-scheduling": "IRoomReserve | Status & Scheduling",
-    "room-status-monitor": "IRoomReserve | Room Status Monitor",
-    "ble-beacon-status": "IRoomReserve | BLE Beacon Status",
-    "class-schedules": "IRoomReserve | Class Schedules",
-  };
-  document.title = tabTitles[activeTab] ?? "IRoomReserve | Dashboard";
-}, [activeTab]);
+  useEffect(() => {
+    const tabTitles: Record<string, string> = {
+      dashboard: "IRoomReserve | Dashboard",
+      pending: "IRoomReserve | Pending",
+      "add-rooms": "IRoomReserve | Add Rooms",
+      feedback: "IRoomReserve | Feedback",
+      "room-history": "IRoomReserve | Room History",
+      inbox: "IRoomReserve | Inbox",
+      "status-scheduling": "IRoomReserve | Status & Scheduling",
+      "room-status-monitor": "IRoomReserve | Room Status Monitor",
+      "ble-beacon-status": "IRoomReserve | BLE Beacon Status",
+      "class-schedules": "IRoomReserve | Class Schedules",
+      reserve: "IRoomReserve | Reserve",
+      "my-reservations": "IRoomReserve | My Reservations",
+      contact: "IRoomReserve | Contact",
+      "room-status": "IRoomReserve | Room Status",
+    };
+    const pathToTab: Record<string, string> = {
+      "/dashboard/inbox": "inbox",
+      "/dashboard/feedback": "feedback",
+      "/dashboard/reserve": "reserve",
+      "/dashboard/reservations": "my-reservations",
+      "/dashboard/contact": "contact",
+      "/dashboard/room-status": "room-status",
+    };
+    const currentTab =
+      pathname === "/dashboard" ? activeTab : pathToTab[pathname];
+    document.title =
+      tabTitles[currentTab ?? ""] ?? "IRoomReserve | Dashboard";
+  }, [activeTab, pathname]);
 
   // Show loading while auth resolves
   if (loading || !firebaseUser) {
