@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api/client";
 import { type ReservationCampus } from "@/lib/campuses";
 import {
   type DigiReservationApproverInput,
+  getCurrentApprovalStep as getReservationApprovalCurrentStep,
   type MainReservationApproverInput,
   type ReservationApprovalRecord,
   type ReservationApprovalStep,
@@ -116,14 +117,17 @@ function normalizeApprovalEmail(email: string) {
 }
 
 function getCurrentApprovalStep(reservation: Reservation) {
-  if (
-    !Array.isArray(reservation.approvalFlow) ||
-    typeof reservation.currentStep !== "number"
-  ) {
-    return null;
-  }
+  return getReservationApprovalCurrentStep(
+    reservation.approvalFlow,
+    reservation.currentStep
+  );
+}
 
-  return reservation.approvalFlow[reservation.currentStep] ?? null;
+function isVisiblePendingReservationForBuilding(reservation: Reservation) {
+  return (
+    reservation.status === "pending" &&
+    getCurrentApprovalStep(reservation)?.role === "building_admin"
+  );
 }
 
 export async function createReservation(
@@ -175,6 +179,13 @@ export async function validateReservationApprover(
   });
 }
 
+export async function fetchPendingReservationsForApprover(): Promise<Reservation[]> {
+  return apiRequest("/api/reservations/pending-approvals", {
+    method: "GET",
+    userId: auth.currentUser?.uid,
+  });
+}
+
 export function onPendingReservationsByBuilding(
   buildingId: string,
   callback: (reservations: Reservation[]) => void
@@ -191,13 +202,15 @@ export function onPendingReservationsByBuilding(
     reservationsQuery,
     (snapshot) => {
       listener.emit(
-        snapshot.docs.map(
-          (reservationDoc) =>
-            ({
-              id: reservationDoc.id,
-              ...reservationDoc.data(),
-            }) as Reservation
-        )
+        snapshot.docs
+          .map(
+            (reservationDoc) =>
+              ({
+                id: reservationDoc.id,
+                ...reservationDoc.data(),
+              }) as Reservation
+          )
+          .filter(isVisiblePendingReservationForBuilding)
       );
     },
     (error) => {

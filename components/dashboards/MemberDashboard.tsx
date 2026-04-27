@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Toast from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -40,6 +41,7 @@ export default function MemberDashboard({
   welcomeEmoji,
 }: MemberDashboardProps) {
   const { firebaseUser } = useAuth();
+  const router = useRouter();
   const uid = firebaseUser?.uid;
   const {
     checkInWithBluetooth,
@@ -148,6 +150,18 @@ export default function MemberDashboard({
     await markAllNotificationsRead(firebaseUser.uid);
   };
 
+  const handleNotificationClick = async (notification: Notification) => {
+    await markNotificationRead(notification.id);
+    setShowNotifications(false);
+
+    if (notification.reservationId) {
+      router.push(`/dashboard/inbox?reservationId=${encodeURIComponent(notification.reservationId)}`);
+      return;
+    }
+
+    router.push('/dashboard/inbox');
+  };
+
   const pendingCount = reservationHistory.filter(
     (reservation) => reservation.status === 'pending'
   ).length;
@@ -238,7 +252,8 @@ export default function MemberDashboard({
                   notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className="p-3 border-b border-dark/5 hover:bg-primary/8 transition-colors flex items-start gap-3"
+                      className="p-3 border-b border-dark/5 hover:bg-primary/8 transition-colors flex items-start gap-3 cursor-pointer"
+                      onClick={() => void handleNotificationClick(notification)}
                     >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
@@ -294,7 +309,10 @@ export default function MemberDashboard({
                         </p>
                       </div>
                       <button
-                        onClick={() => markNotificationRead(notification.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void markNotificationRead(notification.id);
+                        }}
                         className="text-black/70 hover:text-primary transition-colors shrink-0"
                       >
                         <svg

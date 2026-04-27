@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
+import { getCurrentApprovalStep } from "@/lib/reservation-approval";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -19,7 +20,9 @@ type DashboardNotification = {
 } & Record<string, unknown>;
 
 type DashboardReservation = {
+  approvalFlow?: unknown;
   createdAt?: unknown;
+  currentStep?: number;
   date?: string;
   id: string;
   startTime?: string;
@@ -124,6 +127,21 @@ function sortReservations<
   );
 }
 
+function isVisiblePendingReservationForBuildingAdmin(
+  reservation: DashboardReservation
+) {
+  if (reservation.status !== "pending") {
+    return false;
+  }
+
+  const currentStep = getCurrentApprovalStep(
+    Array.isArray(reservation.approvalFlow) ? reservation.approvalFlow : undefined,
+    typeof reservation.currentStep === "number" ? reservation.currentStep : undefined
+  );
+
+  return currentStep?.role === "building_admin";
+}
+
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
@@ -177,7 +195,7 @@ export async function GET(request: NextRequest) {
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
       .sort(sortReservations);
     const requests = allReservations.filter(
-      (reservation) => reservation.status === "pending"
+      isVisiblePendingReservationForBuildingAdmin
     );
     const notifications = notificationsSnapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardNotification)

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +18,7 @@ import {
 } from '@/lib/notifications';
 import {
   approveReservation,
-  onPendingReservationsByApprover,
+  fetchPendingReservationsForApprover,
   rejectReservation,
   Reservation,
 } from '@/lib/reservations';
@@ -74,8 +75,10 @@ function formatEquipment(equipment?: Record<string, number>) {
 
 function ReservationApprovals({
   email,
+  targetReservationId,
 }: {
   email: string;
+  targetReservationId: string | null;
 }) {
   const { firebaseUser, profile } = useAuth();
   const [requests, setRequests] = useState<Reservation[]>([]);
@@ -84,6 +87,44 @@ function ReservationApprovals({
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionError, setActionError] = useState('');
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  useEffect(() => {
+    if (!email) return;
+
+    let cancelled = false;
+
+    const loadRequests = async () => {
+      setLoadingRequests(true);
+      try {
+        const nextRequests = await fetchPendingReservationsForApprover();
+        if (cancelled) return;
+        setRequests(nextRequests);
+      } catch (error) {
+        if (cancelled) return;
+        setRequests([]);
+        setActionError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to load reservation approvals.'
+        );
+      } finally {
+        if (!cancelled) {
+          setLoadingRequests(false);
+        }
+      }
+    };
+
+    void loadRequests();
+    const intervalId = window.setInterval(() => {
+      void loadRequests();
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [email]);
 
   const removeRequestFromInbox = (reservationId: string) => {
     setRequests((currentRequests) =>
@@ -119,19 +160,14 @@ function ReservationApprovals({
   };
 
   useEffect(() => {
-    if (!email) return;
-    let cancelled = false;
+    if (!targetReservationId) {
+      return;
+    }
 
-    const unsubscribe = onPendingReservationsByApprover(email, (nextRequests) => {
-      if (cancelled) return;
-      setRequests(nextRequests);
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [email]);
+    if (requests.some((request) => request.id === targetReservationId)) {
+      setExpandedId(targetReservationId);
+    }
+  }, [requests, targetReservationId]);
 
   const handleApprove = async (reservationId: string) => {
     const approverEmail = profile?.email || firebaseUser?.email;
@@ -189,7 +225,11 @@ function ReservationApprovals({
         <p className="text-xs ui-text-red font-bold mb-3">{actionError}</p>
       )}
 
-      {requests.length === 0 ? (
+      {loadingRequests ? (
+        <div className="glass-card p-8 !rounded-xl text-center">
+          <p className="text-sm font-bold text-black">Loading reservation approvals...</p>
+        </div>
+      ) : requests.length === 0 ? (
         <div className="glass-card p-8 !rounded-xl text-center">
           <p className="text-sm font-bold text-black">No reservation approvals waiting for you.</p>
           <p className="text-xs text-black mt-1">New student requests will appear here.</p>
@@ -546,6 +586,8 @@ function UserInbox({
   showStaffMessages: boolean;
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const searchParams = useSearchParams();
+  const targetReservationId = searchParams.get('reservationId');
 
   useEffect(() => {
     if (!uid) return;
@@ -571,7 +613,12 @@ function UserInbox({
         </p>
       </div>
 
-      {isFaculty && <ReservationApprovals email={email} />}
+      {isFaculty && (
+        <ReservationApprovals
+          email={email}
+          targetReservationId={targetReservationId}
+        />
+      )}
       {showStaffMessages && (
         <MessagesSection
           title="Staff Messages"
