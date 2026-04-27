@@ -163,6 +163,47 @@ async function getBuildingManagerIds(buildingId: string) {
   return getAssignedManagerIds(buildingId);
 }
 
+async function getPrimaryBuildingManagerEmail(buildingId: string) {
+  const managerIds = await getBuildingManagerIds(buildingId);
+
+  if (managerIds.length === 0) {
+    throw new ApiError(
+      400,
+      "missing_building_admin",
+      "No approved building administrator is assigned to the selected building."
+    );
+  }
+
+  for (const managerId of managerIds) {
+    const managerSnapshot = await db.collection("users").doc(managerId).get();
+    if (!managerSnapshot.exists) {
+      continue;
+    }
+
+    const managerData = managerSnapshot.data() as {
+      email?: string | null;
+      status?: string | null;
+      role?: string | null;
+    };
+    const normalizedRole = normalizeRole(managerData.role);
+    const normalizedEmail = managerData.email?.trim().toLowerCase() ?? "";
+
+    if (
+      managerData.status === "approved" &&
+      normalizedRole === USER_ROLES.ADMIN &&
+      normalizedEmail
+    ) {
+      return normalizedEmail;
+    }
+  }
+
+  throw new ApiError(
+    400,
+    "missing_building_admin",
+    "No approved building administrator email is available for the selected building."
+  );
+}
+
 async function getUserIdsByEmail(email: string) {
   const usersSnapshot = await db
     .collection("users")
@@ -277,10 +318,10 @@ async function resolveReservationCampus(input: {
   );
 }
 
-function getReservationApproverInput(
+async function getReservationApproverInput(
   input: ReservationCreateInput | Omit<ReservationCreateInput, "date">,
   campus: ReservationCampus
-): ReservationApproverInput {
+): Promise<ReservationApproverInput> {
   if (campus === "digi") {
     if (!("buildingAdminEmail" in input)) {
       throw new ApiError(
@@ -309,6 +350,7 @@ function getReservationApproverInput(
   return {
     campus,
     advisorEmail: input.advisorEmail,
+    buildingAdminEmail: await getPrimaryBuildingManagerEmail(input.buildingId),
   };
 }
 
@@ -474,7 +516,7 @@ export async function createReservationRecord(data: ReservationCreateInput) {
   try {
     const campus = await resolveReservationCampus(data);
     const approvalFlow = buildApprovalFlow(
-      getReservationApproverInput(data, campus)
+      await getReservationApproverInput(data, campus)
     );
     const { firstApprovalStep, firstApproverIds } =
       await getInitialApproverIdsOrThrow(approvalFlow, campus);
@@ -555,7 +597,7 @@ export async function createRecurringReservationRecord(
 
     const campus = await resolveReservationCampus(data);
     const approvalFlow = buildApprovalFlow(
-      getReservationApproverInput(data, campus)
+      await getReservationApproverInput(data, campus)
     );
     const { firstApprovalStep, firstApproverIds } =
       await getInitialApproverIdsOrThrow(approvalFlow, campus);

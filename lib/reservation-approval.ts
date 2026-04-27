@@ -28,6 +28,7 @@ export interface DigiReservationApproverInput {
 export interface MainReservationApproverInput {
   campus: "main";
   advisorEmail: string;
+  buildingAdminEmail?: string;
 }
 
 export type ReservationApproverInput =
@@ -52,6 +53,10 @@ export function buildApprovalFlow(
 
   return [
     { role: "advisor", email: normalizeApprovalEmail(approvers.advisorEmail) },
+    {
+      role: "building_admin",
+      email: normalizeApprovalEmail(approvers.buildingAdminEmail ?? ""),
+    },
   ];
 }
 
