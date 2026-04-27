@@ -543,6 +543,17 @@ export async function createReservationRecord(data: ReservationCreateInput) {
       ...(data.approvalDocumentName
         ? { approvalDocumentName: data.approvalDocumentName }
         : {}),
+      ...(data.approvalDocumentPath
+        ? { approvalDocumentPath: data.approvalDocumentPath }
+        : {}),
+      ...(data.approvalDocumentMimeType
+        ? { approvalDocumentMimeType: data.approvalDocumentMimeType }
+        : {}),
+      ...(typeof data.approvalDocumentSize === "number" &&
+      Number.isFinite(data.approvalDocumentSize) &&
+      data.approvalDocumentSize > 0
+        ? { approvalDocumentSize: data.approvalDocumentSize }
+        : {}),
       ...(data.approvalDocumentUrl
         ? { approvalDocumentUrl: data.approvalDocumentUrl }
         : {}),
@@ -629,6 +640,17 @@ export async function createRecurringReservationRecord(
         purpose: data.purpose,
         ...(data.approvalDocumentName
           ? { approvalDocumentName: data.approvalDocumentName }
+          : {}),
+        ...(data.approvalDocumentPath
+          ? { approvalDocumentPath: data.approvalDocumentPath }
+          : {}),
+        ...(data.approvalDocumentMimeType
+          ? { approvalDocumentMimeType: data.approvalDocumentMimeType }
+          : {}),
+        ...(typeof data.approvalDocumentSize === "number" &&
+        Number.isFinite(data.approvalDocumentSize) &&
+        data.approvalDocumentSize > 0
+          ? { approvalDocumentSize: data.approvalDocumentSize }
           : {}),
         ...(data.approvalDocumentUrl
           ? { approvalDocumentUrl: data.approvalDocumentUrl }

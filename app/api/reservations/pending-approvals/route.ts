@@ -4,6 +4,7 @@ import { getCurrentApprovalStep } from "@/lib/reservation-approval";
 import { handleApiError, ApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
+import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
 import { db } from "@/lib/configs/firebase-admin";
 
 export const runtime = "nodejs";
@@ -69,14 +70,26 @@ export async function GET(request: NextRequest) {
       .where("status", "==", "pending")
       .get();
 
-    const reservations = snapshot.docs
-      .map(
-        (doc) =>
-          ({
+    const reservations = (
+      await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const reservation = {
             id: doc.id,
             ...doc.data(),
-          }) as PendingApprovalReservation
+          } as PendingApprovalReservation;
+
+          return {
+            ...reservation,
+            approvalDocumentUrl: await createReservationDocumentSignedUrl({
+              path:
+                typeof reservation.approvalDocumentPath === "string"
+                  ? reservation.approvalDocumentPath
+                  : null,
+            }),
+          };
+        })
       )
+    )
       .filter((reservation) => {
         const currentStep = getCurrentApprovalStep(
           Array.isArray(reservation.approvalFlow)

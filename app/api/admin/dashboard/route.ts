@@ -4,6 +4,7 @@ import { handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getCurrentApprovalStep } from "@/lib/reservation-approval";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
+import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
 import {
   assertAuthenticated,
   assertCanManageBuilding,
@@ -191,9 +192,26 @@ export async function GET(request: NextRequest) {
     const rooms = roomsSnapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
       .sort(sortRooms);
-    const allReservations = reservationsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
-      .sort(sortReservations);
+    const allReservations = (
+      await Promise.all(
+        reservationsSnapshot.docs.map(async (doc) => {
+          const reservation = {
+            id: doc.id,
+            ...doc.data(),
+          } as DashboardReservation;
+
+          return {
+            ...reservation,
+            approvalDocumentUrl: await createReservationDocumentSignedUrl({
+              path:
+                typeof reservation.approvalDocumentPath === "string"
+                  ? reservation.approvalDocumentPath
+                  : null,
+            }),
+          } as DashboardReservation;
+        })
+      )
+    ).sort(sortReservations);
     const requests = allReservations.filter(
       isVisiblePendingReservationForBuildingAdmin
     );

@@ -2069,6 +2069,24 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       </div>
                     )}
 
+                    {req.approvalDocumentUrl && (
+                      <div className="mb-4">
+                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">
+                            Concept Paper / Letter of Approval
+                          </p>
+                          <a
+                            href={req.approvalDocumentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary-hover transition-colors"
+                          >
+                            {req.approvalDocumentName || 'Open attachment'}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex items-center gap-3 pt-4 border-t border-dark/5">
                       <button

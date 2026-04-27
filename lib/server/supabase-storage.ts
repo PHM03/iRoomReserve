@@ -115,6 +115,75 @@ export interface UploadedReservationDocument {
   size: number;
 }
 
+function buildStorageObjectUrl(input: { bucket: string; path: string }) {
+  return `${getSupabaseUrl()}/storage/v1/object/${input.bucket}/${encodeObjectPath(
+    input.path
+  )}`;
+}
+
+function getSupabaseStorageBaseUrl() {
+  return `${getSupabaseUrl()}/storage/v1`;
+}
+
+export async function createReservationDocumentSignedUrl(input: {
+  bucket?: string | null;
+  expiresInSeconds?: number;
+  path?: string | null;
+}): Promise<string | null> {
+  const path = input.path?.trim() ?? "";
+  if (!path) {
+    return null;
+  }
+
+  const bucket = input.bucket?.trim() || DEFAULT_BUCKET;
+  const expiresInSeconds = input.expiresInSeconds ?? 60 * 60;
+  const response = await fetch(
+    `${getSupabaseUrl()}/storage/v1/object/sign/${bucket}/${encodeObjectPath(path)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getSupabaseServiceRoleKey()}`,
+        apikey: getSupabaseServiceRoleKey(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: expiresInSeconds }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as
+      | { error?: string; message?: string }
+      | null;
+
+    throw new ApiError(
+      502,
+      "storage_signed_url_failed",
+      errorPayload?.message ??
+        errorPayload?.error ??
+        "Supabase Storage could not create an access URL for the uploaded file."
+    );
+  }
+
+  const payload = (await response.json()) as
+    | { signedURL?: string; signedUrl?: string }
+    | null;
+  const signedUrl = payload?.signedURL ?? payload?.signedUrl ?? "";
+
+  if (!signedUrl) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(signedUrl)) {
+    return signedUrl;
+  }
+
+  if (signedUrl.startsWith("/")) {
+    return `${getSupabaseStorageBaseUrl()}${signedUrl}`;
+  }
+
+  return `${buildStorageObjectUrl({ bucket, path })}?${signedUrl}`;
+}
+
 export async function uploadReservationDocument(input: {
   file: File;
   reservationId?: string | null;
