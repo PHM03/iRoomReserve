@@ -12,6 +12,8 @@ import {
 import { feedbackRespondSchema } from "@/lib/server/schemas";
 import { respondToFeedbackRecord } from "@/lib/server/services/feedback";
 
+export const runtime = "nodejs";
+
 async function getFeedbackBuildingId(feedbackId: string) {
   const feedbackSnapshot = await db.collection("feedback").doc(feedbackId).get();
   if (!feedbackSnapshot.exists) {

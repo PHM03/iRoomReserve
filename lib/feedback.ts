@@ -2,7 +2,6 @@ import {
   addDoc,
   collection,
   type DocumentData,
-  getDocs,
   onSnapshot,
   orderBy,
   type QueryDocumentSnapshot,
@@ -16,6 +15,11 @@ import {
 import { apiRequest } from "@/lib/api/client";
 import { auth, db } from "@/lib/configs/firebase";
 import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import {
+  resolveFeedbackSentimentLabel,
+  type FeedbackSentimentFields,
+  type FeedbackSentimentSummary,
+} from "@/lib/feedback-sentiment";
 import {
   analyzeSentiment,
   getSentimentLabel,
@@ -63,23 +67,65 @@ export interface SubmitFeedbackResult {
   sentimentLabel: SentimentLabel;
 }
 
-type FeedbackSnapshot = Partial<Feedback> & {
-  sentimentLabel?: string;
-  text?: string;
-};
-
-function isSentimentLabel(value: unknown): value is SentimentLabel {
-  return value === "positive" || value === "neutral" || value === "negative";
+export interface BuildingFeedbackResult {
+  feedback: Feedback[];
+  summary: FeedbackSentimentSummary;
 }
 
-function mapFeedback(
-  feedbackDoc: QueryDocumentSnapshot<DocumentData>
-): Feedback {
-  const data = feedbackDoc.data() as FeedbackSnapshot;
+type TimestampLike =
+  | Timestamp
+  | {
+      seconds?: number;
+      nanoseconds?: number;
+      _seconds?: number;
+      _nanoseconds?: number;
+    }
+  | null
+  | undefined;
+
+type FeedbackSnapshot = Partial<Feedback> &
+  FeedbackSentimentFields & {
+    id?: string;
+    sentimentLabel?: string | null;
+    text?: string;
+  };
+
+function reviveTimestamp(value: TimestampLike): Timestamp | null | undefined {
+  if (!value) {
+    return value ?? undefined;
+  }
+
+  if (value instanceof Timestamp) {
+    return value;
+  }
+
+  const seconds =
+    typeof value.seconds === "number"
+      ? value.seconds
+      : typeof value._seconds === "number"
+        ? value._seconds
+        : null;
+  const nanoseconds =
+    typeof value.nanoseconds === "number"
+      ? value.nanoseconds
+      : typeof value._nanoseconds === "number"
+        ? value._nanoseconds
+        : 0;
+
+  if (seconds === null) {
+    return undefined;
+  }
+
+  return new Timestamp(seconds, nanoseconds);
+}
+
+function mapFeedbackData(id: string, data: FeedbackSnapshot): Feedback {
   const text = data.text ?? data.message ?? "";
+  const compoundScore =
+    typeof data.compoundScore === "number" ? data.compoundScore : undefined;
 
   return {
-    id: feedbackDoc.id,
+    id,
     roomId: data.roomId ?? "",
     roomName: data.roomName ?? "",
     buildingId: data.buildingId ?? "",
@@ -90,21 +136,31 @@ function mapFeedback(
     text,
     message: data.message ?? text,
     rating: typeof data.rating === "number" ? data.rating : 0,
-    compoundScore:
-      typeof data.compoundScore === "number" ? data.compoundScore : undefined,
+    compoundScore,
     positiveScore:
       typeof data.positiveScore === "number" ? data.positiveScore : undefined,
     neutralScore:
       typeof data.neutralScore === "number" ? data.neutralScore : undefined,
     negativeScore:
       typeof data.negativeScore === "number" ? data.negativeScore : undefined,
-    sentimentLabel: isSentimentLabel(data.sentimentLabel)
-      ? data.sentimentLabel
-      : undefined,
+    sentimentLabel: resolveFeedbackSentimentLabel({
+      compoundScore,
+      sentimentLabel: data.sentimentLabel ?? undefined,
+    }),
     adminResponse: data.adminResponse ?? null,
-    respondedAt: data.respondedAt ?? null,
-    createdAt: data.createdAt,
+    respondedAt: reviveTimestamp(data.respondedAt) ?? null,
+    createdAt: reviveTimestamp(data.createdAt) ?? undefined,
   };
+}
+
+function mapApiFeedback(feedback: FeedbackSnapshot & { id: string }) {
+  return mapFeedbackData(feedback.id, feedback);
+}
+
+function mapFeedback(
+  feedbackDoc: QueryDocumentSnapshot<DocumentData>
+): Feedback {
+  return mapFeedbackData(feedbackDoc.id, feedbackDoc.data() as FeedbackSnapshot);
 }
 
 export async function createFeedback(data: FeedbackInput): Promise<string> {
@@ -224,14 +280,33 @@ export function onFeedbackByUser(
 }
 
 export async function getFeedbackByUser(userId: string): Promise<Feedback[]> {
-  const q = query(
-    collection(db, "feedback"),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+  const payload = await apiRequest<{ feedback: Array<FeedbackSnapshot & { id: string }> }>(
+    "/api/feedback",
+    {
+      method: "GET",
+      params: { userId },
+      userId,
+    }
   );
-  const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(mapFeedback);
+  return payload.feedback.map(mapApiFeedback);
+}
+
+export async function getFeedbackByBuilding(
+  buildingId: string
+): Promise<BuildingFeedbackResult> {
+  const payload = await apiRequest<{
+    feedback: Array<FeedbackSnapshot & { id: string }>;
+    summary: FeedbackSentimentSummary;
+  }>("/api/feedback", {
+    method: "GET",
+    params: { buildingId },
+  });
+
+  return {
+    feedback: payload.feedback.map(mapApiFeedback),
+    summary: payload.summary,
+  };
 }
 
 export async function getAverageSentiment(roomId: string): Promise<number> {

@@ -4,7 +4,6 @@ import { Timestamp } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
 import type { AdminRequest } from "@/lib/adminRequests";
-import type { Feedback } from "@/lib/feedback";
 import type { Notification } from "@/lib/notifications";
 import type { Reservation } from "@/lib/reservations";
 import type { RoomHistoryEntry } from "@/lib/roomHistory";
@@ -25,7 +24,6 @@ type TimestampLike =
 export interface AdminDashboardSnapshot {
   adminRequests: AdminRequest[];
   allReservations: Reservation[];
-  feedbackList: Feedback[];
   notifications: Notification[];
   requests: Reservation[];
   roomHistory: RoomHistoryEntry[];
@@ -62,17 +60,16 @@ function reviveTimestamp(value: TimestampLike) {
   return new Timestamp(seconds, nanoseconds);
 }
 
-function reviveRecordTimestamps<T extends Record<string, unknown>>(
+function reviveRecordTimestamps<T extends object>(
   record: T,
   fields: string[]
 ) {
   const nextRecord = { ...record } as T;
+  const mutableRecord = nextRecord as Record<string, unknown>;
 
   fields.forEach((field) => {
-    if (field in nextRecord) {
-      nextRecord[field as keyof T] = reviveTimestamp(
-        nextRecord[field as keyof T] as TimestampLike
-      ) as T[keyof T];
+    if (field in mutableRecord) {
+      mutableRecord[field] = reviveTimestamp(mutableRecord[field] as TimestampLike);
     }
   });
 
@@ -98,9 +95,6 @@ export async function fetchAdminDashboardSnapshot(buildingId: string) {
         "createdAt",
         "updatedAt",
       ])
-    ),
-    feedbackList: snapshot.feedbackList.map((feedback) =>
-      reviveRecordTimestamps(feedback, ["createdAt", "respondedAt"])
     ),
     notifications: snapshot.notifications.map((notification) =>
       reviveRecordTimestamps(notification, ["createdAt"])

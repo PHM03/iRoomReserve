@@ -6,7 +6,10 @@ import {
   isCampusManagedBuilding,
   resolveCampusAssignment,
 } from '../lib/campusAssignments';
-import { assertCanManageBuilding } from '../lib/server/route-guards';
+import {
+  assertCanManageBuilding,
+  assertCanViewBuildingFeedback,
+} from '../lib/server/route-guards';
 
 describe('campus assignments', () => {
   it('maps legacy GD building assignments to the main campus', () => {
@@ -75,6 +78,42 @@ describe('assertCanManageBuilding', () => {
           verified: true,
         },
         'sdca-digital-campus'
+      )
+    ).toThrow();
+  });
+});
+
+describe('assertCanViewBuildingFeedback', () => {
+  it('allows a building administrator to view feedback for their campus building', () => {
+    expect(() =>
+      assertCanViewBuildingFeedback(
+        {
+          uid: 'admin-1',
+          role: 'Administrator',
+          email: 'admin@sdca.edu.ph',
+          campus: 'main',
+          assignedBuildingId: null,
+          assignedBuildingIds: [],
+          verified: true,
+        },
+        'gd1'
+      )
+    ).not.toThrow();
+  });
+
+  it('rejects utility staff even when they manage the building', () => {
+    expect(() =>
+      assertCanViewBuildingFeedback(
+        {
+          uid: 'utility-1',
+          role: 'Utility Staff',
+          email: 'utility@sdca.edu.ph',
+          campus: 'main',
+          assignedBuildingId: 'gd1',
+          assignedBuildingIds: ['gd1'],
+          verified: true,
+        },
+        'gd1'
       )
     ).toThrow();
   });

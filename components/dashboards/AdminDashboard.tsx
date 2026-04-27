@@ -29,8 +29,13 @@ import {
 } from '@/lib/rooms';
 import {
   Feedback,
+  getFeedbackByBuilding,
   respondToFeedback,
 } from '@/lib/feedback';
+import {
+  resolveFeedbackSentimentLabel,
+  type FeedbackSentimentSummary,
+} from '@/lib/feedback-sentiment';
 import { getBuildingById } from '@/lib/buildings';
 import {
   Schedule,
@@ -82,6 +87,22 @@ function StatusBadge({ status }: { status: string }) {
       {status}
     </span>
   );
+}
+
+function formatSentimentLabel(label: string) {
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function getSentimentBadgeClasses(label: string) {
+  if (label === 'positive') {
+    return 'border-green-500/25 bg-green-500/10 text-green-700';
+  }
+
+  if (label === 'negative') {
+    return 'border-red-500/25 bg-red-500/10 text-red-700';
+  }
+
+  return 'border-slate-500/25 bg-slate-500/10 text-slate-700';
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -227,6 +248,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+  const [feedbackSummary, setFeedbackSummary] = useState<FeedbackSentimentSummary | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -305,10 +327,14 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
 
     setDashboardLoading(true);
     try {
-      const snapshot = await fetchAdminDashboardSnapshot(buildingId);
+      const [snapshot, feedbackSnapshot] = await Promise.all([
+        fetchAdminDashboardSnapshot(buildingId),
+        getFeedbackByBuilding(buildingId),
+      ]);
       setAdminRequests(snapshot.adminRequests);
       setAllReservations(snapshot.allReservations);
-      setFeedbackList(snapshot.feedbackList);
+      setFeedbackList(feedbackSnapshot.feedback);
+      setFeedbackSummary(feedbackSnapshot.summary);
       setNotifications(snapshot.notifications);
       setRequests(snapshot.requests);
       setRoomHistory(snapshot.roomHistory);
@@ -319,6 +345,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       setAdminRequests([]);
       setAllReservations([]);
       setFeedbackList([]);
+      setFeedbackSummary(null);
       setNotifications([]);
       setRequests([]);
       setRoomHistory([]);
@@ -1393,6 +1420,51 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             </div>
           ) : (
             <div className="space-y-4">
+              {feedbackSummary && (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="glass-card p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Positive</p>
+                    <p className="mt-2 text-2xl font-bold text-green-700">
+                      {feedbackSummary.positivePercentage.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-black">
+                      {feedbackSummary.positiveCount} of {feedbackSummary.total} entries
+                    </p>
+                  </div>
+                  <div className="glass-card p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Neutral</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-700">
+                      {feedbackSummary.neutralPercentage.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-black">
+                      {feedbackSummary.neutralCount} of {feedbackSummary.total} entries
+                    </p>
+                  </div>
+                  <div className="glass-card p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Negative</p>
+                    <p className="mt-2 text-2xl font-bold text-red-700">
+                      {feedbackSummary.negativePercentage.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-black">
+                      {feedbackSummary.negativeCount} of {feedbackSummary.total} entries
+                    </p>
+                  </div>
+                  <div className="glass-card p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Average Compound</p>
+                    <p className="mt-2 text-2xl font-bold text-black">
+                      {feedbackSummary.averageCompoundScore.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-black">
+                      {formatSentimentLabel(
+                        resolveFeedbackSentimentLabel({
+                          compoundScore: feedbackSummary.averageCompoundScore,
+                        })
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {feedbackList.map((fb) => (
                 <div key={fb.id} className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
@@ -1402,10 +1474,59 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       </div>
                       <div>
                         <h4 className="font-bold text-black text-sm">{fb.userName}</h4>
-                        <p className="text-xs text-black">{fb.roomName}</p>
+                        <p className="text-xs text-black">
+                          {fb.roomName} | {fb.buildingName}
+                        </p>
                       </div>
                     </div>
                     <StarRating rating={fb.rating} />
+                  </div>
+
+                  <div className="mb-3 rounded-xl border border-dark/10 bg-dark/5 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">
+                          Sentiment Analysis
+                        </p>
+                        <p className="mt-1 text-sm text-black">
+                          {formatSentimentLabel(resolveFeedbackSentimentLabel(fb))}
+                          {typeof fb.compoundScore === 'number'
+                            ? ` (${fb.compoundScore.toFixed(2)})`
+                            : ''}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${getSentimentBadgeClasses(
+                          resolveFeedbackSentimentLabel(fb)
+                        )}`}
+                      >
+                        {formatSentimentLabel(resolveFeedbackSentimentLabel(fb))}
+                      </span>
+                    </div>
+
+                    {typeof fb.compoundScore === 'number' &&
+                      typeof fb.positiveScore === 'number' &&
+                      typeof fb.neutralScore === 'number' &&
+                      typeof fb.negativeScore === 'number' && (
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-black sm:grid-cols-4">
+                          <div>
+                            <p className="font-bold">Compound</p>
+                            <p>{fb.compoundScore.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="font-bold">Positive</p>
+                            <p>{Math.round(fb.positiveScore * 100)}%</p>
+                          </div>
+                          <div>
+                            <p className="font-bold">Neutral</p>
+                            <p>{Math.round(fb.neutralScore * 100)}%</p>
+                          </div>
+                          <div>
+                            <p className="font-bold">Negative</p>
+                            <p>{Math.round(fb.negativeScore * 100)}%</p>
+                          </div>
+                        </div>
+                      )}
                   </div>
 
                   <p className="text-sm text-black mb-3 leading-relaxed">{fb.message}</p>

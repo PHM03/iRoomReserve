@@ -8,6 +8,43 @@ import {
   assertCanManageBuilding,
 } from "@/lib/server/route-guards";
 
+type DashboardAdminRequest = {
+  createdAt?: unknown;
+  id: string;
+} & Record<string, unknown>;
+
+type DashboardNotification = {
+  createdAt?: unknown;
+  id: string;
+} & Record<string, unknown>;
+
+type DashboardReservation = {
+  createdAt?: unknown;
+  date?: string;
+  id: string;
+  startTime?: string;
+  status?: string;
+} & Record<string, unknown>;
+
+type DashboardRoom = {
+  buildingName?: string;
+  floor?: string;
+  id: string;
+  name?: string;
+} & Record<string, unknown>;
+
+type DashboardRoomHistoryEntry = {
+  createdAt?: unknown;
+  id: string;
+} & Record<string, unknown>;
+
+type DashboardSchedule = {
+  dayOfWeek?: number;
+  id: string;
+  roomName?: string;
+  startTime?: string;
+} & Record<string, unknown>;
+
 function getTimestampSeconds(value: unknown) {
   if (!value || typeof value !== "object") {
     return 0;
@@ -116,7 +153,6 @@ export async function GET(request: NextRequest) {
     const [
       roomsSnapshot,
       reservationsSnapshot,
-      feedbackSnapshot,
       notificationsSnapshot,
       schedulesSnapshot,
       roomHistorySnapshot,
@@ -124,7 +160,6 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       adminDb.collection("rooms").where("buildingId", "==", buildingId).get(),
       adminDb.collection("reservations").where("buildingId", "==", buildingId).get(),
-      adminDb.collection("feedback").where("buildingId", "==", buildingId).get(),
       adminDb
         .collection("notifications")
         .where("recipientUid", "==", authContext.uid)
@@ -136,34 +171,30 @@ export async function GET(request: NextRequest) {
     ]);
 
     const rooms = roomsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
       .sort(sortRooms);
     const allReservations = reservationsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
       .sort(sortReservations);
     const requests = allReservations.filter(
       (reservation) => reservation.status === "pending"
     );
-    const feedbackList = feedbackSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .sort(sortByCreatedAtDesc);
     const notifications = notificationsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardNotification)
       .sort(sortByCreatedAtDesc);
     const schedules = schedulesSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardSchedule)
       .sort(sortSchedules);
     const roomHistory = roomHistorySnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoomHistoryEntry)
       .sort(sortByCreatedAtDesc);
     const adminRequests = adminRequestsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardAdminRequest)
       .sort(sortByCreatedAtDesc);
 
     return NextResponse.json({
       adminRequests,
       allReservations,
-      feedbackList,
       notifications,
       requests,
       roomHistory,

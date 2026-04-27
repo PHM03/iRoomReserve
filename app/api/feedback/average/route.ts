@@ -5,6 +5,8 @@ import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
 import { getAverageFeedbackSentiment } from "@/lib/server/services/feedback";
 
+export const runtime = "nodejs";
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);

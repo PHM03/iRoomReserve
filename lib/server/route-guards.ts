@@ -31,6 +31,26 @@ export function assertRole(
   }
 }
 
+export function assertCanViewBuildingFeedback(
+  context: RequestAuthContext,
+  buildingId: string
+) {
+  assertAuthenticated(context);
+
+  if (
+    context.role !== USER_ROLES.ADMIN &&
+    context.role !== USER_ROLES.SUPER_ADMIN
+  ) {
+    throw new ApiError(
+      403,
+      "forbidden",
+      "Only building administrators can view feedback sentiment."
+    );
+  }
+
+  assertCanManageBuilding(context, buildingId);
+}
+
 export function assertCanManageBuilding(
   context: RequestAuthContext,
   buildingId: string
