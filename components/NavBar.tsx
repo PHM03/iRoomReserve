@@ -174,7 +174,7 @@ const NavBar: React.FC<NavBarProps> = ({
   };
 
   return (
-    <nav className="glass-nav sticky top-0 z-50">
+    <nav className="glass-nav fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between py-5">
           <div className="flex items-center">
