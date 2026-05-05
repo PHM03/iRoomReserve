@@ -71,6 +71,7 @@ const NavBar: React.FC<NavBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const navRef = useRef<HTMLElement | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isMobileStatusMenuOpen, setIsMobileStatusMenuOpen] = useState(false);
@@ -81,19 +82,18 @@ const NavBar: React.FC<NavBarProps> = ({
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       if (
-        dropdownRef.current &&
+        navRef.current &&
         event.target instanceof Node &&
-        !dropdownRef.current.contains(event.target)
+        !navRef.current.contains(event.target)
       ) {
         setIsStatusMenuOpen(false);
+        setIsMenuOpen(false);
+        setIsMobileStatusMenuOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handlePointerDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-    };
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
   const handleLogout = () => {
@@ -175,7 +175,7 @@ const NavBar: React.FC<NavBarProps> = ({
   };
 
   return (
-    <nav className="glass-nav fixed top-0 left-0 right-0 z-50">
+    <nav ref={navRef} className="glass-nav fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between py-5">
           <div className="flex items-center">
