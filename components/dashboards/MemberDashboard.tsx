@@ -12,11 +12,11 @@ import {
 } from '@/lib/reservations';
 import { useBluetoothReservationCheckIn } from '@/hooks/useBluetoothReservationCheckIn';
 import { onRoomsByIds, Room } from '@/lib/rooms';
+import { formatTime12h } from '@/lib/schedules';
 import StatusBadge from '@/components/StatusBadge';
 import {
   canReservationCheckIn,
   compareReservationSchedule,
-  getLocalDateString,
   getReservationRoomStatus,
 } from '@/lib/roomStatus';
 import { formatDate, formatTimeRange } from '@/lib/dateTime';
@@ -43,6 +43,63 @@ export default function MemberDashboard({
     toastType,
   } = useBluetoothReservationCheckIn();
   const [reservationHistory, setReservationHistory] = useState<Reservation[]>([]);
+  const TIMETABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const TIMETABLE_DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const getWeekDates = (): string[] => {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + diffToMonday + index);
+      return date.toISOString().split('T')[0];
+    });
+  };
+
+  const weekDates = getWeekDates();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const TIMETABLE_SLOTS: string[] = [];
+  for (let minutes = 7 * 60; minutes < 21 * 60; minutes += 30) {
+    const hours = Math.floor(minutes / 60);
+    const minuteValue = minutes % 60;
+    TIMETABLE_SLOTS.push(`${String(hours).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`);
+  }
+
+  function slotToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function reservationSpansSlot(reservation: Reservation, slot: string): boolean {
+    const slotMin = slotToMinutes(slot);
+    const startMin = slotToMinutes(reservation.startTime);
+    const endMin = slotToMinutes(reservation.endTime);
+    return slotMin >= startMin && slotMin < endMin;
+  }
+
+  function isReservationStart(reservation: Reservation, slot: string): boolean {
+    return reservation.startTime === slot;
+  }
+
+  function getReservationRowSpan(reservation: Reservation): number {
+    const startMin = slotToMinutes(reservation.startTime);
+    const endMin = slotToMinutes(reservation.endTime);
+    return Math.ceil((endMin - startMin) / 30);
+  }
+
+  const activeReservations = reservationHistory.filter(
+    (reservation) => reservation.status !== 'rejected' && reservation.status !== 'cancelled'
+  );
+
+  const STATUS_COLORS: Record<string, string> = {
+    approved: 'bg-green-500/80 text-white',
+    pending: 'bg-yellow-400/80 text-gray-900',
+    completed: 'bg-blue-500/80 text-white',
+  };
+
+  const todayDayIndex = new Date().getDay();
   const [rooms, setRooms] = useState<Room[]>([]);
 
   useEffect(() => {
@@ -122,14 +179,13 @@ export default function MemberDashboard({
   const activeReservation =
     approvedReservations.find(
       (reservation) =>
-        reservation.checkedInAt || reservation.date === getLocalDateString()
+        reservation.checkedInAt || reservation.date === todayStr
     ) ?? approvedReservations[0];
 
-  const today = getLocalDateString();
   const upcomingReservations = approvedReservations
-    .filter((reservation) => reservation.date >= today)
+    .filter((reservation) => reservation.date >= todayStr)
     .slice(0, 3);
-  const recentActivity = reservationHistory.slice(0, 5);
+  const recentActivity = reservationHistory.slice(0, 3);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
@@ -383,7 +439,7 @@ export default function MemberDashboard({
         </div>
       )}
 
-      <div className={`grid grid-cols-1 gap-6 ${!isStudent ? 'lg:grid-cols-2' : ''}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
             <h3 className="text-xl font-bold text-gray-800">Recent Activity</h3>
@@ -454,6 +510,121 @@ export default function MemberDashboard({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="bg-white rounded-xl px-6 py-4 mb-4 border border-white/30">
+            <h3 className="text-xl font-bold text-gray-800">My Reservation Timetable</h3>
+            <p className="text-sm text-gray-500 mt-0.5">Weekly recurring schedule</p>
+          </div>
+
+          <div className="glass-card !rounded-xl overflow-hidden">
+            {activeReservations.length === 0 ? (
+              <div className="p-12 text-center">
+                <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-sm text-black font-bold">No reservations this week</p>
+                <p className="text-xs text-black mt-1">Your bookings will appear here once you make a reservation</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto overflow-y-auto max-h-[320px]">
+                <table className="w-full text-[10px] border-collapse min-w-[600px]">
+                  <thead>
+                    <tr>
+                      <th className="w-16 border-b border-r border-dark/10 bg-white/60 px-2 py-2 text-left text-[11px] font-extrabold text-black/70 sticky left-0 z-10">
+                        TIME
+                      </th>
+                      {TIMETABLE_DAYS.map((day, index) => (
+                        <th
+                          key={day}
+                          className={`border-b border-r border-dark/10 px-2 py-2 text-center text-[11px] font-extrabold
+                            ${weekDates[index] === todayStr
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-white/60 text-black/60'
+                            }`}
+                        >
+                          <span className="hidden sm:block">{day}</span>
+                          <span className="sm:hidden">{TIMETABLE_DAY_SHORT[index]}</span>
+                          <span className="block text-[9px] font-semibold opacity-80 mt-0.5">
+                            {weekDates[index]?.slice(5)}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TIMETABLE_SLOTS.map((slot) => {
+                      const slotMin = slotToMinutes(slot);
+                      const isHour = slotMin % 60 === 0;
+
+                      return (
+                        <tr key={slot} className={isHour ? 'border-t border-dark/10' : ''}>
+                          <td className={`border-r border-dark/10 px-2 py-0 text-[10px] font-extrabold text-black/70 sticky left-0 bg-white/80 z-10 whitespace-nowrap h-7 ${isHour ? '' : 'border-t-0'}`}>
+                            {isHour ? formatTime12h(slot) : ''}
+                          </td>
+
+                          {weekDates.map((dateStr, columnIndex) => {
+                            const startingReservation = activeReservations.find(
+                              (reservation) => reservation.date === dateStr && isReservationStart(reservation, slot)
+                            );
+
+                            const spanningReservation = activeReservations.find(
+                              (reservation) =>
+                                reservation.date === dateStr &&
+                                !isReservationStart(reservation, slot) &&
+                                reservationSpansSlot(reservation, slot)
+                            );
+
+                            if (spanningReservation) return null;
+
+                            if (startingReservation) {
+                              const rowSpan = getReservationRowSpan(startingReservation);
+                              const colorClass = STATUS_COLORS[startingReservation.status] ?? 'bg-gray-400/80 text-white';
+
+                              return (
+                                <td
+                                  key={dateStr}
+                                  rowSpan={rowSpan}
+                                  className={`border-r border-dark/10 px-1 py-1 align-top ${colorClass} ${
+                                    weekDates[columnIndex] === todayStr ? 'ring-1 ring-inset ring-white/30' : ''
+                                  }`}
+                                >
+                                  <p className="font-bold leading-tight text-[9px]">
+                                    {startingReservation.roomName}
+                                  </p>
+                                  <p className="opacity-80 leading-tight mt-0.5 text-[8px]">
+                                    {startingReservation.buildingName}
+                                  </p>
+                                  <p className="opacity-70 leading-tight text-[8px]">
+                                    {startingReservation.purpose}
+                                  </p>
+                                  <span className={`inline-block mt-0.5 text-[7px] px-1 rounded font-semibold
+                                    ${startingReservation.status === 'approved' ? 'bg-white/20' :
+                                      startingReservation.status === 'pending' ? 'bg-black/10' : 'bg-white/20'}`}>
+                                    {startingReservation.status.toUpperCase()}
+                                  </span>
+                                </td>
+                              );
+                            }
+
+                            return (
+                              <td
+                                key={dateStr}
+                                className={`border-r border-dark/10 h-7 ${
+                                  weekDates[columnIndex] === todayStr ? 'bg-primary/5' : ''
+                                }`}
+                              />
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

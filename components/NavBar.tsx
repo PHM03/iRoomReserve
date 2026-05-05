@@ -164,7 +164,6 @@ const NavBar: React.FC<NavBarProps> = ({
         { label: 'Reserve', href: '/dashboard/reserve' },
         { label: 'My Reservations', href: '/dashboard/reservations' },
         { label: 'Inbox', href: '/dashboard/inbox' },
-        { label: 'Contact', href: '/dashboard/contact' },
         ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
       ];
 

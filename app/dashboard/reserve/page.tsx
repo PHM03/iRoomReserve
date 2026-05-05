@@ -16,9 +16,9 @@ import {
   validateReservationApprover,
 } from '@/lib/reservations';
 import {
-  isDateBooked,
+  hasTimeConflict,
   onBookedDatesByRoom,
-  type BookingDate,
+  type BookingSlot,
 } from '@/lib/roomAvailability';
 import { getRoomsByBuilding, type Room } from '@/lib/rooms';
 import { formatDate, formatTime } from '@/lib/dateTime';
@@ -63,6 +63,8 @@ const INITIAL_EQUIPMENT = {
   monoblockChairs: 0,
   tables: 0,
 };
+const TIME_CONFLICT_MESSAGE =
+  'This room is already reserved for the selected time. Please choose a different time or date.';
 
 function timeStringToMinutes(value: string): number {
   const [hours, minutes] = value.split(':').map(Number);
@@ -211,6 +213,7 @@ export default function ReserveRoomPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [createdCount, setCreatedCount] = useState(0);
   const [submitError, setSubmitError] = useState('');
+  const [timeError, setTimeError] = useState('');
   const [validatingApprover, setValidatingApprover] = useState(false);
   const [submitPhase, setSubmitPhase] = useState<'idle' | 'validating-email' | 'creating-reservation'>('idle');
   const [isRecurring, setIsRecurring] = useState(false);
@@ -232,8 +235,8 @@ export default function ReserveRoomPage() {
   const [approvalEmails, setApprovalEmails] = useState({
     advisorEmail: '',
   });
-  const [bookedDates, setBookedDates] = useState<BookingDate[]>([]);
-  const [bookedDatesLoading, setBookedDatesLoading] = useState(() =>
+  const [bookedSlots, setBookedSlots] = useState<BookingSlot[]>([]);
+  const [bookedSlotsLoading, setBookedSlotsLoading] = useState(() =>
     Boolean(selectedRoomParam)
   );
 
@@ -284,10 +287,10 @@ export default function ReserveRoomPage() {
     }
 
     let cancelled = false;
-    const unsubscribe = onBookedDatesByRoom(selectedRoomParam, (dates) => {
+    const unsubscribe = onBookedDatesByRoom(selectedRoomParam, (slots) => {
       if (cancelled) return;
-      setBookedDates(dates);
-      setBookedDatesLoading(false);
+      setBookedSlots(slots);
+      setBookedSlotsLoading(false);
     });
 
     return () => {
@@ -340,6 +343,17 @@ export default function ReserveRoomPage() {
         );
       })
     : [];
+  const selectedTimeConflict =
+    Boolean(reservationDate) &&
+    Boolean(startTime) &&
+    Boolean(endTime) &&
+    hasTimeConflict(reservationDate, startTime, endTime, bookedSlots);
+
+  useEffect(() => {
+    if (timeError && !selectedTimeConflict) {
+      setTimeError('');
+    }
+  }, [selectedTimeConflict, timeError]);
 
   function getFloorsForActiveBuilding(): string[] {
     if (!activeCampus) return [];
@@ -353,8 +367,15 @@ export default function ReserveRoomPage() {
   }
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const hasSearchQuery = normalizedQuery.length > 0;
   const hasTypeFilters = activeRoomFilters.some((f) => f !== 'available');
   const filteredRooms = rooms.filter((room) => {
+    if (hasSearchQuery) {
+      return (
+        room.name.toLowerCase().includes(normalizedQuery) ||
+        room.id.toLowerCase().includes(normalizedQuery)
+      );
+    }
     // Floor filter — match the selected floor label against room.floor
     if (activeFloor) {
       const floorLabel = getFloorDisplayLabel(room.floor, {
@@ -363,11 +384,6 @@ export default function ReserveRoomPage() {
       }).toLowerCase();
       if (!floorLabel.includes(activeFloor.toLowerCase())) return false;
     }
-    const searchableText = [room.name, room.buildingName, room.floor, room.roomType]
-      .join(' ')
-      .toLowerCase();
-    const matchesSearch =
-      normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
     const matchesType =
       !hasTypeFilters ||
       activeRoomFilters
@@ -376,7 +392,7 @@ export default function ReserveRoomPage() {
     const matchesAvailability =
       !activeRoomFilters.includes('available') || room.status === 'Available';
 
-    return matchesSearch && matchesType && matchesAvailability;
+    return matchesType && matchesAvailability;
   });
   const previewDates = isRecurring ? getPreviewDates() : [];
   const canContinueToEquipment = canProceedToEquipment();
@@ -388,6 +404,7 @@ export default function ReserveRoomPage() {
     setProgramDepartmentOrganization('');
     setPurpose('');
     setSubmitError('');
+    setTimeError('');
     setApprovalEmailError('');
     setCreatedCount(0);
     setIsRecurring(false);
@@ -440,7 +457,7 @@ export default function ReserveRoomPage() {
       return false;
     }
 
-    return !isDateBooked(reservationDate, bookedDates);
+    return !selectedTimeConflict;
   }
 
   function toggleDay(day: number) {
@@ -512,7 +529,6 @@ export default function ReserveRoomPage() {
     setRooms([]);
     setRoomsError('');
     setRoomsLoading(Boolean(nextBuilding && firebaseUser));
-    setSearchQuery('');
     setActiveRoomFilters([]);
   }
 
@@ -522,19 +538,16 @@ export default function ReserveRoomPage() {
     setRooms([]);
     setRoomsError('');
     setRoomsLoading(Boolean(firebaseUser));
-    setSearchQuery('');
     setActiveRoomFilters([]);
   }
 
   function handleFloorSelect(nextFloor: string) {
     setActiveFloor(nextFloor);
     setActiveRoomFilters(['classroom']);
-    setSearchQuery('');
   }
 
   function clearFloorSelection() {
     setActiveFloor(null);
-    setSearchQuery('');
     setActiveRoomFilters([]);
   }
 
@@ -547,8 +560,8 @@ export default function ReserveRoomPage() {
   function handleRoomSelect(roomId: string) {
     if (selectedRoomId !== roomId) {
       resetReservationDetails();
-      setBookedDates([]);
-      setBookedDatesLoading(true);
+      setBookedSlots([]);
+      setBookedSlotsLoading(true);
     }
 
     setDetailsStep(2);
@@ -580,13 +593,12 @@ export default function ReserveRoomPage() {
       return;
     }
 
-    if (!isRecurring && isDateBooked(reservationDate, bookedDates)) {
-      setSubmitError(
-        'That date is already reserved for this room. Please pick a green (available) date.'
-      );
+    if (hasTimeConflict(reservationDate, startTime, endTime, bookedSlots)) {
+      setTimeError(TIME_CONFLICT_MESSAGE);
       return;
     }
 
+    setTimeError('');
     setSubmitError('');
     setSubmitPhase('idle');
     setApprovalDocumentError('');
@@ -813,6 +825,29 @@ export default function ReserveRoomPage() {
                   )}
                 </div>
 
+                <div className="relative">
+                  <svg
+                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="glass-input w-full px-12 py-3"
+                    placeholder="Search by room name or number"
+                  />
+                </div>
+
                 {/* STEP A - Campus Selection */}
                 <div>
                   <p className="mb-2 text-xs font-bold text-black/60 uppercase tracking-wider">
@@ -901,53 +936,31 @@ export default function ReserveRoomPage() {
                     </div>
                   )}
 
-                {/* STEP D - Search + Filter + Room List (only after floor is selected) */}
-                {activeFloor && (
+                {/* STEP D - Filter + Room List */}
+                {(activeFloor || hasSearchQuery) && (
                   <>
                     {/* Breadcrumb */}
-                    <div className="flex items-center gap-1.5 text-xs text-black/50 font-bold">
-                      <span>{getCampusName(activeCampus!)}</span>
-                      {activeBuilding && activeCampus === 'main' && (
-                        <>
-                          <span>&gt;</span>
-                          <span>{activeBuilding.name}</span>
-                        </>
-                      )}
-                      <span>&gt;</span>
-                      <span className="text-primary">{activeFloor}</span>
-                      <button
-                        type="button"
-                        onClick={clearFloorSelection}
-                        className="ml-2 text-black/40 hover:text-primary transition-colors"
-                        title="Clear floor"
-                      >
-                          x
-                      </button>
-                    </div>
-
-                    {/* Search */}
-                    <div className="relative">
-                      <svg
-                        className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                        />
-                      </svg>
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="glass-input w-full px-12 py-3"
-                        placeholder="Search by room name or number"
-                      />
-                    </div>
+                    {activeFloor && (
+                      <div className="flex items-center gap-1.5 text-xs text-black/50 font-bold">
+                        <span>{getCampusName(activeCampus!)}</span>
+                        {activeBuilding && activeCampus === 'main' && (
+                          <>
+                            <span>&gt;</span>
+                            <span>{activeBuilding.name}</span>
+                          </>
+                        )}
+                        <span>&gt;</span>
+                        <span className="text-primary">{activeFloor}</span>
+                        <button
+                          type="button"
+                          onClick={clearFloorSelection}
+                          className="ml-2 text-black/40 hover:text-primary transition-colors"
+                          title="Clear floor"
+                        >
+                            x
+                        </button>
+                      </div>
+                    )}
 
                     {/* Filter chips */}
                     <div className="flex flex-wrap gap-2">
@@ -1068,24 +1081,6 @@ export default function ReserveRoomPage() {
                     )}
                   </>
                 )}
-
-                {/* Assistant hint */}
-                {activeFloor && (
-                  <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h5 className="text-sm font-bold text-black">Need help choosing?</h5>
-                        <p className="mt-1 text-xs text-black">
-                          Use the floating assistant in the bottom-right corner for guided
-                          suggestions.
-                        </p>
-                      </div>
-                      <div className="inline-flex items-center rounded-full border border-primary/20 bg-white/80 px-3 py-1 text-[11px] font-bold text-primary">
-                        Messenger-style assistant
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1115,27 +1110,7 @@ export default function ReserveRoomPage() {
               </div>
             )}
 
-            {selectedRoom && selectedRoom.status !== 'Available' && (
-              <div className="rounded-2xl border border-orange-500/20 bg-orange-50/80 p-6 text-center">
-                <p className="text-sm font-bold text-black">
-                  {selectedRoomName} is currently occupied.
-                </p>
-                <p className="mt-1 text-xs text-black">
-                  The floating assistant has opened with the top 3 alternatives for this time slot.
-                </p>
-                <div className="mt-4 flex items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleBackToRoomList}
-                    className="text-sm font-bold text-primary transition-colors hover:text-primary-hover"
-                  >
-                    Back to room list
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {selectedRoom && selectedRoom.status === 'Available' && currentStep === 2 && (
+            {selectedRoom && currentStep === 2 && (
               <div>
                 <div className="mb-4 flex items-center gap-2">
                   <button
@@ -1290,13 +1265,15 @@ export default function ReserveRoomPage() {
                             Available
                           </span>
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-                            Reserved
+                            <span className="inline-block h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-200/80" />
+                            Partially booked
                           </span>
                         </div>
                       </div>
                       <RoomAvailabilityPicker
-                        bookedDates={bookedDates}
+                        bookedSlots={bookedSlots}
+                        endTime={endTime}
+                        startTime={startTime}
                         value={reservationDate}
                         onChange={(nextDate) => {
                           setReservationDate(nextDate);
@@ -1304,12 +1281,13 @@ export default function ReserveRoomPage() {
                             setSubmitError('');
                           }
                         }}
-                        loading={bookedDatesLoading}
+                        loading={bookedSlotsLoading}
                         hideLegend
                       />
-                      {reservationDate && isDateBooked(reservationDate, bookedDates) && (
+                      {(timeError ||
+                        (reservationDate && startTime && endTime && selectedTimeConflict)) && (
                         <p className="mt-2 text-xs font-bold ui-text-red">
-                          That date is already reserved for {selectedRoomName}. Pick a green date to continue.
+                          {timeError || TIME_CONFLICT_MESSAGE}
                         </p>
                       )}
                     </div>
@@ -1387,9 +1365,17 @@ export default function ReserveRoomPage() {
                       type="text"
                       value={purpose}
                       onChange={(event) => setPurpose(event.target.value)}
+                      maxLength={100}
                       className="glass-input w-full px-4 py-3"
                       placeholder="e.g., General Assembly of BSIT, Faculty Meeting, Rehearsals for Upcoming Event, Workshop"
                     />
+                    <p
+                      className={`mt-1 text-xs ${
+                        purpose.length >= 100 ? 'ui-text-red' : 'text-black/70'
+                      }`}
+                    >
+                      {100 - purpose.length}/100 characters
+                    </p>
                   </div>
 
                   <button
@@ -1560,7 +1546,11 @@ export default function ReserveRoomPage() {
                     </div>
                   )}
 
-                  {submitError && <p className="text-xs font-bold ui-text-red">{submitError}</p>}
+                  {(timeError || submitError) && (
+                    <p className="text-xs font-bold ui-text-red">
+                      {timeError || submitError}
+                    </p>
+                  )}
 
                   <button
                     onClick={handleSubmitReservation}

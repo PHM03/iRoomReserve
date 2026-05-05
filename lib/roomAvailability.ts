@@ -9,23 +9,29 @@ import {
 import { db } from "@/lib/configs/firebase";
 
 /**
- * Reservation statuses that should mark a date as "Reserved" (red, disabled)
- * on the room availability picker. Currently scoped to confirmed bookings only,
- * matching the product decision that pending requests should not block other
- * users from attempting to reserve the same room.
+ * Reservation statuses that should participate in room availability conflict
+ * checks. Currently scoped to confirmed bookings only, matching the product
+ * decision that pending requests should not block other users from attempting
+ * to reserve the same room.
  */
 const BLOCKING_STATUSES = ["approved"] as const;
 
-export type BookingDate = string;
+export interface BookingSlot {
+  date: string;
+  startTime: string;
+  endTime: string;
+}
 
-interface ReservationDateRecord {
+interface ReservationSlotRecord {
   date?: string;
+  startTime?: string;
+  endTime?: string;
   status?: string;
 }
 
 /**
- * Subscribes to all reservations that occupy a given room and emits the set of
- * dates (yyyy-MM-dd) that should be considered unavailable for new bookings.
+ * Subscribes to all approved reservations that occupy a given room and emits
+ * booked time slots so consumers can run overlap checks.
  *
  * Real-time updates ensure that when an admin approves or cancels a booking,
  * every open reservation page sees the change immediately without a refresh.
@@ -41,7 +47,7 @@ interface ReservationDateRecord {
  */
 export function onBookedDatesByRoom(
   roomId: string,
-  callback: (bookedDates: BookingDate[]) => void
+  callback: (bookedSlots: BookingSlot[]) => void
 ): Unsubscribe {
   if (!roomId) {
     return () => {};
@@ -56,34 +62,50 @@ export function onBookedDatesByRoom(
   return onSnapshot(
     reservationsQuery,
     (snapshot) => {
-      const dates = new Set<BookingDate>();
+      const bookedSlots: BookingSlot[] = [];
 
       snapshot.docs.forEach((reservationDoc) => {
-        const data = reservationDoc.data() as ReservationDateRecord;
-        if (data.date) {
-          dates.add(data.date);
+        const data = reservationDoc.data() as ReservationSlotRecord;
+        if (data.date && data.startTime && data.endTime) {
+          bookedSlots.push({
+            date: data.date,
+            startTime: data.startTime,
+            endTime: data.endTime,
+          });
         }
       });
 
-      callback([...dates].sort());
+      callback(
+        bookedSlots.sort(
+          (left, right) =>
+            left.date.localeCompare(right.date) ||
+            left.startTime.localeCompare(right.startTime) ||
+            left.endTime.localeCompare(right.endTime)
+        )
+      );
     },
     (error) => {
-      console.warn("Firestore listener error (booked dates by room):", error);
+      console.warn("Firestore listener error (booked slots by room):", error);
     }
   );
 }
 
 /**
  * Pure helper used by both the picker and the reservation submission flow to
- * guarantee a date isn't double-booked. Always check this on submit even if
- * the UI already disables the date – the listener might be stale by a few ms.
+ * guarantee a requested time slot does not overlap an approved reservation.
+ * Always check this on submit even if the UI already disables the date - the
+ * listener might be stale by a few ms.
  */
-export function isDateBooked(
+export function hasTimeConflict(
   date: string,
-  bookedDates: readonly BookingDate[]
+  startTime: string,
+  endTime: string,
+  bookedSlots: Array<{ date: string; startTime: string; endTime: string }>
 ): boolean {
-  if (!date) return false;
-  return bookedDates.includes(date);
+  return bookedSlots.some((slot) => {
+    if (slot.date !== date) return false;
+    return startTime < slot.endTime && endTime > slot.startTime;
+  });
 }
 
 /**
