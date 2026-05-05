@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import BleStatus from '@/components/BleStatus';
 import StatusBadge from '@/components/StatusBadge';
@@ -9,41 +9,40 @@ import { onRoomsByIds, Room } from '@/lib/rooms';
 import {
   cancelReservation,
   completeReservation,
-  deleteReservation,
   onReservationsByUser,
   Reservation,
 } from '@/lib/reservations';
 import { getReservationRoomStatus } from '@/lib/roomStatus';
 import { formatDate, formatTimeRange } from '@/lib/dateTime';
 
-type FilterTab =
-  | 'all'
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'completed'
-  | 'cancelled';
+type FilterTab = 'pending' | 'approved' | 'rejected' | 'completed' | 'all';
+
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
 
 export default function MyReservationsPage() {
   const { firebaseUser } = useAuth();
   const uid = firebaseUser?.uid;
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('pending');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(currentMonth);
 
   useEffect(() => {
-    if (!uid) {
-      return;
-    }
-
+    if (!uid) return;
     let cancelled = false;
-
     const unsubscribeReservations = onReservationsByUser(uid, (nextReservations) => {
       if (cancelled) return;
       setReservations(nextReservations);
     });
-
     return () => {
       cancelled = true;
       unsubscribeReservations();
@@ -51,18 +50,13 @@ export default function MyReservationsPage() {
   }, [uid]);
 
   useEffect(() => {
-    const roomIds = [...new Set(reservations.map((reservation) => reservation.roomId))];
-    if (roomIds.length === 0) {
-      return;
-    }
-
+    const roomIds = [...new Set(reservations.map((r) => r.roomId))];
+    if (roomIds.length === 0) return;
     let cancelled = false;
-
     const unsubscribeRooms = onRoomsByIds(roomIds, (nextRooms) => {
       if (cancelled) return;
       setRooms(nextRooms);
     });
-
     return () => {
       cancelled = true;
       unsubscribeRooms();
@@ -73,141 +67,89 @@ export default function MyReservationsPage() {
     rooms.map((room) => [room.id, room] as const)
   ) as Record<string, Room | undefined>;
 
-  const filteredReservations =
-    activeFilter === 'all'
-      ? reservations
-      : reservations.filter((reservation) => reservation.status === activeFilter);
+  // Dynamically get available years from reservation data
+  const availableYears = useMemo(() => {
+    const years = reservations
+      .map((r) => new Date(r.date).getFullYear())
+      .filter((y) => !isNaN(y));
+    return [...new Set(years)].sort((a, b) => b - a);
+  }, [reservations]);
 
-  const filters: { key: FilterTab; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: reservations.length },
-    {
-      key: 'pending',
-      label: 'Pending',
-      count: reservations.filter((reservation) => reservation.status === 'pending')
-        .length,
-    },
-    {
-      key: 'approved',
-      label: 'Approved',
-      count: reservations.filter(
-        (reservation) => reservation.status === 'approved'
-      ).length,
-    },
-    {
-      key: 'rejected',
-      label: 'Rejected',
-      count: reservations.filter(
-        (reservation) => reservation.status === 'rejected'
-      ).length,
-    },
-    {
-      key: 'completed',
-      label: 'Completed',
-      count: reservations.filter(
-        (reservation) => reservation.status === 'completed'
-      ).length,
-    },
-    {
-      key: 'cancelled',
-      label: 'Cancelled',
-      count: reservations.filter(
-        (reservation) => reservation.status === 'cancelled'
-      ).length,
-    },
-  ];
+  const filteredReservations = useMemo(() => {
+    let result = reservations;
 
-  const filterStyles: Record<FilterTab, { active: string; inactive: string; badge: string; badgeInactive: string }> = {
-    all: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-    pending: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-    approved: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-    rejected: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-    completed: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-    cancelled: {
-      active: 'bg-primary text-white border border-primary',
-      inactive: 'bg-white text-gray-700 border border-gray-200 hover:text-primary',
-      badge: 'bg-white/30 text-white',
-      badgeInactive: 'bg-gray-100 text-gray-600',
-    },
-  };
-
-  const handleCancel = async (reservationId: string) => {
-    if (!firebaseUser) {
-      return;
+    // Search overrides all other filters
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return result.filter(
+        (r) =>
+          r.roomName?.toLowerCase().includes(q) ||
+          r.roomId?.toLowerCase().includes(q) ||
+          r.buildingName?.toLowerCase().includes(q) ||
+          r.purpose?.toLowerCase().includes(q)
+      );
     }
 
-    setActionLoading(reservationId);
+    // Year/month filter
+    if (selectedYear !== 'all') {
+      result = result.filter((r) => {
+        const d = new Date(r.date);
+        return d.getFullYear() === selectedYear;
+      });
+    }
+    if (selectedMonth !== 'all') {
+      result = result.filter((r) => {
+        const d = new Date(r.date);
+        return d.getMonth() === selectedMonth;
+      });
+    }
 
+    // Status filter — rejected tab includes cancelled
+    if (activeFilter === 'rejected') {
+      return result.filter(
+        (r) => r.status === 'rejected' || r.status === 'cancelled'
+      );
+    }
+    if (activeFilter === 'all') return result;
+    return result.filter((r) => r.status === activeFilter);
+  }, [reservations, searchQuery, selectedYear, selectedMonth, activeFilter]);
+
+  const getCount = (key: FilterTab) => {
+    if (key === 'rejected')
+      return reservations.filter(
+        (r) => r.status === 'rejected' || r.status === 'cancelled'
+      ).length;
+    if (key === 'all') return reservations.length;
+    return reservations.filter((r) => r.status === key).length;
+  };
+
+  const filters: { key: FilterTab; label: string }[] = [
+    { key: 'pending', label: 'Pending' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'all', label: 'All' },
+  ];
+
+  const handleCancel = async (reservationId: string) => {
+    if (!firebaseUser) return;
+    setActionLoading(reservationId);
     try {
       await cancelReservation(reservationId, firebaseUser.uid);
     } catch (error) {
       console.error('Failed to cancel:', error);
     }
-
     setActionLoading(null);
   };
 
   const handleComplete = async (reservationId: string) => {
-    if (!firebaseUser) {
-      return;
-    }
-
+    if (!firebaseUser) return;
     setActionLoading(reservationId);
-
     try {
       await completeReservation(reservationId, firebaseUser.uid);
     } catch (error) {
       console.error('Failed to complete:', error);
     }
-
-    setActionLoading(null);
-  };
-
-  const handleDelete = async (reservationId: string) => {
-    if (!firebaseUser) {
-      return;
-    }
-
-    if (
-      !confirm(
-        'Are you sure you want to delete this reservation? This cannot be undone.'
-      )
-    ) {
-      return;
-    }
-
-    setActionLoading(reservationId);
-
-    try {
-      await deleteReservation(reservationId, firebaseUser.uid);
-    } catch (error) {
-      console.warn('Failed to delete:', error);
-    }
-
     setActionLoading(null);
   };
 
@@ -222,27 +164,106 @@ export default function MyReservationsPage() {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <svg
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+          />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search by room, campus, or purpose..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Year / Month Filters */}
+      <div className="flex flex-wrap gap-3 mb-4 items-center">
+        <select
+          value={selectedYear}
+          onChange={(e) =>
+            setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          }
+          className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="all">All Years</option>
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedMonth}
+          onChange={(e) =>
+            setSelectedMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          }
+          className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="all">All Months</option>
+          {MONTHS.map((month, i) => (
+            <option key={month} value={i}>
+              {month}
+            </option>
+          ))}
+        </select>
+
+        {(selectedYear !== 'all' || selectedMonth !== 'all') && (
+          <button
+            onClick={() => {
+              setSelectedYear('all');
+              setSelectedMonth('all');
+            }}
+            className="text-xs text-primary font-bold hover:underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Status Filter Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
         {filters.map((filter) => {
           const isActive = activeFilter === filter.key;
-          const styles = filterStyles[filter.key];
-
+          const count = getCount(filter.key);
           return (
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                isActive ? styles.active : styles.inactive
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
+                isActive
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-white text-gray-700 border-gray-200 hover:text-primary'
               }`}
             >
               {filter.label}
-              {filter.count > 0 && (
+              {count > 0 && (
                 <span
                   className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    isActive ? styles.badge : styles.badgeInactive
+                    isActive ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  {filter.count}
+                  {count}
                 </span>
               )}
             </button>
@@ -250,6 +271,7 @@ export default function MyReservationsPage() {
         })}
       </div>
 
+      {/* Reservation List */}
       <div className="space-y-4">
         {filteredReservations.length === 0 ? (
           <div className="glass-card p-12 !rounded-xl text-center">
@@ -267,7 +289,7 @@ export default function MyReservationsPage() {
               />
             </svg>
             <p className="text-sm text-black font-bold">
-              No {activeFilter === 'all' ? '' : activeFilter} reservations
+              No {activeFilter === 'all' ? '' : activeFilter} reservations found
             </p>
           </div>
         ) : (
@@ -287,48 +309,24 @@ export default function MyReservationsPage() {
                         <StatusBadge status={reservation.status} />
                         <StatusBadge status={roomStatus} />
                       </div>
-                      <p className="text-sm text-black">
-                        {reservation.buildingName}
-                      </p>
+                      <p className="text-sm text-black">{reservation.buildingName}</p>
                       <div className="flex flex-wrap items-center gap-4 mt-2">
                         <div className="flex items-center gap-1.5">
-                          <svg
-                            className="w-3.5 h-3.5 text-black"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                           <span className="text-xs text-black">{formatDate(reservation.date)}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <svg
-                            className="w-3.5 h-3.5 text-black"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <span className="text-xs text-black">
                             {formatTimeRange(reservation.startTime, reservation.endTime)}
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-black mt-1.5">
-                        {reservation.purpose}
-                      </p>
+                      <p className="text-xs text-black mt-1.5">{reservation.purpose}</p>
                     </div>
 
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:min-w-[140px]">
@@ -348,34 +346,11 @@ export default function MyReservationsPage() {
                           disabled={actionLoading === reservation.id}
                           className="px-4 py-2 rounded-xl text-xs font-bold ui-button-green disabled:opacity-50"
                         >
-                          {actionLoading === reservation.id
-                            ? 'Processing...'
-                            : 'Mark Complete'}
+                          {actionLoading === reservation.id ? 'Processing...' : 'Mark Complete'}
                         </button>
                       )}
-                      <button
-                        onClick={() => handleDelete(reservation.id)}
-                        disabled={actionLoading === reservation.id}
-                        className="p-2 rounded-xl ui-button-ghost ui-button-ghost-danger disabled:opacity-50"
-                        title="Delete reservation"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
                     </div>
                   </div>
-
                   <BleStatus reservation={reservation} room={room} />
                 </div>
               </div>
