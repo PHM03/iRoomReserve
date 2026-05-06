@@ -67,6 +67,12 @@ service cloud.firestore {
         );
     }
 
+    function isApprovedUser() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "approved";
+    }
+
     function hasUserProfile() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid));
@@ -118,7 +124,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isPrivilegedUser());
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId
+        || isPrivilegedUser()
+        || isApprovedUser()
+      );
       allow create, update: if isSignedIn() && request.auth.uid == userId;
     }
 
@@ -189,7 +199,7 @@ service cloud.firestore {
         || request.auth.uid == resource.data.receiverId
       );
 
-      allow create: if isStaffMember()
+      allow create: if (isStaffMember() || isApprovedUser())
         && request.auth.uid == request.resource.data.senderId
         && request.resource.data.senderId != request.resource.data.receiverId
         && request.resource.data.isRead == false
@@ -205,11 +215,17 @@ service cloud.firestore {
           "subject", "body", "isRead", "createdAt"
         ]);
 
-      // Only the receiver may mark a message as read; nothing else can change.
+      // Receiver may mark the message as read.
       allow update: if isSignedIn()
         && request.auth.uid == resource.data.receiverId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["isRead"])
         && request.resource.data.isRead == true;
+
+      // Sender may close their own sent message.
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.senderId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["closedBySender"])
+        && request.resource.data.closedBySender == true;
 
       allow delete: if false;
     }

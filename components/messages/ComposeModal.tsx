@@ -53,7 +53,7 @@ export default function ComposeModal({
     setLoadingRecipients(true);
     setRecipientsError('');
 
-    getStaffRecipients(firebaseUser.uid)
+    getStaffRecipients(firebaseUser.uid, profile?.role)
       .then((list) => {
         if (active) {
           setRecipients(list);
@@ -75,7 +75,7 @@ export default function ComposeModal({
     return () => {
       active = false;
     };
-  }, [open, firebaseUser]);
+  }, [open, firebaseUser, profile?.role]);
 
   if (!open) return null;
 

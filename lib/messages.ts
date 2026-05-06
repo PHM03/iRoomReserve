@@ -49,6 +49,7 @@ export interface Message {
   subject: string;
   body: string;
   isRead: boolean;
+  closedBySender?: boolean;
   createdAt?: Timestamp;
 }
 
@@ -124,6 +125,7 @@ function mapMessage(snapshotDoc: {
     subject: String(data.subject ?? ""),
     body: String(data.body ?? ""),
     isRead: Boolean(data.isRead),
+    closedBySender: Boolean(data.closedBySender),
     createdAt: data.createdAt as Timestamp | undefined,
   };
 }
@@ -222,28 +224,47 @@ export async function markMessageAsRead(messageId: string): Promise<void> {
   await updateDoc(doc(db, "messages", messageId), { isRead: true });
 }
 
+export async function closeSentMessage(messageId: string): Promise<void> {
+  await updateDoc(doc(db, "messages", messageId), { closedBySender: true });
+}
+
 /**
- * Returns staff members the current user is allowed to message. The Firestore
- * security rules also enforce that only staff-to-staff sends are accepted;
- * this query just keeps the dropdown clean and avoids non-staff accounts.
+ * Returns the list of approved users the caller is allowed to message.
+ *
+ * • When a **student** calls → returns all approved **staff** users
+ *   (Faculty, Admin, Utility) so students can reach administration.
+ * • When a **staff** member calls → returns all approved users
+ *   (including other staff *and* students) for full messaging reach.
+ *
+ * The caller's own uid is always excluded from the result list.
  */
 export async function getStaffRecipients(
-  excludeUid: string
+  excludeUid: string,
+  callerRole?: string | null
 ): Promise<MessageRecipient[]> {
-  const staffQuery = query(
-    collection(db, "users"),
-    where("role", "in", STAFF_ROLE_QUERY_VALUES)
-  );
+  const callerIsStaff = isStaffRole(callerRole);
 
-  const snapshot = await getDocs(staffQuery);
+  // Students see only staff; staff see every approved user.
+  const recipientQuery = callerIsStaff
+    ? query(
+        collection(db, "users"),
+        where("status", "==", "approved")
+      )
+    : query(
+        collection(db, "users"),
+        where("status", "==", "approved"),
+        where("role", "in", STAFF_ROLE_QUERY_VALUES)
+      );
+
+  const snapshot = await getDocs(recipientQuery);
 
   return snapshot.docs
     .reduce<MessageRecipient[]>((acc, userDoc) => {
-      const data = userDoc.data() as Record<string, unknown>;
-      const status = String(data.status ?? "approved");
-      if (userDoc.id === excludeUid || status === "disabled") {
+      if (userDoc.id === excludeUid) {
         return acc;
       }
+
+      const data = userDoc.data() as Record<string, unknown>;
 
       const firstName = String(data.firstName ?? "").trim();
       const lastName = String(data.lastName ?? "").trim();

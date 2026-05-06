@@ -48,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-[#f8f9fa]">
-      <body className={`min-h-screen bg-[#f8f9fa] ${centuryGothicRegular.variable} ${centuryGothicBold.variable}`}>
+      <body suppressHydrationWarning className={`min-h-screen bg-[#f8f9fa] ${centuryGothicRegular.variable} ${centuryGothicBold.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
