@@ -196,48 +196,18 @@ export default function FeedbackPage() {
   };
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-[100px] py-8 relative z-10 pb-24 md:pb-8">
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-[100px] py-8 relative z-10 pb-24 md:pb-8">
+      {/* ── Unified page header ─────────────────────────────── */}
       <div className="mb-8">
-        <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
-          <h2 className="text-2xl font-bold text-gray-800">Feedback</h2>
-          <p className="text-gray-600 mt-1">Rate your experience and help us improve</p>
+        <div className="rounded-2xl border border-white/50 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <h1 className="text-2xl font-bold text-gray-800">Feedback</h1>
+          <p className="text-sm text-gray-600 mt-1">Rate your experience and help us improve</p>
         </div>
       </div>
 
-      {pendingFeedback.length > 0 && !showForm && (
-        <div className="mb-8">
-          <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-4">
-            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              Rate Your Experience
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {pendingFeedback.map((reservation) => (
-              <div
-                key={reservation.id}
-                className="glass-card p-4 !rounded-xl flex items-center justify-between"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-black">{reservation.roomName}</h4>
-                  <p className="text-xs text-black">
-                    {reservation.buildingName} | {formatDate(reservation.date)} | {formatTimeRange(reservation.startTime, reservation.endTime)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleOpenFeedback(reservation)}
-                  className="btn-primary px-4 py-2 text-xs"
-                >
-                  Rate Now
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* ── Feedback form overlay ────────────────────────────── */}
       {showForm && selectedReservation && (
-        <div className="glass-card p-6 !rounded-2xl mb-8">
+        <div className="rounded-2xl border border-white/50 bg-white/90 p-6 shadow-sm backdrop-blur mb-8">
           {submitSuccess ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
@@ -253,7 +223,7 @@ export default function FeedbackPage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-black">Rate Your Experience</h3>
-                  <p className="text-xs text-black mt-0.5">
+                  <p className="text-xs text-black/60 mt-0.5">
                     {selectedReservation.roomName} | {selectedReservation.buildingName} |{' '}
                     {formatDate(selectedReservation.date)}
                   </p>
@@ -393,55 +363,120 @@ export default function FeedbackPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-4">
-        <h3 className="text-xl font-bold text-gray-800">Your Feedback</h3>
-      </div>
-      <div className="space-y-4">
-        {feedbackList.length === 0 ? (
-          <div className="glass-card p-12 !rounded-xl text-center">
-            <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-            </svg>
-            <p className="text-sm text-black font-bold">No feedback yet</p>
-            <p className="text-xs text-black mt-1">Your submitted feedback will appear here</p>
+      {/* ── Two-column grid: Rate Now (left) + Your Feedback (right) ── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* ── Left column: Rate Your Experience ──────────────── */}
+        <div className="rounded-2xl border border-white/50 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-2 mb-4">
+            {pendingFeedback.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            )}
+            <h2 className="text-base font-bold text-gray-800">Rate Your Experience</h2>
+            {pendingFeedback.length > 0 && (
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                {pendingFeedback.length}
+              </span>
+            )}
           </div>
-        ) : (
-          feedbackList.map((feedback) => {
-            const storedSentimentLabel =
-              feedback.sentimentLabel ??
-              (typeof feedback.compoundScore === 'number'
-                ? getSentimentLabel(feedback.compoundScore)
-                : null);
 
-            return (
-              <div key={feedback.id} className="glass-card p-5 !rounded-xl">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="text-sm font-bold text-black">{feedback.roomName}</h4>
-                    <p className="text-xs text-black">{feedback.buildingName}</p>
+          {pendingFeedback.length === 0 ? (
+            <div className="rounded-xl border border-dark/5 bg-dark/3 p-8 text-center">
+              <svg className="w-10 h-10 text-black/25 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-bold text-black/50">All caught up!</p>
+              <p className="text-xs text-black/40 mt-0.5">No completed reservations awaiting your feedback.</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {pendingFeedback.map((reservation) => (
+                <div
+                  key={reservation.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-dark/8 bg-white p-4 transition-shadow hover:shadow-sm"
+                >
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-black truncate">{reservation.roomName}</h4>
+                    <p className="text-xs text-black/55 mt-0.5">
+                      {reservation.buildingName} · {formatDate(reservation.date)} · {formatTimeRange(reservation.startTime, reservation.endTime)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenFeedback(reservation)}
+                    className="btn-primary shrink-0 px-4 py-2 text-xs"
+                  >
+                    Rate Now
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right column: Your Feedback ────────────────────── */}
+        <div className="rounded-2xl border border-white/50 bg-white/90 p-5 shadow-sm backdrop-blur">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-base font-bold text-gray-800">Your Feedback</h2>
+            {feedbackList.length > 0 && (
+              <span className="inline-flex items-center rounded-full border border-dark/10 bg-dark/5 px-2 py-0.5 text-[10px] font-bold text-black/55">
+                {feedbackList.length}
+              </span>
+            )}
+          </div>
+
+          {feedbackList.length === 0 ? (
+            <div className="rounded-xl border border-dark/5 bg-dark/3 p-8 text-center">
+              <svg className="w-10 h-10 text-black/25 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              <p className="text-sm font-bold text-black/50">No feedback yet</p>
+              <p className="text-xs text-black/40 mt-0.5">Your submitted feedback will appear here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {feedbackList.map((feedback) => {
+                const storedSentimentLabel =
+                  feedback.sentimentLabel ??
+                  (typeof feedback.compoundScore === 'number'
+                    ? getSentimentLabel(feedback.compoundScore)
+                    : null);
+
+                return (
+                  <div
+                    key={feedback.id}
+                    className="rounded-xl border border-dark/8 bg-white p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-bold text-black truncate">{feedback.roomName}</h4>
+                        <p className="text-xs text-black/55 mt-0.5">{feedback.buildingName}</p>
+                      </div>
+                      <div className="flex shrink-0">{renderStars(feedback.rating)}</div>
+                    </div>
+
                     {storedSentimentLabel && typeof feedback.compoundScore === 'number' && (
                       <span
-                        className={`mt-2 inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${getSentimentBadgeClasses(
+                        className={`mb-2.5 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${getSentimentBadgeClasses(
                           storedSentimentLabel
                         )}`}
                       >
                         {formatSentimentLabel(storedSentimentLabel)} ({feedback.compoundScore.toFixed(2)})
                       </span>
                     )}
+
+                    <p className="text-sm text-black/80 leading-relaxed">{feedback.message}</p>
+
+                    {feedback.adminResponse && (
+                      <div className="mt-3 rounded-xl border border-dark/10 bg-dark/3 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">Admin Response</p>
+                        <p className="text-sm text-black">{feedback.adminResponse}</p>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex">{renderStars(feedback.rating)}</div>
-                </div>
-                <p className="text-sm text-black mb-3">{feedback.message}</p>
-                {feedback.adminResponse && (
-                  <div className="bg-dark/5 rounded-xl p-3 border border-dark/10">
-                    <p className="text-xs font-bold text-primary mb-1">Admin Response</p>
-                    <p className="text-sm text-black">{feedback.adminResponse}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

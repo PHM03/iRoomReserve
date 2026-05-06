@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import DaySchedulePanel from '@/components/DaySchedulePanel';
 import RoomAvailabilityPicker from '@/components/RoomAvailabilityPicker';
 import RoomCard from '@/components/RoomCard';
 import RoomAssistantWidget from '@/components/RoomAssistantWidget';
@@ -18,7 +19,11 @@ import {
 import {
   hasTimeConflict,
   onBookedDatesByRoom,
+  onEnrichedSlotsByRoom,
+  onActiveReservationsByUser,
   type BookingSlot,
+  type EnrichedBookingSlot,
+  type UserActiveSlot,
 } from '@/lib/roomAvailability';
 import { getRoomsByBuilding, type Room } from '@/lib/rooms';
 import { formatDate, formatTime } from '@/lib/dateTime';
@@ -65,6 +70,8 @@ const INITIAL_EQUIPMENT = {
 };
 const TIME_CONFLICT_MESSAGE =
   'This room is already reserved for the selected time. Please choose a different time or date.';
+const USER_CONFLICT_MESSAGE =
+  'Only one reservation at a time. You already have a booking at another room during this time.';
 
 function timeStringToMinutes(value: string): number {
   const [hours, minutes] = value.split(':').map(Number);
@@ -239,6 +246,9 @@ export default function ReserveRoomPage() {
   const [bookedSlotsLoading, setBookedSlotsLoading] = useState(() =>
     Boolean(selectedRoomParam)
   );
+  const [enrichedSlots, setEnrichedSlots] = useState<EnrichedBookingSlot[]>([]);
+  const [userActiveSlots, setUserActiveSlots] = useState<UserActiveSlot[]>([]);
+  const [assistantRequested, setAssistantRequested] = useState(false);
 
   useEffect(() => {
     if (!firebaseUser || !activeBuilding) {
@@ -299,6 +309,47 @@ export default function ReserveRoomPage() {
     };
   }, [selectedRoomParam]);
 
+  // Enriched room slots (approved + pending with userId) for the schedule panel.
+  useEffect(() => {
+    if (!selectedRoomParam) {
+      setEnrichedSlots([]);
+      return;
+    }
+
+    let cancelled = false;
+    const unsubscribe = onEnrichedSlotsByRoom(selectedRoomParam, (slots) => {
+      if (cancelled) return;
+      setEnrichedSlots(slots);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [selectedRoomParam]);
+
+  // User's own active reservations across ALL rooms (cross-room conflict check).
+  useEffect(() => {
+    if (!firebaseUser?.uid) {
+      setUserActiveSlots([]);
+      return;
+    }
+
+    let cancelled = false;
+    const unsubscribe = onActiveReservationsByUser(
+      firebaseUser.uid,
+      (slots) => {
+        if (cancelled) return;
+        setUserActiveSlots(slots);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [firebaseUser?.uid]);
+
   const selectedRoom = selectedRoomParam
     ? rooms.find((room) => room.id === selectedRoomParam) ?? null
     : null;
@@ -349,11 +400,24 @@ export default function ReserveRoomPage() {
     Boolean(endTime) &&
     hasTimeConflict(reservationDate, startTime, endTime, bookedSlots);
 
+  // Cross-room conflict: user already has a booking at this time in another room.
+  const selectedUserConflict =
+    Boolean(reservationDate) &&
+    Boolean(startTime) &&
+    Boolean(endTime) &&
+    userActiveSlots.some(
+      (slot) =>
+        slot.date === reservationDate &&
+        slot.roomId !== selectedRoomId &&
+        startTime < slot.endTime &&
+        endTime > slot.startTime
+    );
+
   useEffect(() => {
-    if (timeError && !selectedTimeConflict) {
+    if (timeError && !selectedTimeConflict && !selectedUserConflict) {
       setTimeError('');
     }
-  }, [selectedTimeConflict, timeError]);
+  }, [selectedTimeConflict, selectedUserConflict, timeError]);
 
   function getFloorsForActiveBuilding(): string[] {
     if (!activeCampus) return [];
@@ -457,7 +521,7 @@ export default function ReserveRoomPage() {
       return false;
     }
 
-    return !selectedTimeConflict;
+    return !selectedTimeConflict && !selectedUserConflict;
   }
 
   function toggleDay(day: number) {
@@ -562,6 +626,7 @@ export default function ReserveRoomPage() {
       resetReservationDetails();
       setBookedSlots([]);
       setBookedSlotsLoading(true);
+      setEnrichedSlots([]);
     }
 
     setDetailsStep(2);
@@ -595,6 +660,20 @@ export default function ReserveRoomPage() {
 
     if (hasTimeConflict(reservationDate, startTime, endTime, bookedSlots)) {
       setTimeError(TIME_CONFLICT_MESSAGE);
+      return;
+    }
+
+    // Cross-room conflict: block if user already has a reservation at this time.
+    if (
+      userActiveSlots.some(
+        (slot) =>
+          slot.date === reservationDate &&
+          slot.roomId !== selectedRoomId &&
+          startTime < slot.endTime &&
+          endTime > slot.startTime
+      )
+    ) {
+      setTimeError(USER_CONFLICT_MESSAGE);
       return;
     }
 
@@ -1270,24 +1349,60 @@ export default function ReserveRoomPage() {
                           </span>
                         </div>
                       </div>
-                      <RoomAvailabilityPicker
-                        bookedSlots={bookedSlots}
-                        endTime={endTime}
-                        startTime={startTime}
-                        value={reservationDate}
-                        onChange={(nextDate) => {
-                          setReservationDate(nextDate);
-                          if (submitError) {
-                            setSubmitError('');
-                          }
-                        }}
-                        loading={bookedSlotsLoading}
-                        hideLegend
-                      />
+                      {/* Calendar + Schedule Panel grid */}
+                      <div className={`grid gap-4 ${reservationDate ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+                        <RoomAvailabilityPicker
+                          bookedSlots={bookedSlots}
+                          endTime={endTime}
+                          startTime={startTime}
+                          value={reservationDate}
+                          onChange={(nextDate) => {
+                            setReservationDate(nextDate);
+                            if (submitError) {
+                              setSubmitError('');
+                            }
+                          }}
+                          loading={bookedSlotsLoading}
+                          hideLegend
+                        />
+
+                        {/* Schedule Panel — appears when a date is selected */}
+                        {reservationDate && selectedCampus && firebaseUser && (
+                          <div className="rounded-2xl border border-dark/10 bg-white/70 p-4">
+                            <DaySchedulePanel
+                              date={reservationDate}
+                              roomEnrichedSlots={enrichedSlots}
+                              userActiveSlots={userActiveSlots}
+                              currentUserId={firebaseUser.uid}
+                              currentRoomId={selectedRoomId}
+                              campusTimeRange={CAMPUS_TIME_RANGES[selectedCampus]}
+                              onSelectSlot={(slotStart) => {
+                                setStartTime(slotStart);
+                                const slotStartMins = timeStringToMinutes(slotStart);
+                                const currentEndMins = endTime ? timeStringToMinutes(endTime) : 0;
+                                if (!endTime || currentEndMins <= slotStartMins) {
+                                  const minEndMins = slotStartMins + 60;
+                                  if (minEndMins <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes) {
+                                    setEndTime(minutesToTimeString(minEndMins));
+                                  }
+                                }
+                              }}
+                              onRequestAlternatives={() => {
+                                setAssistantRequested(true);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                       {(timeError ||
                         (reservationDate && startTime && endTime && selectedTimeConflict)) && (
                         <p className="mt-2 text-xs font-bold ui-text-red">
                           {timeError || TIME_CONFLICT_MESSAGE}
+                        </p>
+                      )}
+                      {reservationDate && startTime && endTime && selectedUserConflict && !selectedTimeConflict && (
+                        <p className="mt-2 text-xs font-bold ui-text-red">
+                          {USER_CONFLICT_MESSAGE}
                         </p>
                       )}
                     </div>
@@ -1594,6 +1709,8 @@ export default function ReserveRoomPage() {
         selectedRoom={selectedRecommendationRoom}
         selectedRoomAvailable={selectedRoom ? selectedRoom.status === 'Available' : null}
         timeslot={selectedTimeslot}
+        requestOpen={assistantRequested}
+        onRequestOpenHandled={() => setAssistantRequested(false)}
       />
     </main>
   );

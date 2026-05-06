@@ -66,6 +66,12 @@ interface RoomAssistantWidgetProps {
   selectedRoom?: RecommendationRoom | null;
   selectedRoomAvailable?: boolean | null;
   timeslot: RoomAssistantTimeslot;
+  /**
+   * When set to true, the widget opens itself automatically. The parent
+   * should reset this to false via onRequestOpenHandled once acknowledged.
+   */
+  requestOpen?: boolean;
+  onRequestOpenHandled?: () => void;
 }
 
 const BOT_REPLY_DELAY_MS = 620;
@@ -302,6 +308,8 @@ export default function RoomAssistantWidget({
   selectedRoom = null,
   selectedRoomAvailable = null,
   timeslot,
+  requestOpen = false,
+  onRequestOpenHandled,
 }: RoomAssistantWidgetProps) {
   const welcomeMessage = useMemo(() => createWelcomeMessage(), []);
   const [isOpen, setIsOpen] = useState(false);
@@ -557,6 +565,18 @@ export default function RoomAssistantWidget({
       replyTimeoutsRef.current = [];
     };
   }, []);
+
+  // Allow parent to programmatically open the widget (e.g. from DaySchedulePanel).
+  useEffect(() => {
+    if (requestOpen && !isOpen) {
+      if (messages.length === 0) {
+        resetConversation();
+      }
+
+      setIsOpen(true);
+      onRequestOpenHandled?.();
+    }
+  }, [requestOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isOpen || !messageListRef.current) {

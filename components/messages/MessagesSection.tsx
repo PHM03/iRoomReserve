@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { formatDate, formatDateTime, formatTimeRange } from '@/lib/dateTime';
@@ -212,6 +212,29 @@ export default function MessagesSection(props: MessagesSectionProps) {
   const isStaff = profile ? isStaffRole(profile.role) : false;
 
   const [activeTab, setActiveTab] = useState<InboxTab>('unread');
+
+  // localStorage keys for "last seen" counts on Sent / Closed tabs.
+  const lsKeySent = firebaseUser ? `msg_lastSeenSent_${firebaseUser.uid}` : '';
+  const lsKeyClosed = firebaseUser ? `msg_lastSeenClosed_${firebaseUser.uid}` : '';
+
+  const readLsNumber = (key: string): number => {
+    if (!key) return 0;
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? Number(raw) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const [lastSeenSentCount, setLastSeenSentCount] = useState(() => readLsNumber(lsKeySent));
+  const [lastSeenClosedCount, setLastSeenClosedCount] = useState(() => readLsNumber(lsKeyClosed));
+
+  // Re-read localStorage when the user changes (e.g. login/logout).
+  useEffect(() => {
+    setLastSeenSentCount(readLsNumber(lsKeySent));
+    setLastSeenClosedCount(readLsNumber(lsKeyClosed));
+  }, [lsKeySent, lsKeyClosed]);
   const [composeOpen, setComposeOpen] = useState(false);
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
@@ -409,6 +432,16 @@ export default function MessagesSection(props: MessagesSectionProps) {
     [effectiveReadNotificationIds, reservationNotifications]
   );
 
+  // Badge counts:
+  // - Unread: messages where isRead === false
+  // - Read: no badge (already seen)
+  // - Sent: new items since user last clicked the Sent tab
+  // - Closed: new items since user last clicked the Closed tab
+  const allSentCount = sentMessages.filter((m) => !m.closedBySender).length;
+  const allClosedCount = sentMessages.filter((m) => m.closedBySender).length;
+  const newSentBadge = Math.max(0, allSentCount - lastSeenSentCount);
+  const newClosedBadge = Math.max(0, allClosedCount - lastSeenClosedCount);
+
   const tabs = useMemo(() => {
     const baseTabs: Array<{ badge?: number; key: InboxTab; label: string }> = [
       {
@@ -419,17 +452,17 @@ export default function MessagesSection(props: MessagesSectionProps) {
       {
         key: 'read',
         label: 'Read',
-        badge: readMessages.length || undefined,
+        // No badge — these are already-seen messages.
       },
       {
         key: 'sent',
         label: 'Sent',
-        badge: sentMessages.length || undefined,
+        badge: newSentBadge || undefined,
       },
       {
         key: 'closed',
         label: 'Closed',
-        badge: closedMessages.length || undefined,
+        badge: newClosedBadge || undefined,
       },
     ];
 
@@ -443,13 +476,36 @@ export default function MessagesSection(props: MessagesSectionProps) {
 
     return baseTabs;
   }, [
-    closedMessages.length,
-    readMessages.length,
-    sentMessages.length,
+    newClosedBadge,
+    newSentBadge,
     showReservationUpdates,
     unreadMessages.length,
     unreadReservationCount,
   ]);
+
+  // When the user clicks a tab, persist the "last seen" count for Sent/Closed.
+  const handleTabClick = useCallback(
+    (tab: InboxTab) => {
+      setActiveTab(tab);
+
+      if (tab === 'sent' && lsKeySent) {
+        const count = allSentCount;
+        setLastSeenSentCount(count);
+        try {
+          localStorage.setItem(lsKeySent, String(count));
+        } catch { /* quota exceeded — non-critical */ }
+      }
+
+      if (tab === 'closed' && lsKeyClosed) {
+        const count = allClosedCount;
+        setLastSeenClosedCount(count);
+        try {
+          localStorage.setItem(lsKeyClosed, String(count));
+        } catch { /* quota exceeded — non-critical */ }
+      }
+    },
+    [allClosedCount, allSentCount, lsKeyClosed, lsKeySent]
+  );
 
   const activeTabDescription = useMemo(() => {
     switch (resolvedActiveTab) {
@@ -918,7 +974,7 @@ export default function MessagesSection(props: MessagesSectionProps) {
                 key={tab.key}
                 type="button"
                 onClick={() => {
-                  setActiveTab(tab.key);
+                  handleTabClick(tab.key);
                   setOpenMessageId(null);
                   setOpenReservationUpdateId(null);
                   setSearchQuery('');

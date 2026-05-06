@@ -96,6 +96,7 @@ const NavBar: React.FC<NavBarProps> = ({
   const isUtilityRole = normalizedRole === USER_ROLES.UTILITY;
   const isStudentRole = normalizedRole === USER_ROLES.STUDENT;
   const isAdmin = normalizedRole === USER_ROLES.ADMIN;
+  const isBuildingAdmin = normalizedRole === USER_ROLES.BUILDING_ADMIN;
   const isAdminRoute = pathname.startsWith('/admin');
   const isStatusSchedulingActive =
     isAdminRoute || activeTab === 'status-scheduling';
@@ -119,12 +120,12 @@ const NavBar: React.FC<NavBarProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!uid || isAdmin) return;
+    if (!uid || (isAdmin && !isBuildingAdmin)) return;
 
     const unsubscribe = onUnreadNotifications(uid, (next) => setNotifications(next));
 
     return () => unsubscribe();
-  }, [uid, isAdmin]);
+  }, [uid, isAdmin, isBuildingAdmin]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -316,7 +317,7 @@ const NavBar: React.FC<NavBarProps> = ({
                 )}
               </div>
             </div>
-            {!isAdmin && (
+            {(!isAdmin || isBuildingAdmin) && (
               <div ref={notificationRef} className="relative">
                 <button
                   onClick={() => setShowNotifications((prev) => !prev)}

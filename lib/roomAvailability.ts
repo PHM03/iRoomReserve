@@ -109,6 +109,168 @@ export function hasTimeConflict(
 }
 
 /**
+ * Statuses that the schedule panel should display visually. Approved slots
+ * are blocking (red), pending slots are informational (yellow).
+ */
+const VISIBLE_STATUSES = ["approved", "pending"] as const;
+
+/**
+ * A booking slot enriched with ownership and status information so the
+ * schedule panel can color-code and enforce interaction rules per slot.
+ */
+export interface EnrichedBookingSlot extends BookingSlot {
+  status: "approved" | "pending";
+  userId: string;
+}
+
+/**
+ * Represents one of the current user's active reservations across any room.
+ * Used to enforce the "one reservation per time slot" cross-room rule.
+ */
+export interface UserActiveSlot {
+  date: string;
+  startTime: string;
+  endTime: string;
+  roomId: string;
+  roomName: string;
+  status: "approved" | "pending";
+}
+
+interface EnrichedReservationRecord {
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  status?: string;
+  userId?: string;
+  roomId?: string;
+  roomName?: string;
+}
+
+/**
+ * Subscribes to all approved AND pending reservations for a given room,
+ * enriched with userId and status. This powers the schedule panel's
+ * color-coded time slot grid.
+ *
+ * Approved slots → red (reserved), Pending slots → yellow (pending).
+ */
+export function onEnrichedSlotsByRoom(
+  roomId: string,
+  callback: (slots: EnrichedBookingSlot[]) => void
+): Unsubscribe {
+  if (!roomId) {
+    return () => {};
+  }
+
+  const reservationsQuery = query(
+    collection(db, "reservations"),
+    where("roomId", "==", roomId),
+    where("status", "in", [...VISIBLE_STATUSES])
+  );
+
+  return onSnapshot(
+    reservationsQuery,
+    (snapshot) => {
+      const slots: EnrichedBookingSlot[] = [];
+
+      snapshot.docs.forEach((reservationDoc) => {
+        const data = reservationDoc.data() as EnrichedReservationRecord;
+        if (
+          data.date &&
+          data.startTime &&
+          data.endTime &&
+          data.userId &&
+          (data.status === "approved" || data.status === "pending")
+        ) {
+          slots.push({
+            date: data.date,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            status: data.status,
+            userId: data.userId,
+          });
+        }
+      });
+
+      callback(
+        slots.sort(
+          (left, right) =>
+            left.date.localeCompare(right.date) ||
+            left.startTime.localeCompare(right.startTime) ||
+            left.endTime.localeCompare(right.endTime)
+        )
+      );
+    },
+    (error) => {
+      console.warn(
+        "Firestore listener error (enriched slots by room):",
+        error
+      );
+    }
+  );
+}
+
+/**
+ * Subscribes to all approved + pending reservations belonging to a specific
+ * user across ALL rooms. This enables the cross-room restriction rule:
+ * a user can only hold one active reservation per time slot.
+ */
+export function onActiveReservationsByUser(
+  userId: string,
+  callback: (slots: UserActiveSlot[]) => void
+): Unsubscribe {
+  if (!userId) {
+    return () => {};
+  }
+
+  const reservationsQuery = query(
+    collection(db, "reservations"),
+    where("userId", "==", userId),
+    where("status", "in", [...VISIBLE_STATUSES])
+  );
+
+  return onSnapshot(
+    reservationsQuery,
+    (snapshot) => {
+      const slots: UserActiveSlot[] = [];
+
+      snapshot.docs.forEach((reservationDoc) => {
+        const data = reservationDoc.data() as EnrichedReservationRecord;
+        if (
+          data.date &&
+          data.startTime &&
+          data.endTime &&
+          data.roomId &&
+          (data.status === "approved" || data.status === "pending")
+        ) {
+          slots.push({
+            date: data.date,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            roomId: data.roomId,
+            roomName: data.roomName || data.roomId,
+            status: data.status,
+          });
+        }
+      });
+
+      callback(
+        slots.sort(
+          (left, right) =>
+            left.date.localeCompare(right.date) ||
+            left.startTime.localeCompare(right.startTime)
+        )
+      );
+    },
+    (error) => {
+      console.warn(
+        "Firestore listener error (active reservations by user):",
+        error
+      );
+    }
+  );
+}
+
+/**
  * Converts a Date to the yyyy-MM-dd string the rest of the reservation system
  * uses. Done in local time so that selecting "today" in the picker doesn't
  * accidentally roll over to yesterday in negative-UTC timezones.
