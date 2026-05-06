@@ -6,6 +6,7 @@ import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
 import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
 import { db } from "@/lib/configs/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservation-groups";
 
 export const runtime = "nodejs";
 
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
       })
       .sort(sortReservations);
 
-    return NextResponse.json(reservations);
+    return NextResponse.json(groupReservationsForDisplay(reservations));
   } catch (error) {
     return handleApiError(error);
   }

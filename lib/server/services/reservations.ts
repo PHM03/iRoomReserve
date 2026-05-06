@@ -70,6 +70,8 @@ interface ReservationRecord {
   checkedInAt?: FirestoreTimestampLike | null;
   completedAt?: FirestoreTimestampLike | null;
   checkInMethod?: RoomCheckInMethod | null;
+  createdAt?: FirestoreTimestampLike;
+  updatedAt?: FirestoreTimestampLike;
 }
 
 interface ReservationCreateBaseInput {
@@ -542,6 +544,71 @@ function formatEquipmentSummary(equipment?: Record<string, number>) {
     .join(", ");
 }
 
+function sortReservationDatesAscending(left: ReservationRecord, right: ReservationRecord) {
+  return (
+    left.date.localeCompare(right.date) ||
+    left.startTime.localeCompare(right.startTime) ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+async function getRecurringReservationGroup(
+  recurringGroupId: string
+): Promise<ReservationRecord[]> {
+  const snapshot = await db
+    .collection("reservations")
+    .where("recurringGroupId", "==", recurringGroupId)
+    .get();
+
+  return snapshot.docs
+    .map(
+      (reservationDoc) =>
+        ({
+          id: reservationDoc.id,
+          ...reservationDoc.data(),
+        }) as ReservationRecord
+    )
+    .sort(sortReservationDatesAscending);
+}
+
+function getGroupedReservationDates(reservations: ReservationRecord[]) {
+  return reservations.map((reservation) => reservation.date);
+}
+
+function formatGroupedReservationDates(dates: string[]) {
+  if (dates.length === 0) {
+    return "";
+  }
+
+  if (dates.length === 1) {
+    return formatDate(dates[0]);
+  }
+
+  return dates.map((date) => formatDate(date)).join(", ");
+}
+
+function formatGroupedScheduleSummary(reservations: ReservationRecord[]) {
+  const dates = getGroupedReservationDates(reservations);
+  const firstReservation = reservations[0];
+
+  if (!firstReservation) {
+    return "";
+  }
+
+  return `${formatGroupedReservationDates(dates)} (${formatTimeRange(
+    firstReservation.startTime,
+    firstReservation.endTime
+  )})`;
+}
+
+async function getReservationGroupForMutation(reservation: ReservationRecord) {
+  if (!reservation.recurringGroupId) {
+    return [reservation];
+  }
+
+  return getRecurringReservationGroup(reservation.recurringGroupId);
+}
+
 export async function createReservationRecord(data: ReservationCreateInput) {
   try {
     const campus = await resolveReservationCampus(data);
@@ -749,8 +816,34 @@ export async function approveReservationRecord(
         id: reservationSnapshot.id,
         ...reservationSnapshot.data(),
       } as ReservationRecord;
+      const groupedReservations = reservation.recurringGroupId
+        ? (
+            await transaction.get(
+              db
+                .collection("reservations")
+                .where("recurringGroupId", "==", reservation.recurringGroupId)
+            )
+          ).docs
+            .map(
+              (groupedReservationDoc) =>
+                ({
+                  id: groupedReservationDoc.id,
+                  ...groupedReservationDoc.data(),
+                }) as ReservationRecord
+            )
+            .sort(sortReservationDatesAscending)
+        : [reservation];
+      const pendingReservations = groupedReservations.filter(
+        (groupedReservation) => groupedReservation.status === "pending"
+      );
 
-      assertReservationPendingApproval(reservation);
+      if (pendingReservations.length === 0) {
+        throw new ApiError(
+          400,
+          "invalid_status",
+          "Only pending reservations can be reviewed."
+        );
+      }
 
       const currentApprovalStep = getReservationCurrentApprovalStep(reservation);
       if (!isCurrentApproverEmail(currentApprovalStep, userEmail)) {
@@ -763,23 +856,40 @@ export async function approveReservationRecord(
 
       const nextStepIndex = reservation.currentStep + 1;
       const isFinalApproval = nextStepIndex >= reservation.approvalFlow.length;
-      const approvalEntry: ReservationApprovalRecord = {
-        role: currentApprovalStep.role,
-        email: currentApprovalStep.email,
-        date: Timestamp.now() as unknown as ReservationApprovalRecord["date"],
-        status: "approved",
-      };
 
-      transaction.update(reservationRef, {
-        approvals: [...(reservation.approvals ?? []), approvalEntry],
-        currentStep: nextStepIndex,
-        status: isFinalApproval ? "approved" : "pending",
-        updatedAt: serverTimestamp(),
+      pendingReservations.forEach((pendingReservation) => {
+        assertReservationPendingApproval(pendingReservation);
+
+        const reservationApprovalStep =
+          getReservationCurrentApprovalStep(pendingReservation);
+        if (!isCurrentApproverEmail(reservationApprovalStep, userEmail)) {
+          throw new ApiError(
+            403,
+            "forbidden",
+            "You are not the current approver for this reservation."
+          );
+        }
+
+        const approvalEntry: ReservationApprovalRecord = {
+          role: reservationApprovalStep.role,
+          email: reservationApprovalStep.email,
+          date: Timestamp.now() as unknown as ReservationApprovalRecord["date"],
+          status: "approved",
+        };
+
+        transaction.update(
+          db.collection("reservations").doc(pendingReservation.id),
+          {
+            approvals: [...(pendingReservation.approvals ?? []), approvalEntry],
+            currentStep: pendingReservation.currentStep + 1,
+            status: isFinalApproval ? "approved" : "pending",
+            updatedAt: serverTimestamp(),
+          }
+        );
       });
 
       return {
-        reservation,
-        currentApprovalStep,
+        groupedReservations: pendingReservations,
         nextApprovalStep: getNextApprovalStep(
           reservation.approvalFlow,
           reservation.currentStep
@@ -803,10 +913,16 @@ export async function approveReservationRecord(
           recipientUid,
           type: "new_reservation",
           title: "Reservation Approval Required",
-          message: `${approvalResult.reservation.userName} reserved ${approvalResult.reservation.roomName} on ${formatReservationScheduleLabel(
-            approvalResult.reservation
-          )}. Your ${approvalResult.nextApprovalStep?.role ?? "next"} approval is required.`,
-          buildingId: approvalResult.reservation.buildingId,
+          message: `${
+            approvalResult.groupedReservations[0].userName
+          } reserved ${
+            approvalResult.groupedReservations[0].roomName
+          } on ${formatGroupedScheduleSummary(
+            approvalResult.groupedReservations
+          )}. Your ${
+            approvalResult.nextApprovalStep?.role ?? "next"
+          } approval is required.`,
+          buildingId: approvalResult.groupedReservations[0].buildingId,
           reservationId,
         });
       });
@@ -814,32 +930,33 @@ export async function approveReservationRecord(
       await batch.commit();
       return;
     }
-
-    const approvedReservations = await getApprovedReservationsForRoom(
-      approvalResult.reservation.roomId
-    );
     const batch = db.batch();
 
     addNotification(batch, {
-      recipientUid: approvalResult.reservation.userId,
+      recipientUid: approvalResult.groupedReservations[0].userId,
       type: "reservation_approved",
       title: "Reservation Approved",
-      message: `Your reservation for ${approvalResult.reservation.roomName} on ${formatDate(
-        approvalResult.reservation.date
+      message: `Your reservation for ${
+        approvalResult.groupedReservations[0].roomName
+      } on ${formatGroupedScheduleSummary(
+        approvalResult.groupedReservations
       )} has been fully approved.`,
-      buildingId: approvalResult.reservation.buildingId,
+      buildingId: approvalResult.groupedReservations[0].buildingId,
       reservationId,
     });
 
-    addRoomHistory(batch, approvalResult.reservation, "approved");
-
-    batch.update(
-      db.collection("rooms").doc(approvalResult.reservation.roomId),
-      {
-        ...getRoomStatusPayload(approvedReservations, reservationId),
+    const roomIds = [...new Set(approvalResult.groupedReservations.map((reservation) => reservation.roomId))];
+    for (const roomId of roomIds) {
+      const approvedReservations = await getApprovedReservationsForRoom(roomId);
+      batch.update(db.collection("rooms").doc(roomId), {
+        ...getRoomStatusPayload(approvedReservations),
         updatedAt: serverTimestamp(),
-      }
-    );
+      });
+    }
+
+    approvalResult.groupedReservations.forEach((reservation) => {
+      addRoomHistory(batch, reservation, "approved");
+    });
 
     await batch.commit();
   } catch (error) {
@@ -868,8 +985,34 @@ export async function rejectReservationRecord(
         id: reservationSnapshot.id,
         ...reservationSnapshot.data(),
       } as ReservationRecord;
+      const groupedReservations = reservation.recurringGroupId
+        ? (
+            await transaction.get(
+              db
+                .collection("reservations")
+                .where("recurringGroupId", "==", reservation.recurringGroupId)
+            )
+          ).docs
+            .map(
+              (groupedReservationDoc) =>
+                ({
+                  id: groupedReservationDoc.id,
+                  ...groupedReservationDoc.data(),
+                }) as ReservationRecord
+            )
+            .sort(sortReservationDatesAscending)
+        : [reservation];
+      const pendingReservations = groupedReservations.filter(
+        (groupedReservation) => groupedReservation.status === "pending"
+      );
 
-      assertReservationPendingApproval(reservation);
+      if (pendingReservations.length === 0) {
+        throw new ApiError(
+          400,
+          "invalid_status",
+          "Only pending reservations can be reviewed."
+        );
+      }
 
       const currentApprovalStep = getReservationCurrentApprovalStep(reservation);
       if (!isCurrentApproverEmail(currentApprovalStep, userEmail)) {
@@ -880,15 +1023,29 @@ export async function rejectReservationRecord(
         );
       }
 
-      transaction.update(reservationRef, {
-        status: "rejected",
-        rejectedBy: normalizeApprovalEmail(userEmail),
-        reason: reason.trim(),
-        updatedAt: serverTimestamp(),
+      pendingReservations.forEach((pendingReservation) => {
+        assertReservationPendingApproval(pendingReservation);
+
+        const reservationApprovalStep =
+          getReservationCurrentApprovalStep(pendingReservation);
+        if (!isCurrentApproverEmail(reservationApprovalStep, userEmail)) {
+          throw new ApiError(
+            403,
+            "forbidden",
+            "You are not the current approver for this reservation."
+          );
+        }
+
+        transaction.update(db.collection("reservations").doc(pendingReservation.id), {
+          status: "rejected",
+          rejectedBy: normalizeApprovalEmail(userEmail),
+          reason: reason.trim(),
+          updatedAt: serverTimestamp(),
+        });
       });
 
       return {
-        reservation,
+        groupedReservations: pendingReservations,
         currentApprovalStep,
       };
     });
@@ -896,13 +1053,17 @@ export async function rejectReservationRecord(
     const batch = db.batch();
 
     addNotification(batch, {
-      recipientUid: rejectionResult.reservation.userId,
+      recipientUid: rejectionResult.groupedReservations[0].userId,
       type: "reservation_rejected",
       title: "Reservation Rejected",
-      message: `Your reservation for ${rejectionResult.reservation.roomName} on ${formatDate(
-        rejectionResult.reservation.date
-      )} was rejected during the ${rejectionResult.currentApprovalStep.role} step. Reason: ${reason.trim()}`,
-      buildingId: rejectionResult.reservation.buildingId,
+      message: `Your reservation for ${
+        rejectionResult.groupedReservations[0].roomName
+      } on ${formatGroupedScheduleSummary(
+        rejectionResult.groupedReservations
+      )} was rejected during the ${
+        rejectionResult.currentApprovalStep.role
+      } step. Reason: ${reason.trim()}`,
+      buildingId: rejectionResult.groupedReservations[0].buildingId,
       reservationId,
     });
 
@@ -942,6 +1103,14 @@ export async function cancelReservationRecord(
       );
     }
 
+    const reservationsToCancel =
+      reservation.recurringGroupId && reservation.status === "pending"
+        ? (await getRecurringReservationGroup(reservation.recurringGroupId)).filter(
+            (groupedReservation) =>
+              groupedReservation.userId === userId &&
+              groupedReservation.status === "pending"
+          )
+        : [reservation];
     const managerIds = await getBuildingManagerIds(reservation.buildingId);
     const approvedReservations =
       reservation.status === "approved"
@@ -949,9 +1118,11 @@ export async function cancelReservationRecord(
         : [];
     const batch = db.batch();
 
-    batch.update(reservationRef, {
-      status: "cancelled",
-      updatedAt: serverTimestamp(),
+    reservationsToCancel.forEach((reservationToCancel) => {
+      batch.update(db.collection("reservations").doc(reservationToCancel.id), {
+        status: "cancelled",
+        updatedAt: serverTimestamp(),
+      });
     });
 
     managerIds.forEach((managerUid) => {
@@ -959,9 +1130,13 @@ export async function cancelReservationRecord(
         recipientUid: managerUid,
         type: "reservation_cancelled",
         title: "Reservation Cancelled",
-        message: `${reservation.userName} cancelled their reservation for ${reservation.roomName} on ${formatReservationScheduleLabel(
-          reservation
-        )}`,
+        message: `${reservation.userName} cancelled their reservation for ${
+          reservation.roomName
+        } on ${
+          reservationsToCancel.length > 1
+            ? formatGroupedScheduleSummary(reservationsToCancel)
+            : formatReservationScheduleLabel(reservation)
+        }`,
         buildingId: reservation.buildingId,
         reservationId,
       });
@@ -1277,13 +1452,26 @@ export async function deleteReservationRecord(
       throw new ApiError(403, "forbidden", "You cannot delete this reservation.");
     }
 
+    const reservationsToDelete =
+      reservation.recurringGroupId &&
+      (reservation.status === "pending" ||
+        reservation.status === "rejected" ||
+        reservation.status === "cancelled")
+        ? (await getRecurringReservationGroup(reservation.recurringGroupId)).filter(
+            (groupedReservation) =>
+              groupedReservation.userId === userId &&
+              groupedReservation.status === reservation.status
+          )
+        : [reservation];
     const approvedReservations =
       reservation.status === "approved"
         ? await getApprovedReservationsForRoom(reservation.roomId)
         : [];
     const batch = db.batch();
 
-    batch.delete(reservationRef);
+    reservationsToDelete.forEach((reservationToDelete) => {
+      batch.delete(db.collection("reservations").doc(reservationToDelete.id));
+    });
 
     if (reservation.status === "approved") {
       batch.update(db.collection("rooms").doc(reservation.roomId), {

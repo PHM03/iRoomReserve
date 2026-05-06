@@ -4,6 +4,7 @@ import { USER_ROLES } from "@/lib/domain/roles";
 import { handleApiError } from "@/lib/server/api-error";
 import { getManagedBuildingIdsForCampus } from "@/lib/campusAssignments";
 import { db } from "@/lib/configs/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservation-groups";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -145,10 +146,14 @@ export async function GET(request: NextRequest) {
         statuses.length === 0
           ? true
           : statuses.includes((reservation.status ?? "").toLowerCase())
-      )
-      .sort(sortReservations);
+      );
 
-    return NextResponse.json(reservations);
+    const normalizedReservations =
+      roomId || (!userId && !campus)
+        ? reservations.sort(sortReservations)
+        : groupReservationsForDisplay(reservations);
+
+    return NextResponse.json(normalizedReservations);
   } catch (error) {
     return handleApiError(error);
   }

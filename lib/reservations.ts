@@ -21,6 +21,7 @@ import {
 } from "@/lib/reservation-approval";
 import { auth, db } from "@/lib/configs/firebase";
 import { type RoomCheckInMethod } from "@/lib/roomStatus";
+import { groupReservationsForDisplay } from "@/lib/reservation-groups";
 import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
 
 export interface Reservation {
@@ -52,6 +53,10 @@ export interface Reservation {
   status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
   adminUid: string | null;
   recurringGroupId?: string;
+  dates?: string[];
+  groupedReservationIds?: string[];
+  isRecurringRequest?: boolean;
+  occurrenceCount?: number;
   checkedInAt?: Timestamp | null;
   checkInMethod?: RoomCheckInMethod | null;
   createdAt?: Timestamp;
@@ -256,15 +261,17 @@ export function onPendingReservationsByBuilding(
     reservationsQuery,
     (snapshot) => {
       listener.emit(
-        snapshot.docs
-          .map(
-            (reservationDoc) =>
-              ({
-                id: reservationDoc.id,
-                ...reservationDoc.data(),
-              }) as Reservation
-          )
-          .filter(isVisiblePendingReservationForBuilding)
+        groupReservationsForDisplay(
+          snapshot.docs
+            .map(
+              (reservationDoc) =>
+                ({
+                  id: reservationDoc.id,
+                  ...reservationDoc.data(),
+                }) as Reservation
+            )
+            .filter(isVisiblePendingReservationForBuilding)
+        )
       );
     },
     (error) => {
@@ -294,18 +301,20 @@ export function onPendingReservationsByApprover(
       reservationsQuery,
       (snapshot) => {
         listener.emit(
-          snapshot.docs
-            .map(
-              (reservationDoc) =>
-                ({
-                  id: reservationDoc.id,
-                  ...reservationDoc.data(),
-                }) as Reservation
-            )
-            .filter((reservation) => {
-              const currentStep = getCurrentApprovalStep(reservation);
-              return currentStep?.email === normalizedEmail;
-            })
+          groupReservationsForDisplay(
+            snapshot.docs
+              .map(
+                (reservationDoc) =>
+                  ({
+                    id: reservationDoc.id,
+                    ...reservationDoc.data(),
+                  }) as Reservation
+              )
+              .filter((reservation) => {
+                const currentStep = getCurrentApprovalStep(reservation);
+                return currentStep?.email === normalizedEmail;
+              })
+          )
         );
       },
       (error) => {
@@ -443,12 +452,14 @@ export function onReservationsByUser(
     reservationsQuery,
     (snapshot) => {
       listener.emit(
-        snapshot.docs.map(
-          (reservationDoc) =>
-            ({
-              id: reservationDoc.id,
-              ...reservationDoc.data(),
-            }) as Reservation
+        groupReservationsForDisplay(
+          snapshot.docs.map(
+            (reservationDoc) =>
+              ({
+                id: reservationDoc.id,
+                ...reservationDoc.data(),
+              }) as Reservation
+          )
         )
       );
     },
@@ -472,12 +483,14 @@ export async function getReservationsByUser(
   );
   const snapshot = await getDocs(reservationsQuery);
 
-  return snapshot.docs.map(
-    (reservationDoc) =>
-      ({
-        id: reservationDoc.id,
-        ...reservationDoc.data(),
-      }) as Reservation
+  return groupReservationsForDisplay(
+    snapshot.docs.map(
+      (reservationDoc) =>
+        ({
+          id: reservationDoc.id,
+          ...reservationDoc.data(),
+        }) as Reservation
+    )
   );
 }
 

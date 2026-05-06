@@ -53,25 +53,6 @@ function formatEquipment(equipment?: Record<string, number>) {
   return items.map(([key, quantity]) => `${key} (x${quantity})`).join(', ');
 }
 
-function ApprovalDetail({
-  children,
-  className = '',
-  label,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  label: string;
-}) {
-  return (
-    <div className={`rounded-2xl border border-dark/5 bg-dark/3 p-3 ${className}`}>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-black">
-        {label}
-      </p>
-      <div className="text-sm text-black">{children}</div>
-    </div>
-  );
-}
-
 function ReservationApprovals({
   email,
   targetReservationId,
@@ -248,82 +229,57 @@ function ReservationApprovals({
               const isRejecting = rejectingId === request.id;
 
               return (
-                <div
-                  key={request.id}
-                  className="overflow-hidden rounded-3xl border border-amber-100 bg-white/80 shadow-sm"
-                >
+                <div key={request.id} className="glass-card !rounded-xl overflow-hidden border-l-4 border-yellow-500/40">
                   <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedId(isExpanded ? null : request.id)
-                    }
-                    className="w-full px-5 py-4 text-left transition-colors hover:bg-amber-50/60"
+                    onClick={() => setExpandedId(isExpanded ? null : request.id)}
+                    className="w-full p-5 text-left hover:bg-primary/10 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-bold text-black">
-                            {request.userName}
-                          </h3>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-sm font-bold text-black">{request.userName}</h4>
                           <StatusBadge status="pending" />
                         </div>
-                        <p className="mt-1 text-sm font-bold text-black">
-                          {request.roomName}
+                        <p className="text-xs text-black">
+                          {request.roomName} in {request.buildingName}
                         </p>
-                        <p className="mt-1 text-xs text-black/65">
-                          {request.buildingName} | {formatDate(request.date)} |{' '}
-                          {formatTimeRange(request.startTime, request.endTime)}
+                        <p className="text-xs text-black mt-1">
+                          {formatDate(request.date)} | {formatTimeRange(request.startTime, request.endTime)}
                         </p>
                       </div>
-
-                      <svg
-                        className={`mt-1 h-5 w-5 shrink-0 text-black transition-transform ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
+                      <svg className={`w-5 h-5 text-black transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-dark/5 px-5 pb-5 pt-4">
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <ApprovalDetail label="Program / Department / Organization">
-                          {request.programDepartmentOrganization || 'Not provided'}
-                        </ApprovalDetail>
-                        <ApprovalDetail label="Purpose">
-                          {request.purpose}
-                        </ApprovalDetail>
-                        <ApprovalDetail
-                          className="sm:col-span-2"
-                          label="Equipment"
-                        >
-                          {formatEquipment(request.equipment)}
-                        </ApprovalDetail>
-
+                    <div className="border-t border-dark/5 px-5 pb-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Program / Department / Organization</p>
+                          <p className="text-sm text-black">{request.programDepartmentOrganization || 'Not provided'}</p>
+                        </div>
+                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Purpose</p>
+                          <p className="text-sm text-black">{request.purpose}</p>
+                        </div>
+                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5 sm:col-span-2">
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Equipment</p>
+                          <p className="text-sm text-black">{formatEquipment(request.equipment)}</p>
+                        </div>
                         {request.approvalDocumentUrl && (
-                          <ApprovalDetail
-                            className="sm:col-span-2"
-                            label="Concept Paper / Letter of Approval"
-                          >
+                          <div className="bg-dark/3 rounded-xl p-3 border border-dark/5 sm:col-span-2">
+                            <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Concept Paper / Letter of Approval</p>
                             <a
                               href={request.approvalDocumentUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-bold text-primary transition-colors hover:text-primary-hover"
+                              className="text-sm font-bold text-primary hover:text-primary-hover transition-colors"
                             >
                               {request.approvalDocumentName || 'Open attachment'}
                             </a>
-                          </ApprovalDetail>
+                          </div>
                         )}
                       </div>
 
@@ -466,7 +422,7 @@ function UserInbox({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-               Compose
+              Compose
             </button>
           )}
         </div>
