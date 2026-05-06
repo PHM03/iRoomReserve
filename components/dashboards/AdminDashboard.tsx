@@ -179,6 +179,11 @@ function getManagedBuildingOptionLabel(building: { id: string; name: string }) {
   return displayLabel === building.name ? displayLabel : `${displayLabel} - ${building.name}`;
 }
 
+function formatReservationDates(dates?: string[], fallbackDate?: string) {
+  const dateList = dates?.length ? dates : fallbackDate ? [fallbackDate] : [];
+  return dateList.map((date) => formatDate(date)).join(', ');
+}
+
 // ─── Component ──────────────────────────────────────────────────
 interface AdminDashboardProps {
   firstName: string;
@@ -1689,7 +1694,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                         <h4 className="font-bold text-black text-sm">{req.userName}</h4>
                         <RoleBadge role={req.userRole} />
                       </div>
-                      <p className="text-xs text-black mt-0.5">{req.roomName} | {formatDate(req.date)} | {formatTimeRange(req.startTime, req.endTime)}</p>
+                      <p className="text-xs text-black mt-0.5">{req.roomName} | {formatReservationDates(req.dates, req.date)} | {formatTimeRange(req.startTime, req.endTime)}</p>
                     </div>
                     <svg className="w-5 h-5 text-black shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2050,7 +2055,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                       </div>
                       <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
                         <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Date</p>
-                        <p className="text-sm font-bold text-black">{formatDate(req.date)}</p>
+                        <p className="text-sm font-bold text-black">{formatReservationDates(req.dates, req.date)}</p>
                       </div>
                       <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
                         <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Time</p>

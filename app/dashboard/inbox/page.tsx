@@ -65,6 +65,11 @@ function formatEquipment(equipment?: Record<string, number>) {
   return items.map(([key, quantity]) => `${key} (x${quantity})`).join(', ');
 }
 
+function formatReservationDates(dates?: string[], fallbackDate?: string) {
+  const dateList = dates?.length ? dates : fallbackDate ? [fallbackDate] : [];
+  return dateList.map((date) => formatDate(date)).join(', ');
+}
+
 function ReservationApprovals({
   email,
   targetReservationId,
@@ -248,7 +253,7 @@ function ReservationApprovals({
                         {request.roomName} in {request.buildingName}
                       </p>
                       <p className="text-xs text-black mt-1">
-                        {formatDate(request.date)} | {formatTimeRange(request.startTime, request.endTime)}
+                        {formatReservationDates(request.dates, request.date)} | {formatTimeRange(request.startTime, request.endTime)}
                       </p>
                     </div>
                     <svg className={`w-5 h-5 text-black transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,6 +273,12 @@ function ReservationApprovals({
                         <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Purpose</p>
                         <p className="text-sm text-black">{request.purpose}</p>
                       </div>
+                      {request.dates && request.dates.length > 1 ? (
+                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5 sm:col-span-2">
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Dates</p>
+                          <p className="text-sm text-black">{formatReservationDates(request.dates)}</p>
+                        </div>
+                      ) : null}
                       <div className="bg-dark/3 rounded-xl p-3 border border-dark/5 sm:col-span-2">
                         <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Equipment</p>
                         <p className="text-sm text-black">{formatEquipment(request.equipment)}</p>
