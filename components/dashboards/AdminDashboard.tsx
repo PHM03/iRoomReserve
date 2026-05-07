@@ -136,9 +136,9 @@ const ROOM_TYPE_OPTIONS = [
 const ROOM_TYPE_LABELS: Record<(typeof ROOM_TYPE_OPTIONS)[number], string> = {
   'Conference Room': 'Conference Room',
   'Glass Room': 'Glass Room',
-  Classroom: 'Classroom',
-  'Specialized Room': 'Specialized Room (Computer Lab, Studio Theatre, DRA Hall, etc.)',
-  Gymnasium: 'Gymnasium',
+  'Classroom': 'Classroom',
+  'Specialized Room': 'Specialized Room (Laboratory, Storage Room, and other program-specific facilities)',
+  'Gymnasium': 'Gymnasium',
 };
 
 const ROOM_AC_OPTIONS = [
