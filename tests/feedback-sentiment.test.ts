@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveFeedbackSentimentLabel,
   summarizeFeedbackSentiment,
-} from "../lib/feedback-sentiment";
+} from "../lib/feedback/feedback-sentiment";
 
 describe("feedback sentiment helpers", () => {
   it("falls back to the compound score when the stored label is missing", () => {

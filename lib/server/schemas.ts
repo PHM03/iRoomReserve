@@ -33,7 +33,7 @@ const userRoleSchema = z.preprocess(
 export const roomStatusSchema = z.enum([
   "Available",
   "Reserved",
-  "Ongoing",
+  "Occupied",
   "Unavailable",
 ]);
 

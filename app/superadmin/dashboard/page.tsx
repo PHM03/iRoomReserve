@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   onAllUsers,
@@ -16,6 +17,7 @@ import {
 import { getCampusName } from '@/lib/buildings/campusAssignments';
 import { type ReservationCampus } from '@/lib/buildings/campuses';
 import { USER_ROLES } from '@/lib/auth/roles';
+import { onReservationsByUser, Reservation } from '@/lib/reservations/reservations';
 import { seedBuildings } from '@/lib/buildings/seedBuildings';
 
 type Tab = 'all' | 'students' | 'faculty' | 'utility' | 'admins' | 'pending';
@@ -27,6 +29,7 @@ export default function SuperAdminDashboard() {
   const [allUsers, setAllUsers] = useState<ManagedUser[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showAccountTooltip, setShowAccountTooltip] = useState(false);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   // ─── Approval Modal State ─────────────────────────────────────
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -66,6 +69,23 @@ export default function SuperAdminDashboard() {
       unsub();
     };
   }, []);
+
+  // Real-time listener for current user's reservations (timetable)
+  useEffect(() => {
+    const uid = firebaseUser?.uid;
+    if (!uid) return;
+
+    let cancelled = false;
+    const unsub = onReservationsByUser(uid, (next) => {
+      if (cancelled) return;
+      setReservations(next);
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [firebaseUser?.uid]);
 
   // ─── Computed Data ────────────────────────────────────────────
   const pendingUsers = allUsers.filter((u) => u.status === 'pending');
@@ -411,6 +431,13 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* My Reservation Timetable */}
+        <MyReservationTimetable
+          className="mb-8"
+          currentUserId={firebaseUser?.uid}
+          reservations={reservations}
+        />
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 mb-6 glass-card !rounded-xl p-1">

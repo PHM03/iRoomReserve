@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
 import StatusBadge from '@/components/ui/StatusBadge';
-import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
+import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   AdminRequest,
@@ -249,7 +249,7 @@ export default function UtilityStaffDashboard({
           </div>
           <div className="rounded-xl border border-dark/10 bg-dark/5 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <StatusBadge status="Ongoing" />
+              <StatusBadge status="Occupied" />
             </div>
             <p className="text-sm text-black">
               A reservation has checked in and is actively using the room.
@@ -265,12 +265,10 @@ export default function UtilityStaffDashboard({
         />
       </section>
 
-      <TodayClassSchedulesPanel
-        buildingId={buildingId}
-        buildingName={buildingName}
+      <MyReservationTimetable
         className="mb-8"
-        key={buildingId}
-        scope="building"
+        currentUserId={uid}
+        reservations={reservations}
       />
 
       <div className="mb-8">
@@ -298,7 +296,7 @@ export default function UtilityStaffDashboard({
               const roomStatus = resolveRoomStatus(
                 reservationRoom ?? {
                   id: reservation.roomId,
-                  status: reservation.checkedInAt ? 'Ongoing' : 'Reserved',
+                  status: reservation.checkedInAt ? 'Occupied' : 'Reserved',
                 },
                 reservations,
                 { now: today }

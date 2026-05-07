@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { normalizeRoomCheckInMethod } from '@/lib/roomStatus';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
 import {
   Schedule,
   ScheduleInput,
@@ -15,7 +16,7 @@ import {
   onSchedulesByBuilding,
   updateSchedule,
   DAY_NAMES,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 import { onReservationsByBuilding, Reservation } from '@/lib/reservations/reservations';
 import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms/rooms';
 
@@ -322,10 +323,14 @@ export function useAdminStatusPages() {
     return uniqueFloors
       .map((floor) => ({
         floor,
+        label: getFloorDisplayLabel(floor, {
+          id: buildingId,
+          name: buildingName,
+        }),
         rooms: roomsByFloor.get(floor) ?? [],
       }))
       .filter((floorGroup) => floorGroup.rooms.length > 0);
-  }, [rooms, uniqueFloors]);
+  }, [buildingId, buildingName, rooms, uniqueFloors]);
 
   const scheduleCountsByDay = useMemo(
     () =>

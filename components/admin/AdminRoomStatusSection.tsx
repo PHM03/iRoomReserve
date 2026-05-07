@@ -1,7 +1,7 @@
 'use client';
 
 import FloorAccordion from '@/components/room-status/FloorAccordion';
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminRoomStatusSectionProps {
@@ -23,7 +23,7 @@ interface AdminRoomStatusSectionProps {
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Ongoing':
+      case 'Occupied':
         return 'ui-badge-orange';
       case 'Reserved':
         return 'ui-badge-blue';
@@ -80,7 +80,7 @@ export default function AdminRoomStatusSection({
                   {floorGroup.rooms.map((room) => {
                     const effective = computeEffectiveStatus(room);
                     const statusBorder =
-                      effective.status === 'Ongoing'
+                      effective.status === 'Occupied'
                         ? 'border-orange-500/40'
                         : effective.status === 'Reserved'
                           ? 'border-blue-500/40'
@@ -127,14 +127,14 @@ export default function AdminRoomStatusSection({
                             Reserved
                           </button>
                           <button
-                            onClick={() => onStatusChange(room.id, 'Ongoing')}
+                            onClick={() => onStatusChange(room.id, 'Occupied')}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Ongoing'
+                              room.status === 'Occupied'
                                 ? 'ui-button-orange'
                                 : 'ui-button-gray'
                             }`}
                           >
-                            Ongoing
+                            Occupied
                           </button>
                           <button
                             onClick={() => onStatusChange(room.id, 'Unavailable')}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
-import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
+import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
@@ -531,7 +531,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       }
 
       return {
-        status: 'Ongoing',
+        status: 'Occupied',
         detail:
           normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth'
             ? 'Bluetooth beacon connected'
@@ -563,13 +563,13 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       }
 
       return activeReservation.checkedInAt
-        ? { status: 'Ongoing', detail: `Checked in: ${activeReservation.userName}` }
+        ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
         : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
     }
     return { status: 'Available', detail: '' };
   };
 
-  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Ongoing').length;
+  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Occupied').length;
   const reservedCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Reserved').length;
   const unavailableCount = rooms.filter((r) => r.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
@@ -1473,12 +1473,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             detailsHref="/admin/ble-status"
           />
 
-          <TodayClassSchedulesPanel
-            buildingId={buildingId}
-            buildingName={buildingName}
+          <MyReservationTimetable
             className="mb-8"
-            key={buildingId}
-            scope="building"
+            currentUserId={firebaseUser?.uid}
+            reservations={allReservations}
           />
 
           {/* Pending Requests Preview */}

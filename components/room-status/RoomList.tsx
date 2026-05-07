@@ -1,8 +1,8 @@
 'use client';
 
 import StatusBadge from '@/components/ui/StatusBadge';
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
-import type { RoomStatusValue } from '@/lib/roomStatus';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { RoomStatusValue } from '@/lib/rooms/roomStatus';
 import type { RoomStatusViewItem } from '@/lib/rooms/roomStatusView';
 
 interface RoomListProps {

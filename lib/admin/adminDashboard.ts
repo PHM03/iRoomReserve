@@ -4,11 +4,11 @@ import { Timestamp } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
 import type { AdminRequest } from "@/lib/admin/adminRequests";
-import type { Notification } from "@/lib/notifications";
+import type { Notification } from "@/lib/notifications/notifications";
 import type { Reservation } from "@/lib/reservations/reservations";
-import type { RoomHistoryEntry } from "@/lib/roomHistory";
+import type { RoomHistoryEntry } from "@/lib/rooms/roomHistory";
 import type { Room } from "@/lib/rooms/rooms";
-import type { Schedule } from "@/lib/schedules";
+import type { Schedule } from "@/lib/schedules/schedules";
 
 type TimestampLike =
   | Timestamp

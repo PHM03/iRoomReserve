@@ -1,9 +1,9 @@
-import type { Building } from "@/lib/buildings";
-import { getCampusName } from "./campusAssignments";
+import type { Building } from "@/lib/buildings/buildings";
+import { getCampusName } from "@/lib/buildings/campusAssignments";
 import type { ReservationCampus } from "@/lib/buildings/campuses";
-import { getFloorDisplayLabel } from "./floorLabels";
+import { getFloorDisplayLabel } from "@/lib/buildings/floorLabels";
 import type { Room } from "@/lib/rooms/rooms";
-import type { ResolvedRoomStatus, RoomStatusValue } from "@/lib/roomStatus";
+import type { ResolvedRoomStatus, RoomStatusValue } from "@/lib/rooms/roomStatus";
 
 export type RoomStatusFilter = "all" | RoomStatusValue;
 

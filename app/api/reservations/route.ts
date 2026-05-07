@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/auth/roles";
 import { handleApiError } from "@/lib/server/api-error";
-import { getManagedBuildingIdsForCampus } from "@/lib/campusAssignments";
+import { getManagedBuildingIdsForCampus } from "@/lib/buildings/campusAssignments";
 import { db } from "@/lib/firebase/firebase-admin";
 import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
