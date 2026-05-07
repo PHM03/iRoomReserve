@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { normalizeRoomCheckInMethod } from '@/lib/roomStatus';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
 import {
   Schedule,
   ScheduleInput,
@@ -15,7 +15,7 @@ import {
   onSchedulesByBuilding,
   updateSchedule,
   DAY_NAMES,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 import { onReservationsByBuilding, Reservation } from '@/lib/reservations/reservations';
 import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms/rooms';
 
