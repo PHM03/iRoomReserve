@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { fetchOccupancySnapshot } from "@/lib/occupancy/occupancyClient";
-import { formatBleTimestamp } from "@/lib/bleMonitor";
+import { formatBleTimestamp } from "@/lib/occupancy/bleMonitor";
 import { formatClockTime } from "@/lib/utils/dateTime";
 
 const AUTO_REFRESH_INTERVAL_MS = 600000;

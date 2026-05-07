@@ -1,8 +1,8 @@
 'use client';
 
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
-import type { Schedule } from '@/lib/schedules';
-import { DAY_NAMES, formatTime12h } from '@/lib/schedules';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { Schedule } from '@/lib/schedules/schedules';
+import { DAY_NAMES, formatTime12h } from '@/lib/schedules/schedules';
 import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminClassSchedulesSectionProps {

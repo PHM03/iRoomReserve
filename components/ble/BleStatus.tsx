@@ -9,7 +9,7 @@ import {
   formatBleLabel,
   formatBleTimestamp,
   getRoomBleBeaconId,
-} from '@/lib/bleMonitor';
+} from '@/lib/occupancy/bleMonitor';
 import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   isOccupancyConnected,
@@ -18,7 +18,7 @@ import {
 import { fetchOccupancySnapshot } from '@/lib/occupancy/occupancyClient';
 import { type Reservation } from '@/lib/reservations/reservations';
 import { type Room } from '@/lib/rooms/rooms';
-import { isReservationActiveTimeSlot } from '@/lib/roomStatus';
+import { isReservationActiveTimeSlot } from '@/lib/rooms/roomStatus';
 
 interface BleStatusProps {
   reservation: Pick<

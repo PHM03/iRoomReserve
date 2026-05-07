@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { USER_ROLES } from '@/lib/auth/roles';
-import { isAllowedEmail, saveUserProfile, logout } from '@/lib/auth';
+import { isAllowedEmail, saveUserProfile, logout } from '@/lib/auth/auth';
 import Toast from '@/components/ui/Toast';
 
 export default function RoleSelectionPage() {

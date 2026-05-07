@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AuthAlert from '@/components/auth/AuthAlert';
 import Toast from '@/components/ui/Toast';
 import { USER_ROLES } from '@/lib/auth/roles';
-import { registerWithEmail, getAuthErrorMessage } from '@/lib/auth';
+import { registerWithEmail, getAuthErrorMessage } from '@/lib/auth/auth';
 
 function RegisterForm() {
   type VantaEffectHandle = {

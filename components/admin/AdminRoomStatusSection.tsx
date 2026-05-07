@@ -1,7 +1,7 @@
 'use client';
 
 import FloorAccordion from '@/components/room-status/FloorAccordion';
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminRoomStatusSectionProps {
@@ -127,9 +127,9 @@ export default function AdminRoomStatusSection({
                             Reserved
                           </button>
                           <button
-                            onClick={() => onStatusChange(room.id, 'Ongoing')}
+                            onClick={() => onStatusChange(room.id, 'Occupied')}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Ongoing'
+                              room.status === 'Occupied'
                                 ? 'ui-button-orange'
                                 : 'ui-button-gray'
                             }`}
