@@ -120,12 +120,12 @@ const NavBar: React.FC<NavBarProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!uid || (isAdmin && !isBuildingAdmin)) return;
+    if (!uid) return;
 
     const unsubscribe = onUnreadNotifications(uid, (next) => setNotifications(next));
 
     return () => unsubscribe();
-  }, [uid, isAdmin, isBuildingAdmin]);
+  }, [uid]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -317,138 +317,136 @@ const NavBar: React.FC<NavBarProps> = ({
                 )}
               </div>
             </div>
-            {(!isAdmin || isBuildingAdmin) && (
-              <div ref={notificationRef} className="relative">
-                <button
-                  onClick={() => setShowNotifications((prev) => !prev)}
-                  className={`${navIconButtonClasses} relative`}
-                  title="Notifications"
+            <div ref={notificationRef} className="relative">
+              <button
+                onClick={() => setShowNotifications((prev) => !prev)}
+                className={`${navIconButtonClasses} relative`}
+                title="Notifications"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 border border-dark/12 shadow-2xl shadow-black/20"
+                  style={{
+                    background: 'rgba(248, 246, 242, 0.98)',
+                    backdropFilter: 'blur(20px)',
+                  }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  {notifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                      {notifications.length}
-                    </span>
-                  )}
-                </button>
-                {showNotifications && (
-                  <div
-                    className="absolute right-0 top-full mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 border border-dark/12 shadow-2xl shadow-black/20"
-                    style={{
-                      background: 'rgba(248, 246, 242, 0.98)',
-                      backdropFilter: 'blur(20px)',
-                    }}
-                  >
-                    <div className="flex items-center justify-between p-4 border-b border-dark/10">
-                      <h4 className="font-bold text-black text-sm">Notifications</h4>
-                      {notifications.length > 0 && (
-                        <button
-                          onClick={handleMarkAllRead}
-                          className="text-xs text-primary font-bold hover:text-primary-hover transition-colors"
+                  <div className="flex items-center justify-between p-4 border-b border-dark/10">
+                    <h4 className="font-bold text-black text-sm">Notifications</h4>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-xs text-primary font-bold hover:text-primary-hover transition-colors"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <p className="text-sm text-black/80">No new notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="p-3 border-b border-dark/5 hover:bg-primary/8 transition-colors flex items-start gap-3 cursor-pointer"
+                          onClick={() => void handleNotificationClick(notification)}
                         >
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-6 text-center">
-                          <p className="text-sm text-black/80">No new notifications</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
                           <div
-                            key={notification.id}
-                            className="p-3 border-b border-dark/5 hover:bg-primary/8 transition-colors flex items-start gap-3 cursor-pointer"
-                            onClick={() => void handleNotificationClick(notification)}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                              notification.type === 'reservation_approved'
+                                ? 'bg-green-500/20'
+                                : notification.type === 'reservation_rejected'
+                                  ? 'bg-red-500/20'
+                                  : 'bg-primary/20'
+                            }`}
                           >
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                            <svg
+                              className={`w-4 h-4 ${
                                 notification.type === 'reservation_approved'
-                                  ? 'bg-green-500/20'
+                                  ? 'ui-text-green'
                                   : notification.type === 'reservation_rejected'
-                                    ? 'bg-red-500/20'
-                                    : 'bg-primary/20'
+                                    ? 'ui-text-red'
+                                    : 'text-primary'
                               }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <svg
-                                className={`w-4 h-4 ${
-                                  notification.type === 'reservation_approved'
-                                    ? 'ui-text-green'
-                                    : notification.type === 'reservation_rejected'
-                                      ? 'ui-text-red'
-                                      : 'text-primary'
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                {notification.type === 'reservation_approved' ? (
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                ) : notification.type === 'reservation_rejected' ? (
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                ) : (
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                                  />
-                                )}
-                              </svg>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-black">{notification.title}</p>
-                              <p className="text-[11px] text-black/80 mt-0.5 leading-relaxed">
-                                {notification.message}
-                              </p>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void markNotificationRead(notification.id);
-                              }}
-                              className="text-black/70 hover:text-primary transition-colors shrink-0"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
+                              {notification.type === 'reservation_approved' ? (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              ) : notification.type === 'reservation_rejected' ? (
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                   strokeWidth={2}
                                   d="M6 18L18 6M6 6l12 12"
                                 />
-                              </svg>
-                            </button>
+                              ) : (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                                />
+                              )}
+                            </svg>
                           </div>
-                        ))
-                      )}
-                    </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-black">{notification.title}</p>
+                            <p className="text-[11px] text-black/80 mt-0.5 leading-relaxed">
+                              {notification.message}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void markNotificationRead(notification.id);
+                            }}
+                            className="text-black/70 hover:text-primary transition-colors shrink-0"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
             <button onClick={handleLogout} className={navIconButtonClasses} title="Logout">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

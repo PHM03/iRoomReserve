@@ -9,7 +9,7 @@ import {
   formatBleLabel,
   formatBleTimestamp,
   getRoomBleBeaconId,
-} from '@/lib/bleMonitor';
+} from '@/lib/occupancy/bleMonitor';
 import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   isOccupancyConnected,
