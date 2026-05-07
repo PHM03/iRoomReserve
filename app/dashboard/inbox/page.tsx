@@ -387,44 +387,32 @@ function UserInbox({
   }, [uid]);
 
   return (
-    <main className="relative z-10 mx-auto max-w-6xl px-4 pb-24 pt-[108px] sm:px-6 md:pb-8 lg:px-8">
-      <div className="mb-8 rounded-[32px] border border-white/50 bg-white/85 p-6 shadow-sm backdrop-blur sm:p-7">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-black/45">
-              Inbox
-            </p>
-            <h1 className="mt-2 text-2xl font-bold text-gray-800 sm:text-3xl">
-              Inbox - Reservation approvals, updates, and messages
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm text-gray-600">
-              Open unread conversations, review reservation activity, and expand only
-              the details you need.
-            </p>
-          </div>
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-[100px] py-8 relative z-10 pb-24 md:pb-8">
+      <div className="mb-8">
+        <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Inbox - Reservation approvals, updates, and messages
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Open unread conversations, review reservation activity, and expand only the details you need.
+              </p>
+            </div>
 
-          {canCompose && (
-            <button
-              type="button"
-              onClick={() => setComposeOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#a12124] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#8e1d20]"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {canCompose && (
+              <button
+                type="button"
+                onClick={() => setComposeOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#a12124] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#8e1d20]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Compose
-            </button>
-          )}
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Compose
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
