@@ -2,7 +2,7 @@
 
 import FloorAccordion from '@/components/room-status/FloorAccordion';
 import RoomList from '@/components/room-status/RoomList';
-import type { BuildingOption, FloorGroup } from '@/lib/roomStatusView';
+import type { BuildingOption, FloorGroup } from '@/lib/rooms/roomStatusView';
 
 interface BuildingSectionProps {
   building: BuildingOption;

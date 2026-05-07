@@ -5,7 +5,7 @@ import {
   getCurrentApprovalStep,
   getNextApprovalStep,
   isCurrentApproverEmail,
-} from '../lib/reservation-approval';
+} from '../lib/reservations/reservation-approval';
 
 describe('reservation approval helpers', () => {
   it('builds a normalized single-step Digi approval flow', () => {

@@ -3,7 +3,7 @@
 import StatusBadge from '@/components/ui/StatusBadge';
 import { getFloorDisplayLabel } from '@/lib/floorLabels';
 import type { RoomStatusValue } from '@/lib/roomStatus';
-import type { RoomStatusViewItem } from '@/lib/roomStatusView';
+import type { RoomStatusViewItem } from '@/lib/rooms/roomStatusView';
 
 interface RoomListProps {
   items: RoomStatusViewItem[];

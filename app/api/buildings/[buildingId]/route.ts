@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { inferCampusFromBuilding } from "@/lib/campuses";
+import { inferCampusFromBuilding } from "@/lib/buildings/campuses";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getRequestAuthContext } from "@/lib/server/request-auth";

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { USER_ROLES } from '@/lib/domain/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 import StudentDashboard from '@/components/dashboards/StudentDashboard';
 import FacultyDashboard from '@/components/dashboards/FacultyDashboard';
 import UtilityStaffDashboard from '@/components/dashboards/UtilityStaffDashboard';

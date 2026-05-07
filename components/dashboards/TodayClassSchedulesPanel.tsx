@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { getBuildingFloorOptions } from '@/lib/floorLabels';
-import { getRoomsByBuildingAndFloor, type Room } from '@/lib/rooms';
+import { useEffect, useMemo, useState } from 'react';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { getBuildingFloorOptions } from '@/lib/buildings/floorLabels';
+import { getRoomsByBuildingAndFloor, type Room } from '@/lib/rooms/rooms';
 import {
   formatTime12h,
   getSchedulesByRoomId,
   type Schedule,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 
 type ScheduleCampusFilter = 'SDCA Digi Campus' | 'SDCA Main Campus';
 type ScheduleBuildingFilter = 'gd1' | 'gd2' | 'gd3';
@@ -47,7 +47,7 @@ const MAIN_BUILDING_OPTIONS: ReadonlyArray<{
 const DIGI_BUILDING = getManagedBuildingsForCampus('digi')[0] ?? null;
 const ROOM_EMPTY_MESSAGE = 'No rooms available';
 const ROOM_TIMEOUT_MESSAGE = 'Failed to load rooms. Please try again.';
-const DAY_LABELS_BY_VALUE = new Map(
+const DAY_LABELS_BY_VALUE = new Map<number, string>(
   SCHEDULE_DAY_OPTIONS.map((option) => [option.value, option.label])
 );
 

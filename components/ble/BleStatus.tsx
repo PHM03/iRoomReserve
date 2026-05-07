@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
-import { formatClockTime, formatTimeRange } from '@/lib/dateTime';
+import { formatClockTime, formatTimeRange } from '@/lib/utils/dateTime';
 import {
   BLE_MONITOR_REFRESH_INTERVAL_MS,
   formatBleLabel,
@@ -14,10 +14,10 @@ import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   isOccupancyConnected,
   type OccupancyPayload,
-} from '@/lib/occupancy';
-import { fetchOccupancySnapshot } from '@/lib/occupancyClient';
-import { type Reservation } from '@/lib/reservations';
-import { type Room } from '@/lib/rooms';
+} from '@/lib/occupancy/occupancy';
+import { fetchOccupancySnapshot } from '@/lib/occupancy/occupancyClient';
+import { type Reservation } from '@/lib/reservations/reservations';
+import { type Room } from '@/lib/rooms/rooms';
 import { isReservationActiveTimeSlot } from '@/lib/roomStatus';
 
 interface BleStatusProps {

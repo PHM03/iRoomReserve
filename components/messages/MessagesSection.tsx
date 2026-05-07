@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
-import { formatDate, formatDateTime, formatTimeRange } from '@/lib/dateTime';
+import { formatDate, formatDateTime, formatTimeRange } from '@/lib/utils/dateTime';
 import {
   type Message,
   closeSentMessage,
@@ -11,15 +11,15 @@ import {
   markMessageAsRead,
   onInboxMessages,
   onSentMessages,
-} from '@/lib/messages';
+} from '@/lib/messages/messages';
 import {
   type Notification as AppNotification,
   markNotificationRead,
-} from '@/lib/notifications';
+} from '@/lib/notifications/notifications';
 import {
   onReservationsByUser,
   type Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import ComposeModal from './ComposeModal';
 
 type InboxTab = 'unread' | 'read' | 'sent' | 'closed' | 'reservationUpdates';

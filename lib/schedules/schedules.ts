@@ -8,9 +8,9 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { auth, db } from "@/lib/configs/firebase";
-import { formatTime } from "./dateTime";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import { auth, db } from "@/lib/firebase/firebase";
+import { formatTime } from "@/lib/utils/dateTime";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 export interface Schedule {
   id: string;

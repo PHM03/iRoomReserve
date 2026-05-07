@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { handleUnavailableRoom } from '@/lib/roomAssistantChat';
-import { findBestRooms } from '@/lib/roomRecommendations';
+import { handleUnavailableRoom } from '@/lib/ai/roomAssistantChat';
+import { findBestRooms } from '@/lib/ai/roomRecommendations';
 
 type AssistantOption = {
   label: string;

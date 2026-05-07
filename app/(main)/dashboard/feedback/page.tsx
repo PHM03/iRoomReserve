@@ -3,10 +3,10 @@
 import { useDeferredValue, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
-import { Feedback, createFeedback, getAverageSentiment, getFeedbackByUser } from '@/lib/feedback';
-import { Reservation, getReservationsByUser } from '@/lib/reservations';
-import { analyzeSentiment, getSentimentLabel } from '@/lib/sentiment';
-import { formatDate, formatTimeRange } from '@/lib/dateTime';
+import { Feedback, createFeedback, getAverageSentiment, getFeedbackByUser } from '@/lib/feedback/feedback';
+import { Reservation, getReservationsByUser } from '@/lib/reservations/reservations';
+import { analyzeSentiment, getSentimentLabel } from '@/lib/ai/sentiment';
+import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 
 function formatSentimentLabel(label: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);

@@ -2,7 +2,7 @@
 
 import FloorAccordion from '@/components/room-status/FloorAccordion';
 import { getFloorDisplayLabel } from '@/lib/floorLabels';
-import type { Room } from '@/lib/rooms';
+import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminRoomStatusSectionProps {
   buildingName?: string;

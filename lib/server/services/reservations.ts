@@ -1,14 +1,14 @@
 import "server-only";
 
-import { db, serverTimestamp, Timestamp } from "@/lib/configs/firebase-admin";
+import { db, serverTimestamp, Timestamp } from "@/lib/firebase/firebase-admin";
 import {
   inferCampusFromBuilding,
   normalizeCampus,
   type ReservationCampus,
-} from "@/lib/campuses";
-import { formatDate, formatTimeRange } from "../../dateTime";
-import { normalizeRole, USER_ROLES } from "@/lib/domain/roles";
-import type { FirestoreTimestampLike } from "@/lib/firestore-types";
+} from "@/lib/buildings/campuses";
+import { formatDate, formatTimeRange } from "../../utils/dateTime";
+import { normalizeRole, USER_ROLES } from "@/lib/auth/roles";
+import type { FirestoreTimestampLike } from "@/lib/types/firestore-types";
 import {
   buildApprovalFlow,
   getCurrentApprovalStep,
@@ -20,14 +20,14 @@ import {
   type ReservationApprovalRecord,
   type ReservationApprovalStep,
   type ReservationApproverInput,
-} from "@/lib/reservation-approval";
+} from "@/lib/reservations/reservation-approval";
 import {
   canReservationCheckIn,
   compareReservationSchedule,
   normalizeRoomCheckInMethod,
   normalizeRoomStatus,
   type RoomCheckInMethod,
-} from "@/lib/roomStatus";
+} from "@/lib/rooms/roomStatus";
 import { ApiError } from "@/lib/server/api-error";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 

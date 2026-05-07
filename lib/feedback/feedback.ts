@@ -13,19 +13,19 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { auth, db } from "@/lib/configs/firebase";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import { auth, db } from "@/lib/firebase/firebase";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 import {
   resolveFeedbackSentimentLabel,
   type FeedbackSentimentFields,
   type FeedbackSentimentSummary,
-} from "@/lib/feedback-sentiment";
+} from "@/lib/feedback/feedback-sentiment";
 import {
   analyzeSentiment,
   getSentimentLabel,
   type SentimentAnalysis,
   type SentimentLabel,
-} from "@/lib/sentiment";
+} from "@/lib/ai/sentiment";
 
 export interface Feedback {
   id: string;

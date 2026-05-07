@@ -2,7 +2,7 @@ import {
   averageSentimentScores,
   getSentimentLabel,
   type SentimentLabel,
-} from "./sentiment";
+} from "@/lib/ai/sentiment";
 
 export interface FeedbackSentimentFields {
   compoundScore?: number | null;

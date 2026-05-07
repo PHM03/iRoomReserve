@@ -7,9 +7,9 @@ import ComposeModal from '@/components/messages/ComposeModal';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAdminTab } from '@/context/AdminTabContext';
 import { useAuth } from '@/context/AuthContext';
-import { formatDate, formatTimeRange } from '@/lib/dateTime';
-import { USER_ROLES } from '@/lib/domain/roles';
-import { isStaffRole } from '@/lib/messages';
+import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { isStaffRole } from '@/lib/messages/messages';
 import {
   Notification as AppNotification,
   onAllNotifications,
@@ -19,7 +19,7 @@ import {
   fetchPendingReservationsForApprover,
   rejectReservation,
   type Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {

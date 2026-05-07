@@ -12,11 +12,11 @@ import {
   disableUserAccount,
   enableUserAccount,
   ManagedUser,
-} from '@/lib/auth';
-import { getCampusName } from '@/lib/campusAssignments';
-import { type ReservationCampus } from '@/lib/campuses';
-import { USER_ROLES } from '@/lib/domain/roles';
-import { seedBuildings } from '@/lib/seedBuildings';
+} from '@/lib/auth/auth';
+import { getCampusName } from '@/lib/buildings/campusAssignments';
+import { type ReservationCampus } from '@/lib/buildings/campuses';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { seedBuildings } from '@/lib/buildings/seedBuildings';
 
 type Tab = 'all' | 'students' | 'faculty' | 'utility' | 'admins' | 'pending';
 

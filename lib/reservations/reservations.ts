@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { type ReservationCampus } from "@/lib/campuses";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
 import { buildUrl } from "@/lib/utils/buildUrl";
 import {
   type DigiReservationApproverInput,
@@ -18,11 +18,11 @@ import {
   type MainReservationApproverInput,
   type ReservationApprovalRecord,
   type ReservationApprovalStep,
-} from "@/lib/reservation-approval";
-import { auth, db } from "@/lib/configs/firebase";
+} from "@/lib/reservations/reservation-approval";
+import { auth, db } from "@/lib/firebase/firebase";
 import { type RoomCheckInMethod } from "@/lib/roomStatus";
-import { groupReservationsForDisplay } from "@/lib/reservation-groups";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 export interface Reservation {
   id: string;

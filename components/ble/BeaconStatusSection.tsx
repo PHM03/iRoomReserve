@@ -1,7 +1,7 @@
 'use client';
 
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
-import type { Room } from '@/lib/rooms';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { Room } from '@/lib/rooms/rooms';
 
 interface BeaconStatusSectionProps {
   buildingName?: string;

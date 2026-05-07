@@ -1,5 +1,5 @@
-import type { FirestoreTimestampLike } from "@/lib/firestore-types";
-import { formatDate, formatTimeRange } from "./dateTime";
+import type { FirestoreTimestampLike } from "@/lib/types/firestore-types";
+import { formatDate, formatTimeRange } from "@/lib/utils/dateTime";
 
 export const ROOM_STATUS_VALUES = ["Available", "Reserved", "Occupied"] as const;
 export const ROOM_CHECK_IN_METHODS = ["manual", "bluetooth"] as const;

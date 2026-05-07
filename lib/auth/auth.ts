@@ -25,16 +25,16 @@ import {
   getCampusName,
   resolveCampusAssignment,
   type CampusName,
-} from "./campusAssignments";
+} from "@/lib/buildings/campusAssignments";
 import {
   ALLOWED_EMAIL_DOMAIN,
   SUPERADMIN_EMAIL,
   SUPERADMIN_PASSWORD,
-} from "@/lib/domain/auth-constants";
-import { normalizeRole, USER_ROLES } from "@/lib/domain/roles";
-import { auth, db } from "@/lib/configs/firebase";
-import { type ReservationCampus } from "@/lib/campuses";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+} from "@/lib/auth/auth-constants";
+import { normalizeRole, USER_ROLES } from "@/lib/auth/roles";
+import { auth, db } from "@/lib/firebase/firebase";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 const MANAGED_ROLE_QUERY_VALUES = [
   USER_ROLES.STUDENT,

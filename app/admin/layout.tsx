@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import NavBar from '@/components/layout/NavBar';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
+import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 
 function LoadingState() {
   return (

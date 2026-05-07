@@ -7,15 +7,15 @@ import RoomAvailabilityPicker from '@/components/rooms/RoomAvailabilityPicker';
 import RoomCard from '@/components/rooms/RoomCard';
 import RoomAssistantWidget from '@/components/rooms/RoomAssistantWidget';
 import { useAuth } from '@/context/AuthContext';
-import { getCampusName, getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/campuses';
-import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
+import { getCampusName, getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/buildings/campuses';
+import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 import {
   createReservation,
   createRecurringReservation,
   uploadReservationDocument,
   validateReservationApprover,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   hasTimeConflict,
   onBookedDatesByRoom,
@@ -24,10 +24,10 @@ import {
   type BookingSlot,
   type EnrichedBookingSlot,
   type UserActiveSlot,
-} from '@/lib/roomAvailability';
-import { getRoomsByBuilding, type Room } from '@/lib/rooms';
-import { formatDate, formatTime } from '@/lib/dateTime';
-import { getFloorDisplayLabel } from '@/lib/floorLabels';
+} from '@/lib/reservations/roomAvailability';
+import { getRoomsByBuilding, type Room } from '@/lib/rooms/rooms';
+import { formatDate, formatTime } from '@/lib/utils/dateTime';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 
 type DetailsStep = 2 | 3;
 type RoomFilterKey =

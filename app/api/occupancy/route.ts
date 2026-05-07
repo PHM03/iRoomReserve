@@ -4,7 +4,7 @@ import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   parseOccupancyRecord,
   type OccupancyPayload,
-} from "@/lib/occupancy";
+} from "@/lib/occupancy/occupancy";
 
 export const dynamic = "force-dynamic";
 

@@ -13,8 +13,8 @@ import {
   where,
 } from "firebase/firestore";
 
-import { db } from "@/lib/configs/firebase";
-import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/domain/roles";
+import { db } from "@/lib/firebase/firebase";
+import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/auth/roles";
 
 /**
  * Roles that participate in the staff-to-staff messaging mesh.

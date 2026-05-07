@@ -4,14 +4,14 @@ import {
   analyzeSentiment,
   averageSentimentScores,
   getSentimentLabel,
-} from "@/lib/sentiment";
-import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
+} from "@/lib/ai/sentiment";
+import { db, serverTimestamp } from "@/lib/firebase/firebase-admin";
 import {
   resolveFeedbackSentimentLabel,
   summarizeFeedbackSentiment,
   type FeedbackSentimentFields,
   type FeedbackSentimentSummary,
-} from "@/lib/feedback-sentiment";
+} from "@/lib/feedback/feedback-sentiment";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
 export interface FeedbackCreateInput {

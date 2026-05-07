@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getCurrentApprovalStep } from "@/lib/reservation-approval";
+import { getCurrentApprovalStep } from "@/lib/reservations/reservation-approval";
 import { handleApiError, ApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
 import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
-import { db } from "@/lib/configs/firebase-admin";
-import { groupReservationsForDisplay } from "@/lib/reservation-groups";
+import { db } from "@/lib/firebase/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 
 export const runtime = "nodejs";
 

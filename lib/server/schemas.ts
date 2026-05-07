@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { normalizeCampus, RESERVATION_CAMPUSES } from "../campuses";
-import { ALL_USER_ROLES, normalizeRole } from "../domain/roles";
-import { RESERVATION_APPROVAL_ROLES } from "../reservation-approval";
+import { normalizeCampus, RESERVATION_CAMPUSES } from "../buildings/campuses";
+import { ALL_USER_ROLES, normalizeRole } from "../auth/roles";
+import { RESERVATION_APPROVAL_ROLES } from "../reservations/reservation-approval";
 
 const nonEmptyString = z.string().trim().min(1);
 const timeString = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:mm time.");

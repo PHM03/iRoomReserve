@@ -6,7 +6,7 @@ import {
   compareFloors,
   groupRoomStatusesByFloor,
   type RoomStatusViewItem,
-} from '../lib/roomStatusView';
+} from '../lib/rooms/roomStatusView';
 
 function makeBuilding(overrides: Partial<Building>): Building {
   return {

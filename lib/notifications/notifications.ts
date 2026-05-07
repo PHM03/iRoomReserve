@@ -13,8 +13,8 @@ import {
   Unsubscribe,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "./configs/firebase";
-import { createGuardedSnapshotCallback } from "./firestoreListener";
+import { db } from "@/lib/firebase/firebase";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 // ─── Types ──────────────────────────────────────────────────────
 export interface Notification {

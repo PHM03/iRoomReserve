@@ -9,26 +9,26 @@ import { useAuth } from '@/context/AuthContext';
 import {
   AdminRequest,
   onAdminRequestsByBuilding,
-} from '@/lib/adminRequests';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { formatTimeRange } from '@/lib/dateTime';
+} from '@/lib/admin/adminRequests';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { formatTimeRange } from '@/lib/utils/dateTime';
 import {
   onReservationsByBuilding,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   onRoomsByBuilding,
   Room,
-} from '@/lib/rooms';
+} from '@/lib/rooms/rooms';
 import {
   isRoomInClass,
   onSchedulesByBuilding,
   Schedule,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 import {
   getLocalDateString,
   resolveRoomStatus,
-} from '@/lib/roomStatus';
+} from '@/lib/rooms/roomStatus';
 
 interface UtilityStaffDashboardProps {
   firstName: string;

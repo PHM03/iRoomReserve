@@ -10,8 +10,8 @@ import {
   markNotificationRead,
   Notification,
   onUnreadNotifications,
-} from '@/lib/notifications';
-import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
+} from '@/lib/notifications/notifications';
+import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 
 export type AdminTab =
   | 'dashboard'

@@ -6,26 +6,26 @@ import CampusSelector from '@/components/room-status/CampusSelector';
 import FloorAccordion from '@/components/room-status/FloorAccordion';
 import RoomList from '@/components/room-status/RoomList';
 import { useAuth } from '@/context/AuthContext';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { onBuildings, type Building } from '@/lib/buildings';
-import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/campuses';
-import { onRoomsByBuildingIds, Room } from '@/lib/rooms';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { onBuildings, type Building } from '@/lib/buildings/buildings';
+import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/buildings/campuses';
+import { onRoomsByBuildingIds, Room } from '@/lib/rooms/rooms';
 import {
   onReservationsByBuildingIds,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   buildCampusOptions,
   type CampusOption,
   groupRoomStatusesByFloor,
   type RoomStatusViewItem,
-} from '@/lib/roomStatusView';
+} from '@/lib/rooms/roomStatusView';
 import {
   isRoomInClass,
   onSchedulesByBuildingIds,
   Schedule,
-} from '@/lib/schedules';
-import { resolveRoomStatus } from '@/lib/roomStatus';
+} from '@/lib/schedules/schedules';
+import { resolveRoomStatus } from '@/lib/rooms/roomStatus';
 
 export default function RoomStatusPage() {
   const { firebaseUser, profile } = useAuth();

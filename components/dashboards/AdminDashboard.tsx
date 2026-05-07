@@ -11,12 +11,12 @@ import {
   approveReservation,
   rejectReservation,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   markNotificationRead,
   markAllNotificationsRead,
   Notification,
-} from '@/lib/notifications';
+} from '@/lib/notifications/notifications';
 import {
   Room,
   RoomInput,
@@ -24,31 +24,31 @@ import {
   updateRoom,
   deleteRoom,
   updateRoomStatus,
-} from '@/lib/rooms';
+} from '@/lib/rooms/rooms';
 import {
   Feedback,
   getFeedbackByBuilding,
   respondToFeedback,
-} from '@/lib/feedback';
+} from '@/lib/feedback/feedback';
 import {
   resolveFeedbackSentimentLabel,
   type FeedbackSentimentSummary,
-} from '@/lib/feedback-sentiment';
-import { getBuildingById } from '@/lib/buildings';
+} from '@/lib/feedback/feedback-sentiment';
+import { getBuildingById } from '@/lib/buildings/buildings';
 import {
   Schedule,
   isRoomInClass,
-} from '@/lib/schedules';
-import { RoomHistoryEntry } from '@/lib/roomHistory';
+} from '@/lib/schedules/schedules';
+import { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
 import {
   AdminRequest,
   respondToAdminRequest,
-} from '@/lib/adminRequests';
-import { fetchAdminDashboardSnapshot } from '@/lib/adminDashboard';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { normalizeRoomCheckInMethod } from '@/lib/roomStatus';
-import { formatDate, formatDateTime, formatTimeRange } from '@/lib/dateTime';
-import { getBuildingFloorOptions, getFloorDisplayLabel } from '@/lib/floorLabels';
+} from '@/lib/admin/adminRequests';
+import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
+import { formatDate, formatDateTime, formatTimeRange } from '@/lib/utils/dateTime';
+import { getBuildingFloorOptions, getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 
 // ─── Helpers ────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string }) {

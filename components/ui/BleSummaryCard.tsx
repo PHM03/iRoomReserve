@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatClockTime } from '@/lib/dateTime';
+import { formatClockTime } from '@/lib/utils/dateTime';
 import { useCallback, useEffect, useState } from 'react';
 
 import BleStatusBadge from '@/components/ui/BleStatusBadge';
@@ -10,12 +10,12 @@ import {
   formatBleLabel,
   formatBleTimestamp,
   isBeaconHardwareOnline,
-} from '@/lib/bleMonitor';
+} from '@/lib/occupancy/bleMonitor';
 import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   type OccupancyPayload,
-} from '@/lib/occupancy';
-import { fetchOccupancySnapshot } from '@/lib/occupancyClient';
+} from '@/lib/occupancy/occupancy';
+import { fetchOccupancySnapshot } from '@/lib/occupancy/occupancyClient';
 
 interface BleSummaryCardProps {
   buildingName?: string;

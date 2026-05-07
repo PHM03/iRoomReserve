@@ -1,6 +1,6 @@
 import "server-only";
 
-import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
+import { db, serverTimestamp } from "@/lib/firebase/firebase-admin";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
 export interface AdminRequestCreateInput {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import { formatBleLabel } from '@/lib/bleMonitor';
+import { formatBleLabel } from '@/lib/occupancy/bleMonitor';
 
 interface BleStatusBadgeProps {
   status: string;

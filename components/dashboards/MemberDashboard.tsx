@@ -1,25 +1,25 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
 import Toast from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
-import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
+import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 import {
   onReservationsByUser,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import { useBluetoothReservationCheckIn } from '@/hooks/useBluetoothReservationCheckIn';
-import { onRoomsByIds, Room } from '@/lib/rooms';
-import { formatTime12h } from '@/lib/schedules';
+import { onRoomsByIds, Room } from '@/lib/rooms/rooms';
+import { formatTime12h } from '@/lib/schedules/schedules';
 import StatusBadge from '@/components/ui/StatusBadge';
 import {
   canReservationCheckIn,
   compareReservationSchedule,
   getReservationRoomStatus,
-} from '@/lib/roomStatus';
-import { formatDate, formatTimeRange } from '@/lib/dateTime';
+} from '@/lib/rooms/roomStatus';
+import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 
 interface MemberDashboardProps {
   firstName: string;

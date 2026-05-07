@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import BleAdminMonitor from '@/components/ble/BleAdminMonitor';
 import { useAuth } from '@/context/AuthContext';
 import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { onRoomsByBuilding, Room } from '@/lib/rooms';
+import { onRoomsByBuilding, Room } from '@/lib/rooms/rooms';
 
 export default function BleBeaconPage() {
   const { firebaseUser, profile } = useAuth();

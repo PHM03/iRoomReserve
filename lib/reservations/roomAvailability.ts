@@ -6,7 +6,7 @@ import {
   where,
 } from "firebase/firestore";
 
-import { db } from "@/lib/configs/firebase";
+import { db } from "@/lib/firebase/firebase";
 
 /**
  * Reservation statuses that should participate in room availability conflict

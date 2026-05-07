@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBeaconRequestOptions,
   getBluetoothErrorMessage,
-} from '../lib/beaconBluetooth';
+} from '../lib/occupancy/beaconBluetooth';
 import {
   DEFAULT_RESERVATION_TIME_ZONE,
   getReservationRoomStatus,

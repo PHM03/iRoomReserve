@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { handleApiError } from "@/lib/server/api-error";
 import { getManagedBuildingIdsForCampus } from "@/lib/campusAssignments";
-import { db } from "@/lib/configs/firebase-admin";
-import { groupReservationsForDisplay } from "@/lib/reservation-groups";
+import { db } from "@/lib/firebase/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,

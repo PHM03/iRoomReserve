@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import BleStatusBadge from '@/components/ui/BleStatusBadge';
-import { formatClockTime } from '@/lib/dateTime';
+import { formatClockTime } from '@/lib/utils/dateTime';
 import {
   BLE_MONITOR_REFRESH_INTERVAL_MS,
   formatBleLabel,
@@ -17,9 +17,9 @@ import {
 import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   type OccupancyPayload,
-} from '@/lib/occupancy';
-import { fetchOccupancySnapshot } from '@/lib/occupancyClient';
-import { type Room } from '@/lib/rooms';
+} from '@/lib/occupancy/occupancy';
+import { fetchOccupancySnapshot } from '@/lib/occupancy/occupancyClient';
+import { type Room } from '@/lib/rooms/rooms';
 
 interface BleAdminMonitorProps {
   buildingName?: string;

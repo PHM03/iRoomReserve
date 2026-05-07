@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
-import { getCurrentApprovalStep } from "@/lib/reservation-approval";
-import { groupReservationsForDisplay } from "@/lib/reservation-groups";
+import { getCurrentApprovalStep } from "@/lib/reservations/reservation-approval";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
 import {

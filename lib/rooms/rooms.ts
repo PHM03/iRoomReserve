@@ -12,15 +12,15 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { db } from "@/lib/configs/firebase";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import { db } from "@/lib/firebase/firebase";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 import {
   normalizeRoomCheckInMethod,
   normalizeRoomStatus,
   type RoomCheckInMethod,
   type RoomStatusValue,
-} from "@/lib/roomStatus";
-import { auth } from "@/lib/configs/firebase";
+} from "@/lib/rooms/roomStatus";
+import { auth } from "@/lib/firebase/firebase";
 
 export interface Room {
   id: string;

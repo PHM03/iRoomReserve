@@ -11,9 +11,9 @@ import {
   onSnapshot,
   Unsubscribe,
 } from "firebase/firestore";
-import { inferCampusFromBuilding, type ReservationCampus } from "./campuses";
-import { db } from "./configs/firebase";
-import { createGuardedSnapshotCallback } from "./firestoreListener";
+import { inferCampusFromBuilding, type ReservationCampus } from "@/lib/buildings/campuses";
+import { db } from "@/lib/firebase/firebase";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 // ─── Types ──────────────────────────────────────────────────────
 export interface Building {

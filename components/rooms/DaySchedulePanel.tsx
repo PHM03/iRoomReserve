@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { formatTime } from '@/lib/dateTime';
-import type { EnrichedBookingSlot, UserActiveSlot } from '@/lib/roomAvailability';
+import { formatTime } from '@/lib/utils/dateTime';
+import type { EnrichedBookingSlot, UserActiveSlot } from '@/lib/reservations/roomAvailability';
 
 /* ──────────────────────────── Types ──────────────────────────── */
 

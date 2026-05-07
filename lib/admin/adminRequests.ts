@@ -10,8 +10,8 @@ import {
 } from "firebase/firestore";
 
 import { apiRequest } from "@/lib/api/client";
-import { db } from "@/lib/configs/firebase";
-import { createGuardedSnapshotCallback } from "@/lib/firestoreListener";
+import { db } from "@/lib/firebase/firebase";
+import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 
 export interface AdminRequest {
   id: string;

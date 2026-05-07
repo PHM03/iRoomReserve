@@ -3,7 +3,7 @@
 import { getFloorDisplayLabel } from '@/lib/floorLabels';
 import type { Schedule } from '@/lib/schedules';
 import { DAY_NAMES, formatTime12h } from '@/lib/schedules';
-import type { Room } from '@/lib/rooms';
+import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminClassSchedulesSectionProps {
   schedules: Schedule[];

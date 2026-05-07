@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import NavBar from '@/components/layout/NavBar';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { USER_ROLES } from '@/lib/domain/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 import Link from 'next/link';
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {

@@ -8,7 +8,7 @@ import {
   MessageRecipient,
   getStaffRecipients,
   sendMessage,
-} from '@/lib/messages';
+} from '@/lib/messages/messages';
 
 interface ComposeModalProps {
   open: boolean;

@@ -8,7 +8,7 @@ import {
   Unsubscribe,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "./configs/firebase";
+import { db } from "./firebase/firebase";
 import { createGuardedSnapshotCallback } from "./firestoreListener";
 
 // ─── Types ──────────────────────────────────────────────────────

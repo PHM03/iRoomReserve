@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useRef, Suspense } from 'react
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthAlert from '@/components/auth/AuthAlert';
 import Toast from '@/components/ui/Toast';
-import { USER_ROLES } from '@/lib/domain/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 import { registerWithEmail, getAuthErrorMessage } from '@/lib/auth';
 
 function RegisterForm() {

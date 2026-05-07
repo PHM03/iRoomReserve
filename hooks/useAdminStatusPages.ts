@@ -16,8 +16,8 @@ import {
   updateSchedule,
   DAY_NAMES,
 } from '@/lib/schedules';
-import { onReservationsByBuilding, Reservation } from '@/lib/reservations';
-import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms';
+import { onReservationsByBuilding, Reservation } from '@/lib/reservations/reservations';
+import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms/rooms';
 
 function getManagedBuildingDisplayLabel(input: {
   id?: string | null;

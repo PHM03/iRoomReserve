@@ -10,7 +10,7 @@ import {
   approveReservation,
   rejectReservation,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   onUnreadNotifications,
   markNotificationRead,
@@ -25,12 +25,12 @@ import {
   deleteRoom,
   updateRoomStatus,
   onRoomsByBuilding,
-} from '@/lib/rooms';
+} from '@/lib/rooms/rooms';
 import {
   Feedback,
   onFeedbackByBuilding,
   respondToFeedback,
-} from '@/lib/feedback';
+} from '@/lib/feedback/feedback';
 import { getBuildingById } from '@/lib/buildings';
 import {
   Schedule,
@@ -49,7 +49,7 @@ import {
   AdminRequest,
   onAdminRequestsByBuilding,
   respondToAdminRequest,
-} from '@/lib/adminRequests';
+} from '@/lib/admin/adminRequests';
 
 interface UseAdminDashboardOptions {
   activeTab: AdminTab;

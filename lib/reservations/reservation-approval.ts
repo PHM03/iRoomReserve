@@ -1,6 +1,6 @@
-import type { FirestoreTimestampLike } from "@/lib/firestore-types";
+import type { FirestoreTimestampLike } from "@/lib/types/firestore-types";
 
-import { type ReservationCampus } from "@/lib/campuses";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
 
 export const RESERVATION_APPROVAL_ROLES = [
   "building_admin",

@@ -1,4 +1,4 @@
-import { inferCampusFromBuilding } from "./campuses";
+import { inferCampusFromBuilding } from "@/lib/buildings/campuses";
 
 export interface FloorOption {
   label: string;

@@ -9,7 +9,7 @@ import {
   fromIsoDateString,
   hasTimeConflict,
   toIsoDateString,
-} from '@/lib/roomAvailability';
+} from '@/lib/reservations/roomAvailability';
 
 interface RoomAvailabilityPickerProps {
   bookedSlots: readonly BookingSlot[];

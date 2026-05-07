@@ -5,15 +5,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import BleStatus from '@/components/ble/BleStatus';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
-import { onRoomsByIds, Room } from '@/lib/rooms';
+import { onRoomsByIds, Room } from '@/lib/rooms/rooms';
 import {
   cancelReservation,
   completeReservation,
   onReservationsByUser,
   Reservation,
-} from '@/lib/reservations';
-import { getReservationRoomStatus } from '@/lib/roomStatus';
-import { formatDate, formatTimeRange } from '@/lib/dateTime';
+} from '@/lib/reservations/reservations';
+import { getReservationRoomStatus } from '@/lib/rooms/roomStatus';
+import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 
 type FilterTab = 'pending' | 'approved' | 'rejected' | 'completed' | 'all';
 

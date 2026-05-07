@@ -4,7 +4,7 @@ import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   parseOccupancyPayload,
   type OccupancyPayload,
-} from '@/lib/occupancy';
+} from '@/lib/occupancy/occupancy';
 
 const OCCUPANCY_CLIENT_CACHE_WINDOW_MS = 5 * 60 * 1000;
 
