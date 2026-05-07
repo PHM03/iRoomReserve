@@ -1,10 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import BleAdminMonitor from '@/components/BleAdminMonitor';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import BleSummaryCard from '@/components/BleSummaryCard';
-import AdminRoomStatusSection from '@/components/admin/AdminRoomStatusSection';
 import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
@@ -40,13 +37,7 @@ import {
 import { getBuildingById } from '@/lib/buildings';
 import {
   Schedule,
-  ScheduleInput,
-  addSchedule,
-  updateSchedule,
-  deleteSchedule,
   isRoomInClass,
-  DAY_NAMES,
-  formatTime12h,
 } from '@/lib/schedules';
 import { RoomHistoryEntry } from '@/lib/roomHistory';
 import {
@@ -267,15 +258,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
 
   // Schedule form state
-  const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [schedRoomId, setSchedRoomId] = useState('');
-  const [schedSubject, setSchedSubject] = useState('');
-  const [schedInstructor, setSchedInstructor] = useState('');
-  const [schedDay, setSchedDay] = useState<number>(1);
-  const [schedStart, setSchedStart] = useState('');
-  const [schedEnd, setSchedEnd] = useState('');
-  const [addingSchedule, setAddingSchedule] = useState(false);
-  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
 
   // Inbox state
   const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
@@ -532,72 +515,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       await reloadDashboard();
     } catch (err) {
       console.warn('Failed to respond:', err);
-    }
-  };
-
-  const handleAddSchedule = async () => {
-    if (!buildingId || !schedRoomId || !schedSubject.trim() || !schedInstructor.trim() || !schedStart || !schedEnd) return;
-    setAddingSchedule(true);
-    try {
-      const room = rooms.find((r) => r.id === schedRoomId);
-      if (editingScheduleId) {
-        await updateSchedule(editingScheduleId, {
-          roomId: schedRoomId,
-          roomName: room?.name || '',
-          subjectName: schedSubject.trim(),
-          instructorName: schedInstructor.trim(),
-          dayOfWeek: schedDay,
-          startTime: schedStart,
-          endTime: schedEnd,
-        });
-        setEditingScheduleId(null);
-      } else {
-        const data: ScheduleInput = {
-          roomId: schedRoomId,
-          roomName: room?.name || '',
-          buildingId,
-          subjectName: schedSubject.trim(),
-          instructorName: schedInstructor.trim(),
-          dayOfWeek: schedDay,
-          startTime: schedStart,
-          endTime: schedEnd,
-          createdBy: firebaseUser?.uid || '',
-        };
-        await addSchedule(data);
-      }
-      setShowScheduleForm(false);
-      setSchedRoomId('');
-      setSchedSubject('');
-      setSchedInstructor('');
-      setSchedDay(1);
-      setSchedStart('');
-      setSchedEnd('');
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to save schedule:', err);
-      alert('Failed to save schedule. Check the console for details.');
-    }
-    setAddingSchedule(false);
-  };
-
-  const handleEditSchedule = (s: Schedule) => {
-    setEditingScheduleId(s.id);
-    setSchedRoomId(s.roomId);
-    setSchedSubject(s.subjectName);
-    setSchedInstructor(s.instructorName);
-    setSchedDay(s.dayOfWeek);
-    setSchedStart(s.startTime);
-    setSchedEnd(s.endTime);
-    setShowScheduleForm(true);
-  };
-
-  const handleDeleteSchedule = async (id: string) => {
-    if (!confirm('Delete this schedule?')) return;
-    try {
-      await deleteSchedule(id);
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to delete schedule:', err);
     }
   };
 
@@ -1630,42 +1547,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             scope="building"
           />
 
-          {/* Today's Class Schedules */}
-          {false && (() => {
-            const todaySchedules = schedules.filter((s) => s.dayOfWeek === new Date().getDay());
-            return (
-              <>
-                <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
-                  <h3 className="text-lg font-bold text-gray-800">Today&apos;s Class Schedules <span className="text-sm text-gray-600 font-normal ml-1">({DAY_NAMES[new Date().getDay()]})</span></h3>
-                  <span className="text-xs text-gray-600">{todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}</span>
-                </div>
-                {todaySchedules.length === 0 ? (
-                  <div className="glass-card p-6 text-center mb-8"><p className="text-sm text-black">No classes scheduled for today.</p></div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-                    {todaySchedules.map((s) => {
-                      const now = new Date();
-                      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-                      const isActive = s.startTime <= currentTime && s.endTime > currentTime;
-                      return (
-                        <div key={s.id} className={`glass-card p-4 border-l-4 ${isActive ? 'border-orange-500/60' : 'border-dark/10'}`}>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="text-sm font-bold text-black">{s.subjectName}</p>
-                              <p className="text-xs text-black mt-0.5">{s.roomName} · {s.instructorName}</p>
-                              <p className="text-xs text-black mt-1">{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
-                            </div>
-                            {isActive && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ui-badge-orange">In Progress</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-
           {/* Pending Requests Preview */}
           <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
             <h3 className="text-lg font-bold text-gray-800">Pending Requests</h3>
@@ -1712,158 +1593,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: STATUS & SCHEDULING ──────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      {activeTab === 'status-scheduling' && (
-        <div>
-          <div className="glass-card p-5 mb-8 !rounded-2xl border border-yellow-500/20 bg-yellow-500/5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide ui-text-yellow">
-                  Deprecated View
-                </p>
-                <p className="mt-1 text-sm text-black">
-                  Status and scheduling tools now have dedicated admin pages. This combined
-                  view is kept for backward compatibility.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/admin/room-status" className="btn-primary px-4 py-2 text-sm">
-                  Room Status Monitor
-                </Link>
-                <Link
-                  href="/admin/ble-status"
-                  className="ui-button-gray px-4 py-2 text-sm rounded-xl"
-                >
-                  BLE Beacon Status
-                </Link>
-                <Link
-                  href="/admin/class-schedules"
-                  className="ui-button-gray px-4 py-2 text-sm rounded-xl"
-                >
-                  Class Schedules
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <AdminRoomStatusSection
-            buildingName={buildingName}
-            rooms={rooms}
-            statusMonitorFloorGroups={statusMonitorFloorGroups}
-            computeEffectiveStatus={computeEffectiveStatus}
-            onStatusChange={handleStatusChange}
-            className="mb-10"
-          />
-
-          {/* ─── Class Schedule Manager ─────────────────────────────── */}
-          <BleAdminMonitor
-            buildingName={buildingName}
-            rooms={rooms}
-            className="mb-10"
-          />
-
-          <div className="mt-10">
-            <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
-              <h3 className="text-xl font-bold text-gray-800">Class Schedules</h3>
-              <button onClick={() => {
-                if (showScheduleForm) {
-                  setShowScheduleForm(false);
-                  setEditingScheduleId(null);
-                  setSchedRoomId('');
-                  setSchedSubject('');
-                  setSchedInstructor('');
-                  setSchedDay(1);
-                  setSchedStart('');
-                  setSchedEnd('');
-                } else {
-                  setShowScheduleForm(true);
-                }
-              }} className="btn-primary px-4 py-2 text-sm">
-                {showScheduleForm ? 'Cancel' : '+ Add Schedule'}
-              </button>
-            </div>
-
-            {showScheduleForm && (
-              <div className="glass-card p-5 mb-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">Room</label>
-                    <select value={schedRoomId} onChange={(e) => setSchedRoomId(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm">
-                      <option value="">Select room...</option>
-                      {rooms.map((r) => <option key={r.id} value={r.id}>{r.name} ({getFloorDisplayLabel(r.floor, {
-                        id: r.buildingId,
-                        name: r.buildingName,
-                      })})</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">Day</label>
-                    <select value={schedDay} onChange={(e) => setSchedDay(Number(e.target.value))} className="glass-input w-full px-4 py-2.5 text-sm">
-                      {DAY_NAMES.map((name, i) => <option key={i} value={i}>{name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">Subject</label>
-                    <input value={schedSubject} onChange={(e) => setSchedSubject(e.target.value)} placeholder="e.g. IT 101" className="glass-input w-full px-4 py-2.5 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">Instructor</label>
-                    <input value={schedInstructor} onChange={(e) => setSchedInstructor(e.target.value)} placeholder="e.g. Prof. Santos" className="glass-input w-full px-4 py-2.5 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">Start Time</label>
-                    <input type="time" value={schedStart} onChange={(e) => setSchedStart(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">End Time</label>
-                    <input type="time" value={schedEnd} onChange={(e) => setSchedEnd(e.target.value)} className="glass-input w-full px-4 py-2.5 text-sm" />
-                  </div>
-                </div>
-                <button onClick={handleAddSchedule} disabled={addingSchedule || !schedRoomId || !schedSubject.trim()} className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50">
-                  {addingSchedule ? 'Saving...' : editingScheduleId ? 'Update Schedule' : 'Add Schedule'}
-                </button>
-              </div>
-            )}
-
-            {schedules.length === 0 ? (
-              <div className="glass-card p-8 text-center"><p className="text-sm text-black">No class schedules assigned yet.</p></div>
-            ) : (
-              <div className="space-y-4">
-                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-                  const daySchedules = schedules.filter((s) => s.dayOfWeek === day);
-                  if (daySchedules.length === 0) return null;
-                  return (
-                    <div key={day}>
-                      <h4 className="text-sm font-bold text-black mb-2">{DAY_NAMES[day]}</h4>
-                      <div className="space-y-2">
-                        {daySchedules.map((s) => (
-                          <div key={s.id} className="glass-card p-4 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-bold text-black">{s.subjectName}</p>
-                              <p className="text-xs text-black">{s.roomName} · {s.instructorName} · {formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              <button onClick={() => handleEditSchedule(s)} className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all" title="Edit">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                              </button>
-                              <button onClick={() => handleDeleteSchedule(s.id)} className="p-2 rounded-lg ui-button-ghost ui-button-ghost-danger transition-all" title="Delete">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
