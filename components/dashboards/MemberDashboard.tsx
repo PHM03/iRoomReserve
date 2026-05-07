@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
-import Toast from '@/components/Toast';
+import Toast from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
 import {
@@ -13,7 +13,7 @@ import {
 import { useBluetoothReservationCheckIn } from '@/hooks/useBluetoothReservationCheckIn';
 import { onRoomsByIds, Room } from '@/lib/rooms';
 import { formatTime12h } from '@/lib/schedules';
-import StatusBadge from '@/components/StatusBadge';
+import StatusBadge from '@/components/ui/StatusBadge';
 import {
   canReservationCheckIn,
   compareReservationSchedule,

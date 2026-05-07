@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import Providers from "@/components/Providers";
+import Providers from "@/components/layout/Providers";
 import "./globals.css";
 
 const centuryGothicRegular = localFont({

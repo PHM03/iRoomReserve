@@ -1,12 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import BleSummaryCard from '@/components/BleSummaryCard';
+import BleSummaryCard from '@/components/ui/BleSummaryCard';
 import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import type { AdminTab } from '@/components/NavBar';
+import type { AdminTab } from '@/components/layout/NavBar';
 import {
   approveReservation,
   rejectReservation,

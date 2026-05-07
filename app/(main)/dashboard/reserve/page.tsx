@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DaySchedulePanel from '@/components/DaySchedulePanel';
-import RoomAvailabilityPicker from '@/components/RoomAvailabilityPicker';
-import RoomCard from '@/components/RoomCard';
-import RoomAssistantWidget from '@/components/RoomAssistantWidget';
+import DaySchedulePanel from '@/components/rooms/DaySchedulePanel';
+import RoomAvailabilityPicker from '@/components/rooms/RoomAvailabilityPicker';
+import RoomCard from '@/components/rooms/RoomCard';
+import RoomAssistantWidget from '@/components/rooms/RoomAssistantWidget';
 import { useAuth } from '@/context/AuthContext';
 import { getCampusName, getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/campuses';

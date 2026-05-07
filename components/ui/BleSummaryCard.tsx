@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { formatClockTime } from '@/lib/dateTime';
 import { useCallback, useEffect, useState } from 'react';
 
-import BleStatusBadge from '@/components/BleStatusBadge';
+import BleStatusBadge from '@/components/ui/BleStatusBadge';
 import {
   BLE_MONITOR_REFRESH_INTERVAL_MS,
   formatBleLabel,

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import BleSummaryCard from '@/components/BleSummaryCard';
-import StatusBadge from '@/components/StatusBadge';
+import BleSummaryCard from '@/components/ui/BleSummaryCard';
+import StatusBadge from '@/components/ui/StatusBadge';
 import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
 import { useAuth } from '@/context/AuthContext';
 import {

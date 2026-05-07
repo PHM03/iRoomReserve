@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { USER_ROLES } from '@/lib/domain/roles';
 import { isAllowedEmail, saveUserProfile, logout } from '@/lib/auth';
-import Toast from '@/components/Toast';
+import Toast from '@/components/ui/Toast';
 
 export default function RoleSelectionPage() {
     const { firebaseUser, profile } = useAuth();

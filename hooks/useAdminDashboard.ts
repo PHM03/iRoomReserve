@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import type { AdminTab } from '@/components/NavBar';
+import type { AdminTab } from '@/components/layout/NavBar';
 import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
 import {
   onPendingReservationsByBuilding,

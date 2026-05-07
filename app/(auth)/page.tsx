@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AuthAlert from '@/components/AuthAlert';
-import Toast from '@/components/Toast';
+import AuthAlert from '@/components/auth/AuthAlert';
+import Toast from '@/components/ui/Toast';
 import { loginWithEmail, loginWithGoogle, saveUserProfile, getAuthErrorMessage, resendVerificationEmail, getUserProfile, logout } from '@/lib/auth';
 
 function LoginForm() {

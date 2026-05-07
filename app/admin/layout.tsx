@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import NavBar from '@/components/NavBar';
+import NavBar from '@/components/layout/NavBar';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 
-import BleStatus from '@/components/BleStatus';
-import StatusBadge from '@/components/StatusBadge';
+import BleStatus from '@/components/ble/BleStatus';
+import StatusBadge from '@/components/ui/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
 import { onRoomsByIds, Room } from '@/lib/rooms';
 import {

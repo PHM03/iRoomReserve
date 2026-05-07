@@ -2,7 +2,7 @@
 
 import AdminNoBuildingAssigned from '@/components/admin/AdminNoBuildingAssigned';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import BleAdminMonitor from '@/components/BleAdminMonitor';
+import BleAdminMonitor from '@/components/ble/BleAdminMonitor';
 import { useAdminStatusPages } from '@/hooks/useAdminStatusPages';
 
 export default function AdminBleStatusPage() {

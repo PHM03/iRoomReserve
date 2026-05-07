@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import BleStatusBadge from '@/components/BleStatusBadge';
+import BleStatusBadge from '@/components/ui/BleStatusBadge';
 import { formatClockTime } from '@/lib/dateTime';
 import {
   BLE_MONITOR_REFRESH_INTERVAL_MS,
