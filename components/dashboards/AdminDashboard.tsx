@@ -1,189 +1,42 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import BleSummaryCard from '@/components/ui/BleSummaryCard';
-import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
-import MessagesSection from '@/components/messages/MessagesSection';
+import type { AdminTab } from '@/components/layout/NavBar';
+import AdminNoBuildingAssigned from '@/components/admin/AdminNoBuildingAssigned';
+import AdminFeedbackTab from '@/components/admin/dashboard/AdminFeedbackTab';
+import AdminInboxTab from '@/components/admin/dashboard/AdminInboxTab';
+import AdminOverviewTab from '@/components/admin/dashboard/AdminOverviewTab';
+import AdminPendingTab from '@/components/admin/dashboard/AdminPendingTab';
+import AdminRoomHistoryTab from '@/components/admin/dashboard/AdminRoomHistoryTab';
+import AdminRoomsTab from '@/components/admin/dashboard/AdminRoomsTab';
+import { getManagedBuildingDisplayLabel } from '@/components/admin/dashboard/shared';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import type { AdminTab } from '@/components/layout/NavBar';
-import {
-  approveReservation,
-  rejectReservation,
-  Reservation,
-} from '@/lib/reservations/reservations';
-import {
-  markNotificationRead,
-  markAllNotificationsRead,
-  Notification,
-} from '@/lib/notifications/notifications';
-import {
-  Room,
-  RoomInput,
-  addRoom,
-  updateRoom,
-  deleteRoom,
-  updateRoomStatus,
-} from '@/lib/rooms/rooms';
-import {
-  Feedback,
-  getFeedbackByBuilding,
-  respondToFeedback,
-} from '@/lib/feedback/feedback';
-import {
-  resolveFeedbackSentimentLabel,
-  type FeedbackSentimentSummary,
-} from '@/lib/feedback/feedback-sentiment';
-import { getBuildingById } from '@/lib/buildings/buildings';
-import {
-  Schedule,
-  isRoomInClass,
-} from '@/lib/schedules/schedules';
-import { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
-import {
-  AdminRequest,
-  respondToAdminRequest,
-} from '@/lib/admin/adminRequests';
 import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
+import { getFeedbackByBuilding } from '@/lib/feedback/feedback';
+import type { Feedback } from '@/lib/feedback/feedback';
+import type { FeedbackSentimentSummary } from '@/lib/feedback/feedback-sentiment';
 import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { getBuildingById } from '@/lib/buildings/buildings';
 import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
-import { formatDate, formatDateTime, formatTimeRange } from '@/lib/utils/dateTime';
-import { getBuildingFloorOptions, getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { Room } from '@/lib/rooms/rooms';
+import type { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
+import type { Reservation } from '@/lib/reservations/reservations';
+import { isRoomInClass, type Schedule } from '@/lib/schedules/schedules';
+import type { AdminRequest } from '@/lib/admin/adminRequests';
 
-// ─── Helpers ────────────────────────────────────────────────────
-function RoleBadge({ role }: { role: string }) {
-  const style = role === 'Faculty'
-    ? 'ui-badge-green'
-    : 'ui-badge-blue';
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${style}`}>
-      {role}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const style = (() => {
-    switch (status) {
-      case 'Occupied': return 'ui-badge-red';
-      case 'Reserved': return 'ui-badge-blue';
-      case 'Unavailable': return 'ui-badge-red';
-      case 'Available': return 'ui-badge-green';
-      case 'approved': return 'ui-badge-green';
-      case 'rejected': return 'ui-badge-red';
-      case 'pending': return 'ui-badge-yellow';
-      case 'completed': return 'ui-badge-blue';
-      default: return 'ui-badge-gray';
-    }
-  })();
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${style}`}>
-      {status}
-    </span>
-  );
-}
-
-function formatSentimentLabel(label: string) {
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function getSentimentBadgeClasses(label: string) {
-  if (label === 'positive') {
-    return 'border-green-500/25 bg-green-500/10 text-green-700';
-  }
-
-  if (label === 'negative') {
-    return 'border-red-500/25 bg-red-500/10 text-red-700';
-  }
-
-  return 'border-slate-500/25 bg-slate-500/10 text-slate-700';
-}
-
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg
-          key={star}
-          className={`w-4 h-4 ${star <= rating ? 'ui-text-yellow' : 'text-black'}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-    </div>
-  );
-}
-
-const ROOM_TYPE_OPTIONS = [
-  'Conference Room',
-  'Glass Room',
-  'Classroom',
-  'Specialized Room',
-  'Gymnasium',
-] as const;
-
-const ROOM_TYPE_LABELS: Record<(typeof ROOM_TYPE_OPTIONS)[number], string> = {
-  'Conference Room': 'Conference Room',
-  'Glass Room': 'Glass Room',
-  'Classroom': 'Classroom',
-  'Specialized Room': 'Specialized Room (Laboratory, Storage Room, and other program-specific facilities)',
-  'Gymnasium': 'Gymnasium',
-};
-
-const ROOM_AC_OPTIONS = [
-  'Working',
-  'Not Working',
-  'No Air Conditioning',
-] as const;
-
-const ROOM_DISPLAY_OPTIONS = [
-  'Working',
-  'Not Working',
-  'No Television or Projector',
-] as const;
-
-function getManagedBuildingDisplayLabel(input: {
-  id?: string | null;
-  name?: string | null;
-}) {
-  const searchValue = `${input.id ?? ''} ${input.name ?? ''}`.toLowerCase();
-
-  if (/\bgd[\s-]?1\b/.test(searchValue)) {
-    return 'GD1';
-  }
-
-  if (/\bgd[\s-]?2\b/.test(searchValue)) {
-    return 'GD2';
-  }
-
-  if (/\bgd[\s-]?3\b/.test(searchValue)) {
-    return 'GD3';
-  }
-
-  return input.name?.trim() || input.id?.trim() || 'Assigned Building';
-}
-
-function getManagedBuildingOptionLabel(building: { id: string; name: string }) {
-  const displayLabel = getManagedBuildingDisplayLabel(building);
-  return displayLabel === building.name ? displayLabel : `${displayLabel} - ${building.name}`;
-}
-
-function formatReservationDates(dates?: string[], fallbackDate?: string) {
-  const dateList = dates?.length ? dates : fallbackDate ? [fallbackDate] : [];
-  return dateList.map((date) => formatDate(date)).join(', ');
-}
-
-// ─── Component ──────────────────────────────────────────────────
 interface AdminDashboardProps {
   firstName: string;
   activeTab: AdminTab;
 }
 
-export default function AdminDashboard({ firstName, activeTab }: AdminDashboardProps) {
+export default function AdminDashboard({
+  firstName,
+  activeTab,
+}: AdminDashboardProps) {
   const { firebaseUser, profile } = useAuth();
   const { setActiveTab, selectedBuildingId, setSelectedBuildingId } = useAdminTab();
+
   const managedBuildings = useMemo(
     () => getManagedBuildingsForCampus(profile?.campus),
     [profile?.campus]
@@ -193,9 +46,9 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   )
     ? selectedBuildingId
     : managedBuildings[0]?.id ?? '';
-  const selectedManagedBuilding = managedBuildings.find(
-    (building) => building.id === effectiveManagedBuildingId
-  ) ?? managedBuildings[0];
+  const selectedManagedBuilding =
+    managedBuildings.find((building) => building.id === effectiveManagedBuildingId) ??
+    managedBuildings[0];
   const buildingId = selectedManagedBuilding?.id;
   const buildingName = selectedManagedBuilding?.name;
   const activeBuildingLabel = getManagedBuildingDisplayLabel({
@@ -203,91 +56,35 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     name: buildingName,
   });
 
-  // ─── State ──────────────────────────────────────────────────
   const [requests, setRequests] = useState<Reservation[]>([]);
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
-  const [feedbackSummary, setFeedbackSummary] = useState<FeedbackSentimentSummary | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [rejectingReservationId, setRejectingReservationId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [reservationActionError, setReservationActionError] = useState('');
-
-  // Add Room wizard state
-  const [addRoomStep, setAddRoomStep] = useState(0); // 0=button, 1=floor, 2=form
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newRoomFloor, setNewRoomFloor] = useState('');
-  const [newRoomCapacity, setNewRoomCapacity] = useState('');
-  const [newRoomType, setNewRoomType] = useState('');
-  const [newRoomAcStatus, setNewRoomAcStatus] = useState('');
-  const [newRoomTvStatus, setNewRoomTvStatus] = useState('');
-  const [newRoomBeaconId, setNewRoomBeaconId] = useState('');
-  const [addingRoom, setAddingRoom] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] =
+    useState<FeedbackSentimentSummary | null>(null);
+  const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [buildingFloors, setBuildingFloors] = useState(0);
 
-  // Edit Room state
-  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editFloor, setEditFloor] = useState('');
-  const [editCapacity, setEditCapacity] = useState('');
-  const [editRoomType, setEditRoomType] = useState('');
-  const [editAcStatus, setEditAcStatus] = useState('');
-  const [editTvStatus, setEditTvStatus] = useState('');
-  const [editBeaconId, setEditBeaconId] = useState('');
-  const [savingRoomId, setSavingRoomId] = useState<string | null>(null);
-  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
-
-  // Feedback response state
-  const [respondingId, setRespondingId] = useState<string | null>(null);
-  const [responseText, setResponseText] = useState('');
-
-  // Room search & filter state
-  const [roomSearch, setRoomSearch] = useState('');
-  const [roomFloorFilter, setRoomFloorFilter] = useState<string>('all');
-
-  // History filter state
-  const [historyFilter, setHistoryFilter] = useState<string>('all');
-  const [historySearch, setHistorySearch] = useState('');
-  const [historyTypeFilter] = useState<string>('all');
-
-  // Schedules state
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
-
-  // Schedule form state
-  const [schedRoomId, setSchedRoomId] = useState('');
-
-  // Inbox state
-  const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
-  const [inboxFilter, setInboxFilter] = useState<'all' | 'open' | 'responded' | 'closed'>('all');
-  const [inboxReplyingTo, setInboxReplyingTo] = useState<string | null>(null);
-  const [inboxReplyText, setInboxReplyText] = useState('');
-  const [inboxSubmitting, setInboxSubmitting] = useState(false);
-  const [inboxExpandedId, setInboxExpandedId] = useState<string | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-
-  useEffect(() => {
-    // Selected building is derived from the current profile and local picker state.
-  }, [managedBuildings]);
-
-  // ─── Real-time Listeners ────────────────────────────────────
   const reloadDashboard = useCallback(async () => {
-    if (!buildingId || !firebaseUser?.uid) return;
+    if (!buildingId || !firebaseUser?.uid) {
+      return;
+    }
 
     setDashboardLoading(true);
+
     try {
       const [snapshot, feedbackSnapshot] = await Promise.all([
         fetchAdminDashboardSnapshot(buildingId),
         getFeedbackByBuilding(buildingId),
       ]);
+
       setAdminRequests(snapshot.adminRequests);
       setAllReservations(snapshot.allReservations);
       setFeedbackList(feedbackSnapshot.feedback);
       setFeedbackSummary(feedbackSnapshot.summary);
-      setNotifications(snapshot.notifications);
       setRequests(snapshot.requests);
       setRoomHistory(snapshot.roomHistory);
       setRooms(snapshot.rooms);
@@ -298,7 +95,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       setAllReservations([]);
       setFeedbackList([]);
       setFeedbackSummary(null);
-      setNotifications([]);
       setRequests([]);
       setRoomHistory([]);
       setRooms([]);
@@ -306,356 +102,123 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
     } finally {
       setDashboardLoading(false);
     }
-  }, [buildingId, firebaseUser?.uid, setDashboardLoading]);
+  }, [buildingId, firebaseUser?.uid]);
 
   useEffect(() => {
     void reloadDashboard();
   }, [reloadDashboard]);
 
-  // Load building floors when on add-rooms tab
   useEffect(() => {
     if (buildingId && activeTab === 'add-rooms') {
-      getBuildingById(buildingId).then((b) => {
-        if (b) setBuildingFloors(b.floors);
+      getBuildingById(buildingId).then((building) => {
+        if (building) {
+          setBuildingFloors(building.floors);
+        }
       });
     }
-  }, [buildingId, activeTab]);
+  }, [activeTab, buildingId]);
 
-  // ─── Handlers ───────────────────────────────────────────────
-  const handleApprove = async (id: string) => {
-    const approverEmail = profile?.email || firebaseUser?.email;
-    if (!approverEmail) return;
-    setReservationActionError('');
-    setActionLoading(id);
-    try {
-      await approveReservation(id, approverEmail);
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to approve:', err);
-      setReservationActionError(
-        err instanceof Error ? err.message : 'Failed to approve reservation.'
-      );
-    }
-    setActionLoading(null);
-  };
-
-  const handleReject = async (id: string) => {
-    const approverEmail = profile?.email || firebaseUser?.email;
-    if (!approverEmail) return;
-    if (!rejectReason.trim()) {
-      setReservationActionError('Please enter a reason before rejecting this reservation.');
-      return;
-    }
-    setReservationActionError('');
-    setActionLoading(id);
-    try {
-      await rejectReservation(id, approverEmail, rejectReason.trim());
-      setRejectingReservationId(null);
-      setRejectReason('');
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to reject:', err);
-      setReservationActionError(
-        err instanceof Error ? err.message : 'Failed to reject reservation.'
-      );
-    }
-    setActionLoading(null);
-  };
-
-  const handleMarkAllRead = async () => {
-    if (!firebaseUser) return;
-    await markAllNotificationsRead(firebaseUser.uid);
-    await reloadDashboard();
-  };
-
-  const handleDismissNotification = async (notifId: string) => {
-    await markNotificationRead(notifId);
-    await reloadDashboard();
-  };
-
-  const resetAddRoomWizard = () => {
-    setAddRoomStep(0);
-    setNewRoomName('');
-    setNewRoomFloor('');
-    setNewRoomCapacity('');
-    setNewRoomType('');
-    setNewRoomAcStatus('');
-    setNewRoomTvStatus('');
-    setNewRoomBeaconId('');
-  };
-
-  const resetEditRoomForm = () => {
-    setEditingRoomId(null);
-    setEditName('');
-    setEditFloor('');
-    setEditCapacity('');
-    setEditRoomType('');
-    setEditAcStatus('');
-    setEditTvStatus('');
-    setEditBeaconId('');
-  };
-
-  const startEditingRoom = (room: Room) => {
-    setEditingRoomId(room.id);
-    setEditName(room.name);
-    setEditFloor(room.floor);
-    setEditCapacity(String(room.capacity));
-    setEditRoomType(room.roomType || '');
-    setEditAcStatus(room.acStatus || 'No Air Conditioning');
-    setEditTvStatus(room.tvProjectorStatus || 'No Television or Projector');
-    setEditBeaconId(room.beaconId || '');
-  };
-
-  const handleAddRoomBuildingChange = (nextBuildingId: string) => {
-    if (!nextBuildingId || nextBuildingId === buildingId) {
-      return;
-    }
-
-    setSelectedBuildingId(nextBuildingId);
-    setNewRoomFloor('');
-
-    if (addRoomStep === 2) {
-      setAddRoomStep(1);
-    }
-  };
-
-  const handleAddRoom = async () => {
-    if (!buildingId || !buildingName || !newRoomName.trim() || !newRoomFloor.trim() || !newRoomType) return;
-    setAddingRoom(true);
-    try {
-      const data: RoomInput = {
-        name: newRoomName.trim(),
-        floor: newRoomFloor.trim(),
-        roomType: newRoomType,
-        acStatus: newRoomAcStatus || 'No Air Conditioning',
-        tvProjectorStatus: newRoomTvStatus || 'No Television or Projector',
-        capacity: parseInt(newRoomCapacity) || 30,
-        status: 'Available',
-        buildingId,
-        buildingName,
-        beaconId: newRoomBeaconId.trim() || null,
-      };
-      await addRoom(data);
-      resetAddRoomWizard();
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to add room:', err);
-    }
-    setAddingRoom(false);
-  };
-
-  const handleEditRoom = async (roomId: string) => {
-    if (!editName.trim() || !editFloor.trim() || !editRoomType) return;
-    setSavingRoomId(roomId);
-
-    try {
-      const payload = {
-        name: editName.trim(),
-        floor: editFloor.trim(),
-        roomType: editRoomType,
-        acStatus: editAcStatus || 'No Air Conditioning',
-        tvProjectorStatus: editTvStatus || 'No Television or Projector',
-        capacity: parseInt(editCapacity, 10) || 30,
-        beaconId: editBeaconId.trim() || null,
-      };
-
-      await updateRoom(roomId, payload);
-      resetEditRoomForm();
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to update room:', err);
-      alert('Failed to update room. Please try again.');
-    } finally {
-      setSavingRoomId(null);
-    }
-  };
-
-  const handleDeleteRoom = async (roomId: string) => {
-    if (!confirm('Are you sure you want to delete this room?')) return;
-    setDeletingRoomId(roomId);
-
-    try {
-      await deleteRoom(roomId);
-      if (editingRoomId === roomId) {
-        resetEditRoomForm();
+  const computeEffectiveStatus = useCallback(
+    (room: Room): { status: string; detail: string } => {
+      if (room.status === 'Unavailable') {
+        return { status: 'Unavailable', detail: 'Manual override' };
       }
 
-      if (schedRoomId === roomId) {
-        setSchedRoomId('');
-      }
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to delete:', err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : 'Failed to delete room. Please try again.'
-      );
-    } finally {
-      setDeletingRoomId(null);
-    }
-  };
+      if (room.status === 'Occupied') {
+        if (
+          normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth' &&
+          room.beaconConnected === false
+        ) {
+          return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+        }
 
-  const handleStatusChange = async (roomId: string, status: Room['status']) => {
-    try {
-      await updateRoomStatus(roomId, status);
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to update status:', err);
-      alert('Failed to update room status. Check the console for details.');
-    }
-  };
-
-  const handleRespondFeedback = async (feedbackId: string) => {
-    if (!responseText.trim()) return;
-    try {
-      await respondToFeedback(feedbackId, responseText.trim());
-      setRespondingId(null);
-      setResponseText('');
-      await reloadDashboard();
-    } catch (err) {
-      console.warn('Failed to respond:', err);
-    }
-  };
-
-  // ─── Computed Values ────────────────────────────────────────
-  const computeEffectiveStatus = (room: Room): { status: string; detail: string } => {
-    // Manual overrides take priority
-    if (room.status === 'Unavailable') return { status: 'Unavailable', detail: 'Manual override' };
-    if (room.status === 'Occupied') {
-      if (
-        normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth' &&
-        room.beaconConnected === false
-      ) {
-        return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+        return {
+          status: 'Occupied',
+          detail:
+            normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth'
+              ? 'Bluetooth beacon connected'
+              : 'Checked in',
+        };
       }
 
-      return {
-        status: 'Occupied',
-        detail:
-          normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth'
-            ? 'Bluetooth beacon connected'
-            : 'Checked in',
-      };
-    }
-    if (room.status === 'Reserved') return { status: 'Reserved', detail: 'Reserved' };
-    // Check active class schedules
-    const activeClass = isRoomInClass(schedules, room.id);
-    if (activeClass) return { status: 'Reserved', detail: `Class: ${activeClass.subjectName}` };
-    // Check active reservations
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    const activeReservation = allReservations.find(
-      (r) => r.roomId === room.id && r.status === 'approved' && r.date === today && r.startTime <= currentTime && r.endTime > currentTime
-    );
-    if (activeReservation) {
-      const activeCheckInMethod = normalizeRoomCheckInMethod(
-        activeReservation.checkInMethod ?? room.checkInMethod
+      if (room.status === 'Reserved') {
+        return { status: 'Reserved', detail: 'Reserved' };
+      }
+
+      const activeClass = isRoomInClass(schedules, room.id);
+      if (activeClass) {
+        return { status: 'Reserved', detail: `Class: ${activeClass.subjectName}` };
+      }
+
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}`;
+
+      const activeReservation = allReservations.find(
+        (reservation) =>
+          reservation.roomId === room.id &&
+          reservation.status === 'approved' &&
+          reservation.date === today &&
+          reservation.startTime <= currentTime &&
+          reservation.endTime > currentTime
       );
 
-      if (
-        activeReservation.checkedInAt &&
-        activeCheckInMethod === 'bluetooth' &&
-        room.beaconConnected === false
-      ) {
-        return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+      if (activeReservation) {
+        const activeCheckInMethod = normalizeRoomCheckInMethod(
+          activeReservation.checkInMethod ?? room.checkInMethod
+        );
+
+        if (
+          activeReservation.checkedInAt &&
+          activeCheckInMethod === 'bluetooth' &&
+          room.beaconConnected === false
+        ) {
+          return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+        }
+
+        return activeReservation.checkedInAt
+          ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
+          : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
       }
 
-      return activeReservation.checkedInAt
-        ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
-        : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
-    }
-    return { status: 'Available', detail: '' };
-  };
+      return { status: 'Available', detail: '' };
+    },
+    [allReservations, schedules]
+  );
 
-  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Occupied').length;
-  const reservedCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Reserved').length;
-  const unavailableCount = rooms.filter((r) => r.status === 'Unavailable').length;
+  const ongoingCount = rooms.filter(
+    (room) => computeEffectiveStatus(room).status === 'Occupied'
+  ).length;
+  const reservedCount = rooms.filter(
+    (room) => computeEffectiveStatus(room).status === 'Reserved'
+  ).length;
+  const unavailableCount = rooms.filter((room) => room.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
   const pendingCount = requests.length;
+  const approverEmail = profile?.email || firebaseUser?.email;
 
-  // Filtered rooms for search & floor filter
-  const uniqueFloors = Array.from(new Set(rooms.map((r) => r.floor))).sort((a, b) => {
-    const floorOrder = (f: string) => {
-      if (f.toLowerCase().includes('ground')) return 0;
-      const match = f.match(/(\d+)/);
-      return match ? parseInt(match[1]) : 999;
-    };
-    return floorOrder(a) - floorOrder(b);
-  });
-
-  const filteredRooms = rooms.filter((r) => {
-    if (roomFloorFilter !== 'all' && r.floor !== roomFloorFilter) return false;
-    if (roomSearch && !r.name.toLowerCase().includes(roomSearch.toLowerCase())) return false;
-    return true;
-  });
-
-  const statusMonitorFloorGroups = useMemo(() => {
-    const roomsByFloor = new Map<string, Room[]>();
-
-    rooms.forEach((room) => {
-      const floorRooms = roomsByFloor.get(room.floor) ?? [];
-      floorRooms.push(room);
-      roomsByFloor.set(room.floor, floorRooms);
-    });
-
-    return uniqueFloors
-      .map((floor) => ({
-        floor,
-        label: getFloorDisplayLabel(floor, {
-          id: buildingId,
-          name: buildingName,
-        }),
-        rooms: roomsByFloor.get(floor) ?? [],
-      }))
-      .filter((floorGroup) => floorGroup.rooms.length > 0);
-  }, [buildingId, buildingName, rooms, uniqueFloors]);
-
-  const filteredHistory = roomHistory.filter((r) => {
-    if (historyFilter !== 'all' && r.status !== historyFilter) return false;
-    if (historyTypeFilter !== 'all' && r.type !== historyTypeFilter) return false;
-    if (historySearch && !r.userName.toLowerCase().includes(historySearch.toLowerCase()) && !r.roomName.toLowerCase().includes(historySearch.toLowerCase())) return false;
-    return true;
-  });
-  const addRoomFloorOptions = getBuildingFloorOptions({
-    id: buildingId,
-    name: buildingName,
-    floors: buildingFloors,
-  });
-
-  // ─── No Building Assigned State ─────────────────────────────
   if (!buildingId || !buildingName) {
     return (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-black">Welcome, {firstName} 🏛️</h2>
+          <h2 className="text-2xl font-bold text-black">Welcome, {firstName}</h2>
           <p className="text-black mt-1">Administrator Dashboard</p>
         </div>
-        <div className="glass-card p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 ui-text-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-bold text-black mb-2">No Building Assigned</h3>
-          <p className="text-sm text-black max-w-sm mx-auto">
-            Your account has been approved, but the Super Admin has not yet assigned a building to you.
-            Please contact the Super Admin to get a building assignment.
-          </p>
-        </div>
+        <AdminNoBuildingAssigned />
       </main>
     );
   }
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
-      {/* ─── Header ───────────────────────── */}
       <div className="mb-8">
         {activeTab === 'dashboard' ? (
           <div>
             <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
-              <h2 className="text-2xl font-bold text-gray-800">Welcome, {firstName} 🏛️</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Welcome, {firstName}</h2>
               <p className="text-gray-600 mt-1">
                 Managing: <span className="text-primary font-bold">{buildingName}</span>
               </p>
@@ -666,7 +229,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
                   Active Building
                 </label>
                 <select
-                  value={buildingId ?? ''}
+                  value={buildingId}
                   onChange={(event) => setSelectedBuildingId(event.target.value)}
                   className="glass-input w-full px-4 py-3 bg-dark/6 appearance-none cursor-pointer"
                   style={{ backgroundImage: 'none' }}
@@ -683,1363 +246,64 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
         ) : null}
       </div>
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: ADD ROOMS ──────────────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      {activeTab === 'add-rooms' && (
-        <div>
-          <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Manage Rooms</h3>
-          </div>
-
-          {/* ─── Step 0: New Room Button ─────────────────────────── */}
-          {addRoomStep === 0 && (
-            <div className="mb-8 space-y-3">
-              <button
-                onClick={() => setAddRoomStep(1)}
-                className="w-full glass-card p-6 !rounded-2xl flex items-center justify-center gap-3 group hover:!border-primary/40 transition-all cursor-pointer"
-              >
-                <svg className="w-6 h-6 text-black group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-lg font-bold text-black group-hover:text-primary transition-colors">
-                  New Room
-                </span>
-              </button>
-
-              <div className="rounded-xl border border-[#d9a3a4] bg-[#f9eded] px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-black">
-                  Active Building
-                </p>
-                <p className="mt-1 text-sm font-bold text-black">{activeBuildingLabel}</p>
-                {buildingName && activeBuildingLabel !== buildingName ? (
-                  <p className="mt-1 text-xs text-black">{buildingName}</p>
-                ) : null}
-              </div>
-            </div>
-          )}
-
-          {/* ─── Step 1: Select Floor ────────────────────────────── */}
-          {addRoomStep === 1 && (
-            <div className="glass-card p-6 mb-8 !rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h4 className="text-lg font-bold text-black">Select Floor</h4>
-                  <p className="text-xs text-black mt-0.5">Step 1 of 2 — Choose which floor the room is on</p>
-                </div>
-                <button
-                  onClick={resetAddRoomWizard}
-                  className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              {/* Progress Bar */}
-              <div className="flex gap-2 mb-6">
-                <div className="h-1 flex-1 rounded-full bg-primary" />
-                <div className="h-1 flex-1 rounded-full bg-dark/10" />
-              </div>
-              <div className="mb-6">
-                <label className="block text-xs font-bold text-black mb-1.5">
-                  Building
-                </label>
-                {managedBuildings.length > 1 ? (
-                  <select
-                    value={buildingId ?? ''}
-                    onChange={(event) => handleAddRoomBuildingChange(event.target.value)}
-                    className="glass-input w-full px-4 py-2.5 text-sm appearance-none cursor-pointer"
-                  >
-                    {managedBuildings.map((building) => (
-                      <option key={building.id} value={building.id}>
-                        {getManagedBuildingOptionLabel(building)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    <p className="text-sm font-bold text-black">{activeBuildingLabel}</p>
-                    {buildingName && activeBuildingLabel !== buildingName ? (
-                      <p className="mt-1 text-xs text-black">{buildingName}</p>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {addRoomFloorOptions.map((floorOption, index) => (
-                  <button
-                    key={floorOption.value}
-                    onClick={() => {
-                      setNewRoomFloor(floorOption.value);
-                      setAddRoomStep(2);
-                    }}
-                    className="glass-card !bg-dark/5 p-4 !rounded-xl text-center group hover:!border-primary/40 transition-all cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-primary font-bold text-sm">
-                        {floorOption.label === 'Basement Floor'
-                          ? 'B'
-                          : floorOption.label === 'Ground Floor'
-                            ? 'G'
-                            : floorOption.label.match(/(\d+)/)?.[1] ?? index}
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold text-black group-hover:text-primary transition-colors">{floorOption.label}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ─── Step 2: Room Information Form ───────────────────── */}
-          {addRoomStep === 2 && (
-            <div className="glass-card p-6 mb-8 !rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h4 className="text-lg font-bold text-black">Room Information</h4>
-                  <p className="text-xs text-black mt-0.5">
-                    Step 2 of 2 — <span className="text-primary">{getFloorDisplayLabel(newRoomFloor, {
-                      id: buildingId,
-                      name: buildingName,
-                    })}</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setAddRoomStep(1)}
-                    className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={resetAddRoomWizard}
-                    className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              {/* Progress Bar */}
-              <div className="flex gap-2 mb-6">
-                <div className="h-1 flex-1 rounded-full bg-primary" />
-                <div className="h-1 flex-1 rounded-full bg-primary" />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-xs font-bold text-black mb-1.5">
-                  Building
-                </label>
-                {managedBuildings.length > 1 ? (
-                  <select
-                    value={buildingId ?? ''}
-                    onChange={(event) => handleAddRoomBuildingChange(event.target.value)}
-                    className="glass-input w-full px-4 py-2.5 text-sm appearance-none cursor-pointer"
-                  >
-                    {managedBuildings.map((building) => (
-                      <option key={building.id} value={building.id}>
-                        {getManagedBuildingOptionLabel(building)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    <p className="text-sm font-bold text-black">{activeBuildingLabel}</p>
-                    {buildingName && activeBuildingLabel !== buildingName ? (
-                      <p className="mt-1 text-xs text-black">{buildingName}</p>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-6">
-                {/* Room Name & Type */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1.5">Room Name *</label>
-                    <input
-                      type="text"
-                      value={newRoomName}
-                      onChange={(e) => setNewRoomName(e.target.value)}
-                      placeholder="e.g. Room 312"
-                      className="glass-input w-full px-4 py-2.5 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1.5">Room Type *</label>
-                    <select
-                      value={newRoomType}
-                      onChange={(e) => setNewRoomType(e.target.value)}
-                      className="glass-input w-full px-4 py-2.5 text-sm appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled>Select room type</option>
-                      {ROOM_TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {ROOM_TYPE_LABELS[option]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1.5">
-                    Beacon ID
-                  </label>
-                  <input
-                    type="text"
-                    value={newRoomBeaconId}
-                    onChange={(e) => setNewRoomBeaconId(e.target.value)}
-                    placeholder="e.g. ESP32_ROOM_301"
-                    className="glass-input w-full px-4 py-2.5 text-sm"
-                  />
-                  <p className="mt-1.5 text-xs text-black">
-                    Use the exact ESP32 BLE device name for Bluetooth room
-                    check-in.
-                  </p>
-                </div>
-
-                {/* Facilities Section */}
-                <div>
-                  <h5 className="text-sm font-bold text-black uppercase tracking-wider mb-4">Facilities</h5>
-
-                  {/* Air Conditioner Status */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-black mb-2">Air Conditioner Status</label>
-                    <div className="flex flex-wrap gap-2">
-                      {ROOM_AC_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setNewRoomAcStatus(opt)}
-                          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${newRoomAcStatus === opt
-                            ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
-                            }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Television or Projector Status */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-black mb-2">Television or Projector</label>
-                    <div className="flex flex-wrap gap-2">
-                      {ROOM_DISPLAY_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setNewRoomTvStatus(opt)}
-                          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${newRoomTvStatus === opt
-                            ? 'bg-primary/20 text-primary border border-primary/40'
-                            : 'bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 hover:text-primary'
-                            }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Capacity */}
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1.5">Capacity</label>
-                    <input
-                      type="number"
-                      value={newRoomCapacity}
-                      onChange={(e) => setNewRoomCapacity(e.target.value)}
-                      placeholder="30"
-                      className="glass-input w-full sm:w-40 px-4 py-2.5 text-sm"
-                      min={1}
-                    />
-                  </div>
-                </div>
-
-                {/* Submit */}
-                <button
-                  onClick={handleAddRoom}
-                  disabled={addingRoom || !newRoomName.trim() || !newRoomType}
-                  className="btn-primary w-full py-3 px-4 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  {addingRoom ? 'Adding Room...' : 'Add Room'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ─── Search & Floor Filter ──────────────────────────── */}
-          {rooms.length > 0 && (
-            <div className="mb-6 space-y-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  value={roomSearch}
-                  onChange={(e) => setRoomSearch(e.target.value)}
-                  placeholder="Search rooms by name..."
-                  className="glass-input w-full pl-10 pr-4 py-2.5 text-sm"
-                />
-              </div>
-              {/* Floor Filter Pills */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setRoomFloorFilter('all')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    roomFloorFilter === 'all'
-                      ? 'bg-[#a12124] text-white border border-[#a12124]'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  All ({rooms.length})
-                </button>
-                {uniqueFloors.map((floor) => {
-                  const count = rooms.filter((r) => r.floor === floor).length;
-                  return (
-                    <button
-                      key={floor}
-                      onClick={() => setRoomFloorFilter(floor)}
-                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                        roomFloorFilter === floor
-                          ? 'bg-[#a12124] text-white border border-[#a12124]'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {getFloorDisplayLabel(floor, {
-                        id: buildingId,
-                        name: buildingName,
-                      })} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Room List */}
-          {dashboardLoading && rooms.length === 0 && addRoomStep === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <h4 className="text-lg font-bold text-black mb-1">Loading rooms...</h4>
-              <p className="text-sm text-black">Fetching the latest building snapshot.</p>
-            </div>
-          ) : rooms.length === 0 && addRoomStep === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <div className="text-4xl mb-3">🏠</div>
-              <h4 className="text-lg font-bold text-black mb-1">No Rooms Yet</h4>
-              <p className="text-sm text-black">Click &quot;New Room&quot; above to add your first room.</p>
-            </div>
-          ) : filteredRooms.length === 0 && rooms.length > 0 ? (
-            <div className="glass-card p-8 text-center">
-              <div className="text-3xl mb-3">🔍</div>
-              <h4 className="text-lg font-bold text-black mb-1">No Rooms Found</h4>
-              <p className="text-sm text-black">Try adjusting your search or filter.</p>
-            </div>
-          ) : filteredRooms.length > 0 && (
-            <div className="space-y-3">
-              {filteredRooms.map((room) => (
-                <div key={room.id} className="glass-card p-4 sm:p-5">
-                  {editingRoomId === room.id ? (
-                    /* Editing Mode */
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="mb-1.5 block text-xs font-bold text-black">
-                            Room Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="glass-input w-full px-4 py-2.5 text-sm"
-                            placeholder="e.g. Room 312"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1.5 block text-xs font-bold text-black">
-                            Floor *
-                          </label>
-                          <select
-                            value={editFloor}
-                            onChange={(e) => setEditFloor(e.target.value)}
-                            className="glass-input w-full cursor-pointer appearance-none px-4 py-2.5 text-sm"
-                          >
-                            <option value="" disabled>Select floor</option>
-                            {addRoomFloorOptions.map((floorOption) => (
-                              <option key={floorOption.value} value={floorOption.value}>
-                                {floorOption.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="mb-1.5 block text-xs font-bold text-black">
-                            Room Type *
-                          </label>
-                          <select
-                            value={editRoomType}
-                            onChange={(e) => setEditRoomType(e.target.value)}
-                            className="glass-input w-full cursor-pointer appearance-none px-4 py-2.5 text-sm"
-                          >
-                            <option value="" disabled>Select room type</option>
-                            {ROOM_TYPE_OPTIONS.map((option) => (
-                              <option key={option} value={option}>
-                                {ROOM_TYPE_LABELS[option]}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <label className="mb-1.5 block text-xs font-bold text-black">
-                            Beacon ID
-                          </label>
-                          <input
-                            type="text"
-                            value={editBeaconId}
-                            onChange={(e) => setEditBeaconId(e.target.value)}
-                            className="glass-input w-full px-4 py-2.5 text-sm"
-                            placeholder="e.g. ESP32_ROOM_301"
-                          />
-                          <p className="mt-1.5 text-xs text-black">
-                            Match this to the beacon&apos;s exact BLE device name.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h5 className="mb-4 text-sm font-bold uppercase tracking-wider text-black">
-                          Facilities
-                        </h5>
-
-                        <div className="mb-4">
-                          <label className="mb-2 block text-xs font-bold text-black">
-                            Air Conditioner Status
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {ROOM_AC_OPTIONS.map((option) => (
-                              <button
-                                key={option}
-                                type="button"
-                                onClick={() => setEditAcStatus(option)}
-                                className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-                                  editAcStatus === option
-                                    ? 'border border-primary/40 bg-primary/20 text-primary'
-                                    : 'border border-dark/10 bg-dark/5 text-black hover:bg-primary/10 hover:text-primary'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="mb-4">
-                          <label className="mb-2 block text-xs font-bold text-black">
-                            Television or Projector
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {ROOM_DISPLAY_OPTIONS.map((option) => (
-                              <button
-                                key={option}
-                                type="button"
-                                onClick={() => setEditTvStatus(option)}
-                                className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-                                  editTvStatus === option
-                                    ? 'border border-primary/40 bg-primary/20 text-primary'
-                                    : 'border border-dark/10 bg-dark/5 text-black hover:bg-primary/10 hover:text-primary'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="mb-1.5 block text-xs font-bold text-black">
-                            Capacity
-                          </label>
-                          <input
-                            type="number"
-                            value={editCapacity}
-                            onChange={(e) => setEditCapacity(e.target.value)}
-                            className="glass-input w-full px-4 py-2.5 text-sm sm:w-40"
-                            placeholder="30"
-                            min={1}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleEditRoom(room.id)}
-                          disabled={
-                            savingRoomId === room.id ||
-                            !editName.trim() ||
-                            !editFloor.trim() ||
-                            !editRoomType
-                          }
-                          className="px-4 py-2 rounded-xl text-sm font-bold ui-button-green"
-                        >
-                          {savingRoomId === room.id ? 'Saving...' : 'Save Changes'}
-                        </button>
-                        <button
-                          onClick={resetEditRoomForm}
-                          disabled={savingRoomId === room.id}
-                          className="px-4 py-2 rounded-xl text-sm font-bold bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Display Mode */
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-lg shrink-0">
-                          🚪
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-black text-sm">{room.name}</h4>
-                          <p className="text-xs text-black">
-                            {getFloorDisplayLabel(room.floor, {
-                              id: room.buildingId,
-                              name: room.buildingName,
-                            })} · {room.roomType || 'Room'} · Capacity: {room.capacity}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <StatusBadge status={room.status} />
-                        <button
-                          onClick={() => startEditingRoom(room)}
-                          disabled={deletingRoomId === room.id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-black hover:text-primary hover:bg-primary/10 border border-dark/10 transition-all"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRoom(room.id)}
-                          disabled={deletingRoomId === room.id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-bold ui-button-ghost ui-text-red ui-button-ghost-danger disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {deletingRoomId === room.id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: FEEDBACK ───────────────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      {activeTab === 'feedback' && (
-        <div>
-          <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-6 py-4 border border-white/30">
-            <h3 className="text-xl font-bold text-gray-800">Room Feedback</h3>
-            <span className="text-sm text-gray-600">{feedbackList.length} total</span>
-          </div>
-
-          {feedbackList.length === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <div className="text-4xl mb-3">💬</div>
-              <h4 className="text-lg font-bold text-black mb-1">No Feedback Yet</h4>
-              <p className="text-sm text-black">Feedback from room users will appear here.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {feedbackSummary && (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="glass-card p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Positive</p>
-                    <p className="mt-2 text-2xl font-bold text-green-700">
-                      {feedbackSummary.positivePercentage.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-black">
-                      {feedbackSummary.positiveCount} of {feedbackSummary.total} entries
-                    </p>
-                  </div>
-                  <div className="glass-card p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Neutral</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-700">
-                      {feedbackSummary.neutralPercentage.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-black">
-                      {feedbackSummary.neutralCount} of {feedbackSummary.total} entries
-                    </p>
-                  </div>
-                  <div className="glass-card p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Negative</p>
-                    <p className="mt-2 text-2xl font-bold text-red-700">
-                      {feedbackSummary.negativePercentage.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-black">
-                      {feedbackSummary.negativeCount} of {feedbackSummary.total} entries
-                    </p>
-                  </div>
-                  <div className="glass-card p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">Average Compound</p>
-                    <p className="mt-2 text-2xl font-bold text-black">
-                      {feedbackSummary.averageCompoundScore.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-black">
-                      {formatSentimentLabel(
-                        resolveFeedbackSentimentLabel({
-                          compoundScore: feedbackSummary.averageCompoundScore,
-                        })
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {feedbackList.map((fb) => (
-                <div key={fb.id} className="glass-card p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm">
-                        {fb.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-black text-sm">{fb.userName}</h4>
-                        <p className="text-xs text-black">
-                          {fb.roomName} | {fb.buildingName}
-                        </p>
-                      </div>
-                    </div>
-                    <StarRating rating={fb.rating} />
-                  </div>
-
-                  <div className="mb-3 rounded-xl border border-dark/10 bg-dark/5 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-black">
-                          Sentiment Analysis
-                        </p>
-                        <p className="mt-1 text-sm text-black">
-                          {formatSentimentLabel(resolveFeedbackSentimentLabel(fb))}
-                          {typeof fb.compoundScore === 'number'
-                            ? ` (${fb.compoundScore.toFixed(2)})`
-                            : ''}
-                        </p>
-                      </div>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${getSentimentBadgeClasses(
-                          resolveFeedbackSentimentLabel(fb)
-                        )}`}
-                      >
-                        {formatSentimentLabel(resolveFeedbackSentimentLabel(fb))}
-                      </span>
-                    </div>
-
-                    {typeof fb.compoundScore === 'number' &&
-                      typeof fb.positiveScore === 'number' &&
-                      typeof fb.neutralScore === 'number' &&
-                      typeof fb.negativeScore === 'number' && (
-                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-black sm:grid-cols-4">
-                          <div>
-                            <p className="font-bold">Compound</p>
-                            <p>{fb.compoundScore.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="font-bold">Positive</p>
-                            <p>{Math.round(fb.positiveScore * 100)}%</p>
-                          </div>
-                          <div>
-                            <p className="font-bold">Neutral</p>
-                            <p>{Math.round(fb.neutralScore * 100)}%</p>
-                          </div>
-                          <div>
-                            <p className="font-bold">Negative</p>
-                            <p>{Math.round(fb.negativeScore * 100)}%</p>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-
-                  <p className="text-sm text-black mb-3 leading-relaxed">{fb.message}</p>
-
-                  {fb.adminResponse ? (
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mt-3">
-                      <p className="text-xs font-bold text-primary mb-1">Admin Response</p>
-                      <p className="text-sm text-black">{fb.adminResponse}</p>
-                    </div>
-                  ) : (
-                    <>
-                      {respondingId === fb.id ? (
-                        <div className="mt-3 space-y-2">
-                          <textarea
-                            value={responseText}
-                            onChange={(e) => setResponseText(e.target.value)}
-                            placeholder="Type your response..."
-                            className="glass-input w-full px-4 py-3 text-sm resize-none"
-                            rows={3}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => { setRespondingId(null); setResponseText(''); }}
-                              className="px-4 py-2 rounded-xl text-sm font-bold bg-dark/5 text-black border border-dark/10 hover:bg-primary/10 transition-all"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleRespondFeedback(fb.id)}
-                              disabled={!responseText.trim()}
-                              className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
-                            >
-                              Send Response
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setRespondingId(fb.id)}
-                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary/70 hover:text-primary hover:bg-primary/5 border border-primary/20 transition-all"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                          </svg>
-                          Reply
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: DASHBOARD OVERVIEW ───────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'dashboard' && (
-        <div>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Total Rooms</p><p className="text-2xl font-bold text-black mt-1">{rooms.length}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Reserved</p><p className="text-2xl font-bold ui-text-blue mt-1">{reservedCount}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Available</p><p className="text-2xl font-bold ui-text-green mt-1">{availableCount}</p></div>
-            <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-black font-bold">Pending Requests</p><p className="text-2xl font-bold ui-text-yellow mt-1">{pendingCount}</p><p className="text-[10px] text-black mt-0.5">Click to review →</p></button>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Occupied</p><p className="text-2xl font-bold ui-text-orange mt-1">{ongoingCount}</p></div>
-          </div>
-
-          {/* Live Room Status Grid */}
-          <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Live Room Status <span className="text-sm text-gray-600 font-normal ml-2">({buildingName})</span></h3>
-          </div>
-          {rooms.length === 0 ? (
-            <div className="glass-card p-8 text-center mb-8"><p className="text-sm text-black">No rooms configured yet.</p></div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-              {rooms.map((room) => {
-                const effective = computeEffectiveStatus(room);
-                const borderColor = effective.status === 'Occupied' ? 'border-orange-500/40' : effective.status === 'Reserved' ? 'border-blue-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
-                return (
-                  <div key={room.id} className={`glass-card p-4 border-l-4 ${borderColor}`}>
-                    <div className="flex justify-between items-start">
-                      <div><h4 className="font-bold text-black">{room.name}</h4><p className="text-xs text-black">{getFloorDisplayLabel(room.floor, {
-                        id: room.buildingId,
-                        name: room.buildingName,
-                      })} · Cap: {room.capacity}</p></div>
-                      <StatusBadge status={effective.status} />
-                    </div>
-                    {effective.detail && <p className="text-xs text-black mt-2">{effective.detail}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <BleSummaryCard
-            buildingName={buildingName}
-            className="mb-8"
-            detailsHref="/admin/ble-status"
-          />
-
-          <MyReservationTimetable
-            className="mb-8"
-            currentUserId={firebaseUser?.uid}
-            reservations={allReservations}
-          />
-
-          {/* Pending Requests Preview */}
-          <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
-            <h3 className="text-lg font-bold text-gray-800">Pending Requests</h3>
-            {requests.length > 0 && (
-              <button onClick={() => setActiveTab('pending')} className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
-                View all ({requests.length}) →
-              </button>
-            )}
-          </div>
-          {requests.length === 0 ? (
-            <div className="glass-card p-8 text-center"><p className="text-sm text-black">No requests waiting for approval.</p></div>
-          ) : (
-            <div className="space-y-3">
-              {requests.slice(0, 3).map((req) => (
-                <button
-                  key={req.id}
-                  onClick={() => setActiveTab('pending')}
-                  className="glass-card p-4 w-full text-left hover:!border-yellow-500/30 transition-all cursor-pointer"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center ui-text-yellow font-bold text-sm shrink-0">
-                      {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-black text-sm">{req.userName}</h4>
-                        <RoleBadge role={req.userRole} />
-                      </div>
-                      <p className="text-xs text-black mt-0.5">{req.roomName} | {formatReservationDates(req.dates, req.date)} | {formatTimeRange(req.startTime, req.endTime)}</p>
-                    </div>
-                    <svg className="w-5 h-5 text-black shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
-              {requests.length > 3 && (
-                <button
-                  onClick={() => setActiveTab('pending')}
-                  className="w-full text-center py-2 text-sm font-bold text-primary/70 hover:text-primary transition-colors"
-                >
-                  +{requests.length - 3} more pending...
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        <AdminOverviewTab
+          allReservations={allReservations}
+          availableCount={availableCount}
+          buildingName={buildingName}
+          computeEffectiveStatus={computeEffectiveStatus}
+          currentUserId={firebaseUser?.uid}
+          ongoingCount={ongoingCount}
+          pendingCount={pendingCount}
+          requests={requests}
+          reservedCount={reservedCount}
+          rooms={rooms}
+          setActiveTab={setActiveTab}
+        />
       )}
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: ROOM HISTORY ───────────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
+      {activeTab === 'add-rooms' && (
+        <AdminRoomsTab
+          activeBuildingLabel={activeBuildingLabel}
+          buildingFloors={buildingFloors}
+          buildingId={buildingId}
+          buildingName={buildingName}
+          dashboardLoading={dashboardLoading}
+          managedBuildings={managedBuildings}
+          onBuildingChange={setSelectedBuildingId}
+          onReload={reloadDashboard}
+          rooms={rooms}
+        />
+      )}
+
+      {activeTab === 'feedback' && (
+        <AdminFeedbackTab
+          feedbackList={feedbackList}
+          feedbackSummary={feedbackSummary}
+          onReload={reloadDashboard}
+        />
+      )}
+
       {activeTab === 'room-history' && (
-        <div>
-          <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Room History</h3>
-          </div>
-
-          {/* Filters */}
-          <div className="glass-card p-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <input type="text" value={historySearch} onChange={(e) => setHistorySearch(e.target.value)} placeholder="Search by name or room..." className="glass-input w-full px-4 py-2.5 text-sm" />
-              </div>
-              <div className="flex gap-2 flex-wrap items-center">
-                {['all', 'approved', 'rejected', 'active', 'completed', 'cancelled'].map((filter) => (
-                  <button key={filter} onClick={() => setHistoryFilter(filter)} className={`px-3 py-2 rounded-lg text-xs font-bold capitalize transition-all ${historyFilter === filter ? 'bg-primary text-white border border-primary' : 'bg-white text-gray-700 border border-gray-200 hover:text-primary'}`}>
-                    {filter === 'all' ? 'All Status' : filter}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {filteredHistory.length === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <div className="text-4xl mb-3">📋</div>
-              <h4 className="text-lg font-bold text-black mb-1">No Reservations Found</h4>
-              <p className="text-sm text-black">
-                {historySearch || historyFilter !== 'all'
-                  ? 'Try adjusting your filters.'
-                  : 'Reservation history will appear here.'}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden md:block glass-card overflow-hidden !rounded-xl">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="border-b border-dark/10">
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">User</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Room</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Purpose</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredHistory.map((res) => (
-                      <tr key={res.id} className="border-b border-dark/5 hover:bg-primary/10 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-black">{res.userName}</span>
-                            <RoleBadge role={res.userRole} />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{res.roomName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${res.type === 'reservation' ? 'ui-badge-blue' : 'ui-badge-purple'}`}>
-                            {res.type === 'reservation' ? 'Reservation' : 'Class'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{formatDate(res.date)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{formatTimeRange(res.startTime, res.endTime)}</td>
-                        <td className="px-6 py-4 text-sm text-black max-w-[200px] truncate">{res.purpose}</td>
-                        <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={res.status} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Cards */}
-              <div className="md:hidden space-y-3">
-                {filteredHistory.map((res) => (
-                  <div key={res.id} className="glass-card p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-black text-sm">{res.userName}</span>
-                        <RoleBadge role={res.userRole} />
-                      </div>
-                      <StatusBadge status={res.status} />
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-black">Room:</span>
-                        <span className="font-bold text-black">{res.roomName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-black">Type:</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${res.type === 'reservation' ? 'ui-badge-blue' : 'ui-badge-purple'}`}>
-                          {res.type === 'reservation' ? 'Reservation' : 'Class'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-black">Date:</span>
-                        <span className="text-black">{formatDate(res.date)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-black">Time:</span>
-                        <span className="text-black">{formatTimeRange(res.startTime, res.endTime)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-black">Purpose:</span>
-                        <span className="text-black truncate max-w-[180px]">{res.purpose}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          <div className="mt-4 text-center">
-            <p className="text-xs text-black">Showing {filteredHistory.length} of {roomHistory.length} entries</p>
-          </div>
-        </div>
+        <AdminRoomHistoryTab roomHistory={roomHistory} />
       )}
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: PENDING RESERVATIONS ──────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'pending' && (
-        <div>
-          <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-6 py-4 border border-white/30">
-            <div>
-              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                Pending Reservations
-                {requests.length > 0 && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-yellow">
-                    {requests.length} pending
-                  </span>
-                )}
-              </h3>
-              <p className="text-gray-600 mt-1 text-sm">
-                Review and approve reservation requests for <span className="ui-text-teal font-bold">{buildingName}</span>
-              </p>
-            </div>
-          </div>
-
-          {requests.length === 0 ? (
-            <div className="glass-card p-12 !rounded-xl text-center">
-              <svg className="w-16 h-16 text-black mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-              <p className="text-sm text-black font-bold">All caught up!</p>
-              <p className="text-xs text-black mt-1">No pending reservation requests</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reservationActionError && (
-                <p className="text-xs ui-text-red font-bold">{reservationActionError}</p>
-              )}
-              {requests.map((req) => (
-                <div key={req.id} className="glass-card !rounded-xl overflow-hidden border-l-4 border-yellow-500/40">
-                  <div className="p-5">
-                    {/* User Info Row */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center ui-text-yellow font-bold text-sm shrink-0">
-                          {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="font-bold text-black">{req.userName}</h4>
-                            <RoleBadge role={req.userRole} />
-                          </div>
-                          <p className="text-xs text-black">Reservation Request</p>
-                        </div>
-                      </div>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-yellow">
-                        Pending
-                      </span>
-                    </div>
-
-                    {/* Reservation Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Room</p>
-                        <p className="text-sm font-bold text-black">{req.roomName}</p>
-                        <p className="text-xs text-black mt-0.5">{req.buildingName}</p>
-                      </div>
-                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Date</p>
-                        <p className="text-sm font-bold text-black">{formatReservationDates(req.dates, req.date)}</p>
-                      </div>
-                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Time</p>
-                        <p className="text-sm font-bold text-black">{formatTimeRange(req.startTime, req.endTime)}</p>
-                      </div>
-                      <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                        <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Purpose</p>
-                        <p className="text-sm font-bold text-black truncate">{req.purpose || 'Not specified'}</p>
-                      </div>
-                    </div>
-
-                    {/* Additional Details */}
-                    {req.equipment && Object.keys(req.equipment).length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                        {req.equipment && Object.keys(req.equipment).length > 0 && (
-                          <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                            <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">Equipment</p>
-                            <p className="text-sm text-black">{Object.entries(req.equipment).map(([k, v]) => `${k} (×${v})`).join(', ')}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {req.approvalDocumentUrl && (
-                      <div className="mb-4">
-                        <div className="bg-dark/3 rounded-xl p-3 border border-dark/5">
-                          <p className="text-[10px] text-black font-bold uppercase tracking-wider mb-1">
-                            Concept Paper / Letter of Approval
-                          </p>
-                          <a
-                            href={req.approvalDocumentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm font-bold text-primary hover:text-primary-hover transition-colors"
-                          >
-                            {req.approvalDocumentName || 'Open attachment'}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-3 pt-4 border-t border-dark/5">
-                      <button
-                        onClick={() => handleApprove(req.id)}
-                        disabled={actionLoading === req.id}
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold ui-button-green disabled:opacity-50"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          setReservationActionError('');
-                          setRejectingReservationId(
-                            rejectingReservationId === req.id ? null : req.id
-                          );
-                          setRejectReason('');
-                        }}
-                        disabled={actionLoading === req.id}
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold ui-button-red disabled:opacity-50"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Reject
-                      </button>
-                    </div>
-
-                    {rejectingReservationId === req.id && (
-                      <div className="mt-4 space-y-3 pt-4 border-t border-dark/5">
-                        <label className="block text-xs font-bold text-black">
-                          Reason for rejection
-                        </label>
-                        <textarea
-                          value={rejectReason}
-                          onChange={(e) => setRejectReason(e.target.value)}
-                          className="glass-input w-full px-4 py-3 min-h-[110px] resize-none"
-                          placeholder="Explain why this reservation request is being rejected."
-                        />
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleReject(req.id)}
-                            disabled={actionLoading === req.id || !rejectReason.trim()}
-                            className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-sm font-bold ui-button-red disabled:opacity-50"
-                          >
-                            Confirm Rejection
-                          </button>
-                          <button
-                            onClick={() => {
-                              setRejectingReservationId(null);
-                              setRejectReason('');
-                            }}
-                            className="px-4 py-2 text-sm font-bold text-black hover:text-primary transition-all"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <AdminPendingTab
+          approverEmail={approverEmail}
+          buildingName={buildingName}
+          requests={requests}
+          onReload={reloadDashboard}
+        />
       )}
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ─── TAB: INBOX ──────────────────────────────────────────── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      {activeTab === 'inbox' && (() => {
-        const filteredInbox = inboxFilter === 'all'
-          ? adminRequests
-          : adminRequests.filter((r) => r.status === inboxFilter);
-        const openCount = adminRequests.filter((r) => r.status === 'open').length;
-
-        const handleInboxReply = async (requestId: string) => {
-          if (!inboxReplyText.trim()) return;
-          setInboxSubmitting(true);
-          try {
-            await respondToAdminRequest(requestId, inboxReplyText.trim());
-            setInboxReplyingTo(null);
-            setInboxReplyText('');
-            await reloadDashboard();
-          } catch (err) {
-            console.error('Failed to respond:', err);
-          }
-          setInboxSubmitting(false);
-        };
-
-        const typeIcon = (type: string) => {
-          switch (type) {
-            case 'equipment': return '🔧';
-            case 'general': return '💬';
-            default: return '📋';
-          }
-        };
-
-        const formatRequestTimestamp = (ts: { toDate?: () => Date } | undefined): string => {
-          return formatDateTime(ts);
-        };
-
-        return (
-          <div>
-            {/* Staff-to-staff messaging (Admin <-> Utility/Faculty) */}
-            <MessagesSection
-              title="Staff Messages"
-              subtitle="Direct conversations with utility staff and faculty."
-            />
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-6 py-4 border border-white/30">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                  User Requests
-                  {openCount > 0 && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-blue">
-                      {openCount} new
-                    </span>
-                  )}
-                </h3>
-                <p className="text-gray-600 mt-1 text-sm">
-                  Support requests from users in <span className="ui-text-teal font-bold">{buildingName}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-              {(['all', 'open', 'responded', 'closed'] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setInboxFilter(f)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
-                    inboxFilter === f
-                      ? 'bg-primary text-white border border-primary'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:text-primary'
-                  }`}
-                >
-                  {f === 'all' ? `All (${adminRequests.length})` : `${f} (${adminRequests.filter(r => r.status === f).length})`}
-                </button>
-              ))}
-            </div>
-
-            {/* Messages */}
-            <div className="space-y-4">
-              {filteredInbox.length === 0 ? (
-                <div className="glass-card p-12 !rounded-xl text-center">
-                  <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                  <p className="text-sm text-black font-bold">No messages</p>
-                  <p className="text-xs text-black mt-1">
-                    {inboxFilter === 'all' ? 'Your inbox is empty' : `No ${inboxFilter} messages`}
-                  </p>
-                </div>
-              ) : (
-                filteredInbox.map((req) => {
-                  const isExpanded = inboxExpandedId === req.id;
-                  return (
-                    <div key={req.id} className="glass-card !rounded-xl overflow-hidden">
-                      {/* Clickable Header */}
-                      <button
-                        onClick={() => setInboxExpandedId(isExpanded ? null : req.id)}
-                        className="w-full p-5 text-left hover:bg-primary/10 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm shrink-0">
-                              {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <h4 className="text-sm font-bold text-black">{req.userName}</h4>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                  req.status === 'open' ? 'ui-badge-blue' :
-                                  req.status === 'responded' ? 'ui-badge-green' :
-                                  'ui-badge-gray'
-                                } capitalize`}>
-                                  {req.status}
-                                </span>
-                              </div>
-                              <p className="text-xs text-black">
-                                <span className="mr-1">{typeIcon(req.type)}</span>
-                                {req.type} · {req.subject}
-                                {req.createdAt && <span className="ml-2 text-black"> | {formatRequestTimestamp(req.createdAt)}</span>}
-                              </p>
-                            </div>
-                          </div>
-                          <svg className={`w-5 h-5 text-black transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </button>
-
-                      {/* Expanded Detail */}
-                      {isExpanded && (
-                        <div className="border-t border-dark/5 px-5 pb-5">
-                          {/* User's Message */}
-                          <div className="mt-4">
-                            <p className="text-xs font-bold text-black mb-2">Message</p>
-                            <p className="text-sm text-black leading-relaxed bg-dark/3 border border-dark/5 rounded-xl p-3">{req.message}</p>
-                          </div>
-
-                          {/* Admin Response */}
-                          {req.adminResponse && (
-                            <div className="mt-4">
-                              <p className="text-xs font-bold ui-text-green mb-2">Your Response</p>
-                              <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
-                                <p className="text-sm text-black leading-relaxed">{req.adminResponse}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Reply Section */}
-                          {req.status === 'open' && (
-                            <>
-                              {inboxReplyingTo === req.id ? (
-                                <div className="space-y-3 mt-4 pt-4 border-t border-dark/5">
-                                  <textarea
-                                    value={inboxReplyText}
-                                    onChange={(e) => setInboxReplyText(e.target.value)}
-                                    className="glass-input w-full px-4 py-3 min-h-[100px] resize-none"
-                                    placeholder="Type your response..."
-                                    autoFocus
-                                  />
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => handleInboxReply(req.id)}
-                                      disabled={inboxSubmitting || !inboxReplyText.trim()}
-                                      className="btn-primary px-5 py-2 text-sm flex items-center gap-2"
-                                    >
-                                      {inboxSubmitting ? (
-                                        <>
-                                          <svg className="animate-spin h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                          </svg>
-                                          Sending...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                          </svg>
-                                          Send Response
-                                        </>
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => { setInboxReplyingTo(null); setInboxReplyText(''); }}
-                                      className="px-4 py-2 text-sm font-bold text-black hover:text-primary transition-all"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setInboxReplyingTo(req.id)}
-                                  className="mt-4 px-4 py-2 rounded-xl text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                  </svg>
-                                  Reply
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {activeTab === 'inbox' && (
+        <AdminInboxTab
+          adminRequests={adminRequests}
+          buildingName={buildingName}
+          onReload={reloadDashboard}
+        />
+      )}
     </main>
   );
 }

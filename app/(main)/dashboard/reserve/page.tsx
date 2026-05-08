@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DaySchedulePanel from '@/components/rooms/DaySchedulePanel';
+import DaySchedulePanel from '@/components/rooms/schedules/DaySchedulePanel';
 import RoomAvailabilityPicker from '@/components/rooms/RoomAvailabilityPicker';
 import RoomCard from '@/components/rooms/RoomCard';
 import RoomAssistantWidget from '@/components/rooms/RoomAssistantWidget';
