@@ -13,7 +13,6 @@ import { getManagedBuildingDisplayLabel } from '@/components/admin/dashboard/sha
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
-import type { AdminRequest } from '@/lib/admin/adminRequests';
 import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
 import { getBuildingById } from '@/lib/buildings/buildings';
 import { getFeedbackByBuilding } from '@/lib/feedback/feedback';
@@ -64,8 +63,6 @@ export default function AdminDashboard({
     useState<FeedbackSentimentSummary | null>(null);
   const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [buildingFloors, setBuildingFloors] = useState(0);
 
   const reloadDashboard = useCallback(async () => {
@@ -73,15 +70,14 @@ export default function AdminDashboard({
       return;
     }
 
-    setDashboardLoading(true);
-
     try {
       const [snapshot, feedbackSnapshot] = await Promise.all([
-        fetchAdminDashboardSnapshot(buildingId),
+        fetchAdminDashboardSnapshot(buildingId, {
+          includeRooms: activeTab === 'dashboard',
+        }),
         getFeedbackByBuilding(buildingId),
       ]);
 
-      setAdminRequests(snapshot.adminRequests);
       setAllReservations(snapshot.allReservations);
       setFeedbackList(feedbackSnapshot.feedback);
       setFeedbackSummary(feedbackSnapshot.summary);
@@ -91,7 +87,6 @@ export default function AdminDashboard({
       setSchedules(snapshot.schedules);
     } catch (error) {
       console.warn('Failed to load admin dashboard snapshot:', error);
-      setAdminRequests([]);
       setAllReservations([]);
       setFeedbackList([]);
       setFeedbackSummary(null);
@@ -99,13 +94,15 @@ export default function AdminDashboard({
       setRoomHistory([]);
       setRooms([]);
       setSchedules([]);
-    } finally {
-      setDashboardLoading(false);
     }
-  }, [buildingId, firebaseUser?.uid]);
+  }, [activeTab, buildingId, firebaseUser?.uid]);
 
   useEffect(() => {
-    void reloadDashboard();
+    const timeoutId = window.setTimeout(() => {
+      void reloadDashboard();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [reloadDashboard]);
 
   useEffect(() => {
@@ -279,11 +276,8 @@ export default function AdminDashboard({
           buildingFloors={buildingFloors}
           buildingId={buildingId}
           buildingName={buildingName}
-          dashboardLoading={dashboardLoading}
           managedBuildings={managedBuildings}
           onBuildingChange={setSelectedBuildingId}
-          onReload={reloadDashboard}
-          rooms={rooms}
         />
       )}
 
@@ -309,11 +303,7 @@ export default function AdminDashboard({
       )}
 
       {activeTab === 'inbox' && (
-        <AdminInboxTab
-          adminRequests={adminRequests}
-          buildingName={buildingName}
-          onReload={reloadDashboard}
-        />
+        <AdminInboxTab />
       )}
     </main>
   );

@@ -62,6 +62,16 @@ export type RoomInput = Omit<
   | "checkInMethod"
 >;
 
+export interface RoomFloorCount {
+  floor: string;
+  count: number;
+}
+
+export interface RoomCountSummary {
+  floors: RoomFloorCount[];
+  total: number;
+}
+
 export interface RoomStatusUpdate {
   status: RoomStatusValue;
   reservedBy?: string | null;
@@ -344,6 +354,21 @@ export async function getRoomsByBuildingAndFloor(
   });
 
   return nextRooms;
+}
+
+export async function getRoomCountsByBuilding(
+  buildingId: string,
+  floors: string[] = []
+): Promise<RoomCountSummary> {
+  return apiRequest<RoomCountSummary>("/api/rooms", {
+    method: "GET",
+    params: {
+      buildingId,
+      counts: true,
+      floors: floors.length > 0 ? floors.join("|") : undefined,
+    },
+    userId: auth.currentUser?.uid,
+  });
 }
 
 export async function getAvailableRoomsByBuilding(

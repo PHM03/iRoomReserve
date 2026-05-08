@@ -31,6 +31,10 @@ export interface AdminDashboardSnapshot {
   schedules: Schedule[];
 }
 
+interface FetchAdminDashboardSnapshotOptions {
+  includeRooms?: boolean;
+}
+
 function reviveTimestamp(value: TimestampLike) {
   if (!value) {
     return value ?? undefined;
@@ -76,12 +80,15 @@ function reviveRecordTimestamps<T extends object>(
   return nextRecord;
 }
 
-export async function fetchAdminDashboardSnapshot(buildingId: string) {
+export async function fetchAdminDashboardSnapshot(
+  buildingId: string,
+  options: FetchAdminDashboardSnapshotOptions = {}
+) {
   const snapshot = await apiRequest<AdminDashboardSnapshot>(
     "/api/admin/dashboard",
     {
       method: "GET",
-      params: { buildingId },
+      params: { buildingId, includeRooms: options.includeRooms ?? true },
     }
   );
 

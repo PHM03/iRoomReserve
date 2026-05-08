@@ -28,6 +28,11 @@ interface RoomRecord {
   activeReservationId?: string | null;
 }
 
+interface RoomFloorCount {
+  floor: string;
+  count: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -35,7 +40,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const buildingId = searchParams.get("buildingId");
+    const countsOnly = searchParams.get("counts") === "true";
     const floor = searchParams.get("floor");
+    const countFloors = searchParams
+      .get("floors")
+      ?.split("|")
+      .map((value) => value.trim())
+      .filter(Boolean);
     const roomIds = searchParams
       .get("roomIds")
       ?.split(",")
@@ -47,6 +58,34 @@ export async function GET(request: NextRequest) {
       throw new Error(
         "Firebase Admin Firestore is not configured. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY."
       );
+    }
+
+    if (countsOnly) {
+      if (!buildingId) {
+        return NextResponse.json(
+          { error: { code: "missing_building_id", message: "buildingId is required." } },
+          { status: 400 }
+        );
+      }
+
+      const buildingRoomsQuery = adminDb
+        .collection("rooms")
+        .where("buildingId", "==", buildingId);
+      const [totalSnapshot, ...floorSnapshots] = await Promise.all([
+        buildingRoomsQuery.count().get(),
+        ...(countFloors ?? []).map((countFloor) =>
+          buildingRoomsQuery.where("floor", "==", countFloor).count().get()
+        ),
+      ]);
+      const floors: RoomFloorCount[] = (countFloors ?? []).map((countFloor, index) => ({
+        floor: countFloor,
+        count: floorSnapshots[index]?.data().count ?? 0,
+      }));
+
+      return NextResponse.json({
+        floors,
+        total: totalSnapshot.data().count,
+      });
     }
 
     const baseSnapshot = roomIds?.length

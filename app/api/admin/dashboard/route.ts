@@ -177,6 +177,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const buildingId = searchParams.get("buildingId")?.trim() ?? "";
+    const includeRooms = searchParams.get("includeRooms") !== "false";
 
     if (!buildingId) {
       return NextResponse.json(
@@ -202,7 +203,9 @@ export async function GET(request: NextRequest) {
       roomHistorySnapshot,
       adminRequestsSnapshot,
     ] = await Promise.all([
-      adminDb.collection("rooms").where("buildingId", "==", buildingId).get(),
+      includeRooms
+        ? adminDb.collection("rooms").where("buildingId", "==", buildingId).get()
+        : Promise.resolve(null),
       adminDb.collection("reservations").where("buildingId", "==", buildingId).get(),
       adminDb
         .collection("notifications")
@@ -214,9 +217,11 @@ export async function GET(request: NextRequest) {
       adminDb.collection("adminRequests").where("buildingId", "==", buildingId).get(),
     ]);
 
-    const rooms = roomsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
-      .sort(sortRooms);
+    const rooms = roomsSnapshot
+      ? roomsSnapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
+          .sort(sortRooms)
+      : [];
     const allReservations = (
       await Promise.all(
         reservationsSnapshot.docs.map(async (doc) => {
