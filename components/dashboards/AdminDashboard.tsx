@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
-import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
