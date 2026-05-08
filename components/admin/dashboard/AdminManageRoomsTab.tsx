@@ -23,7 +23,7 @@ interface BuildingOption {
   name: string;
 }
 
-interface AdminRoomsTabProps {
+interface AdminManageRoomsTabProps {
   activeBuildingLabel: string;
   buildingFloors: number;
   buildingId: string;
@@ -50,7 +50,7 @@ function sortFloors(floors: string[]) {
   });
 }
 
-export default function AdminRoomsTab({
+export default function AdminManageRoomsTab({
   activeBuildingLabel,
   buildingFloors,
   buildingId,
@@ -60,7 +60,7 @@ export default function AdminRoomsTab({
   onBuildingChange,
   onReload,
   rooms,
-}: AdminRoomsTabProps) {
+}: AdminManageRoomsTabProps) {
   const [addRoomStep, setAddRoomStep] = useState(0);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomFloor, setNewRoomFloor] = useState('');
@@ -456,7 +456,7 @@ export default function AdminRoomsTab({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1.5">Capacity</label>
+                <label className="block text-xs font-bold text-black mb-1.5">Maximum Capacity</label>
                 <input
                   type="number"
                   value={newRoomCapacity}
@@ -642,7 +642,7 @@ export default function AdminRoomsTab({
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-bold text-black">Capacity</label>
+                      <label className="mb-1.5 block text-xs font-bold text-black">Maximum Capacity</label>
                       <input
                         type="number"
                         value={editCapacity}
@@ -689,7 +689,7 @@ export default function AdminRoomsTab({
                           id: room.buildingId,
                           name: room.buildingName,
                         })}{' '}
-                        · {room.roomType || 'Room'} · Capacity: {room.capacity}
+                        · {room.roomType || 'Room'} · Maximum Capacity: {room.capacity}
                       </p>
                     </div>
                   </div>

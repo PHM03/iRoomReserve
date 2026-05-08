@@ -167,7 +167,7 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
   }, [buildingId, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (buildingId && activeTab === 'add-rooms') {
+    if (buildingId && activeTab === 'manage-rooms') {
       getBuildingById(buildingId).then((building) => {
         if (building) setBuildingFloors(building.floors);
       });

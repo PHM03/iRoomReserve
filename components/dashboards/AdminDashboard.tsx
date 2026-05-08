@@ -8,7 +8,7 @@ import AdminInboxTab from '@/components/admin/dashboard/AdminInboxTab';
 import AdminOverviewTab from '@/components/admin/dashboard/AdminOverviewTab';
 import AdminPendingTab from '@/components/admin/dashboard/AdminPendingTab';
 import AdminRoomHistoryTab from '@/components/admin/dashboard/AdminRoomHistoryTab';
-import AdminRoomsTab from '@/components/admin/dashboard/AdminRoomsTab';
+import AdminManageRoomsTab from '@/components/admin/dashboard/AdminManageRoomsTab';
 import { getManagedBuildingDisplayLabel } from '@/components/admin/dashboard/shared';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
@@ -274,7 +274,7 @@ export default function AdminDashboard({
       )}
 
       {activeTab === 'manage-rooms' && (
-        <AdminRoomsTab
+        <AdminManageRoomsTab
           activeBuildingLabel={activeBuildingLabel}
           buildingFloors={buildingFloors}
           buildingId={buildingId}
