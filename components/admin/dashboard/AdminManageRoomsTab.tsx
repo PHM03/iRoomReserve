@@ -50,6 +50,23 @@ function sortFloors(floors: string[]) {
   });
 }
 
+function getRoomTypeBadgeLetter(roomType?: string) {
+  switch (roomType) {
+    case 'Conference Room':
+      return 'C';
+    case 'Glass Room':
+      return 'G';
+    case 'Classroom':
+      return 'R';
+    case 'Specialized Room':
+      return 'S';
+    case 'Gymnasium':
+      return 'Y';
+    default:
+      return 'R';
+  }
+}
+
 export default function AdminManageRoomsTab({
   activeBuildingLabel,
   buildingFloors,
@@ -377,7 +394,7 @@ export default function AdminManageRoomsTab({
                   type="text"
                   value={newRoomName}
                   onChange={(event) => setNewRoomName(event.target.value)}
-                  placeholder="e.g. Room 312"
+                  placeholder="e.g. Room 312 or GD3 506"
                   className="glass-input w-full px-4 py-2.5 text-sm"
                 />
               </div>
@@ -399,16 +416,16 @@ export default function AdminManageRoomsTab({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-black mb-1.5">Beacon ID</label>
+              <label className="block text-xs font-bold text-black mb-1.5">Beacon ID (building-room-beacon)</label>
               <input
                 type="text"
                 value={newRoomBeaconId}
                 onChange={(event) => setNewRoomBeaconId(event.target.value)}
-                placeholder="e.g. ESP32_ROOM_301"
+                placeholder="e.g. dc-312-beacon or gd3-506-beacon"
                 className="glass-input w-full px-4 py-2.5 text-sm"
               />
               <p className="mt-1.5 text-xs text-black">
-                Use the exact ESP32 BLE device name for Bluetooth room check-in.
+                Use the exact ESP32 BLE device name for Bluetooth room check-in. Not required for all rooms.
               </p>
             </div>
 
@@ -680,7 +697,7 @@ export default function AdminManageRoomsTab({
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-lg shrink-0">
-                      R
+                      {getRoomTypeBadgeLetter(room.roomType)}
                     </div>
                     <div>
                       <h4 className="font-bold text-black text-sm">{room.name}</h4>
