@@ -23,10 +23,6 @@ interface AdminRoomStatusSectionProps {
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Occupied':
-        return 'ui-badge-orange';
-      case 'Reserved':
-        return 'ui-badge-blue';
       case 'Unavailable':
         return 'ui-badge-red';
       case 'Available':
@@ -80,13 +76,9 @@ export default function AdminRoomStatusSection({
                   {floorGroup.rooms.map((room) => {
                     const effective = computeEffectiveStatus(room);
                     const statusBorder =
-                      effective.status === 'Occupied'
-                        ? 'border-orange-500/40'
-                        : effective.status === 'Reserved'
-                          ? 'border-blue-500/40'
-                          : effective.status === 'Unavailable'
-                            ? 'border-red-500/40'
-                            : 'border-green-500/40';
+                      effective.status === 'Unavailable'
+                        ? 'border-red-500/40'
+                        : 'border-green-500/40';
 
                     return (
                       <div key={room.id} className={`glass-card p-5 border-l-4 ${statusBorder}`}>
@@ -115,26 +107,6 @@ export default function AdminRoomStatusSection({
                             }`}
                           >
                             Available
-                          </button>
-                          <button
-                            onClick={() => onStatusChange(room.id, 'Reserved')}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Reserved'
-                                ? 'ui-button-blue'
-                                : 'ui-button-gray'
-                            }`}
-                          >
-                            Reserved
-                          </button>
-                          <button
-                            onClick={() => onStatusChange(room.id, 'Occupied')}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Occupied'
-                                ? 'ui-button-orange'
-                                : 'ui-button-gray'
-                            }`}
-                          >
-                            Occupied
                           </button>
                           <button
                             onClick={() => onStatusChange(room.id, 'Unavailable')}
