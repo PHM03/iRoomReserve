@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   onAllUsers,

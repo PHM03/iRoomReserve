@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
 import StatusBadge from '@/components/ui/StatusBadge';
-import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   AdminRequest,

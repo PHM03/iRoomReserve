@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import Toast from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
 import {
