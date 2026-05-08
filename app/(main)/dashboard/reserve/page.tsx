@@ -36,7 +36,8 @@ type RoomFilterKey =
   | 'glass-room'
   | 'conference-room'
   | 'specialized-room'
-  | 'gymnasium';
+  | 'gymnasium'
+  | 'open-area';
 type AssistantRoomType = '' | 'glass' | 'lecture' | 'lab';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -50,6 +51,7 @@ const FILTER_CHIPS: Array<{ key: RoomFilterKey; label: string }> = [
   { key: 'conference-room', label: 'Conference Room' },
   { key: 'specialized-room', label: 'Specialized Room' },
   { key: 'gymnasium', label: 'Gymnasium' },
+  { key: 'open-area', label: 'Open Area'},
   { key: 'available', label: 'Available' },
 ];
 const BUILDING_FLOORS: Record<string, string[]> = {
@@ -149,6 +151,8 @@ function matchesRoomType(room: Room, filter: Exclude<RoomFilterKey, 'available'>
       return roomType.includes('specialized');
     case 'gymnasium':
       return roomType.includes('gymnasium') || roomType.includes('gym');
+    case 'open-area':
+      return roomType.includes('open area');
     default:
       return false;
   }

@@ -64,6 +64,7 @@ export const ROOM_TYPE_OPTIONS = [
   'Classroom',
   'Specialized Room',
   'Gymnasium',
+  'Open Area',
 ] as const;
 
 export const ROOM_TYPE_LABELS: Record<(typeof ROOM_TYPE_OPTIONS)[number], string> = {
@@ -72,7 +73,8 @@ export const ROOM_TYPE_LABELS: Record<(typeof ROOM_TYPE_OPTIONS)[number], string
   'Classroom': 'Classroom',
   'Specialized Room':
     'Specialized Room (Laboratory, Storage Room, and other program-specific facilities)',
-  Gymnasium: 'Gymnasium',
+  'Gymnasium': 'Gymnasium',
+  'Open Area': 'Open Area',
 };
 
 export const ROOM_AC_OPTIONS = [
