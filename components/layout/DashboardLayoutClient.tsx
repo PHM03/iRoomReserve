@@ -26,19 +26,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const tabTitles: Record<string, string> = {
-      dashboard: "IRoomReserve | Dashboard",
-      pending: "IRoomReserve | Pending",
-      "add-rooms": "IRoomReserve | Add Rooms",
-      feedback: "IRoomReserve | Feedback",
-      "room-history": "IRoomReserve | Room History",
-      inbox: "IRoomReserve | Inbox",
-      "status-scheduling": "IRoomReserve | Status & Scheduling",
-      "room-status-monitor": "IRoomReserve | Room Status Monitor",
-      "ble-beacon-status": "IRoomReserve | BLE Beacon Status",
-      "class-schedules": "IRoomReserve | Class Schedules",
-      reserve: "IRoomReserve | Reserve",
-      "my-reservations": "IRoomReserve | My Reservations",
-      "room-status": "IRoomReserve | Room Status",
+      dashboard: "iRoomReserve | Dashboard",
+      pending: "iRoomReserve | Pending",
+      "manage-rooms": "iRoomReserve | Manage Rooms",
+      feedback: "iRoomReserve | Feedback",
+      "room-history": "iRoomReserve | Room History",
+      inbox: "iRoomReserve | Inbox",
+      "status-scheduling": "iRoomReserve | Status & Scheduling",
+      "room-status-monitor": "iRoomReserve | Room Status Monitor",
+      "ble-beacon-status": "iRoomReserve | BLE Beacon Status",
+      "class-schedules": "iRoomReserve | Class Schedules",
+      reserve: "iRoomReserve | Reserve",
+      "my-reservations": "iRoomReserve | My Reservations",
+      "room-status": "iRoomReserve | Room Status",
     };
     const pathToTab: Record<string, string> = {
       "/dashboard/inbox": "inbox",
@@ -51,7 +51,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const currentTab =
       pathname === "/dashboard" ? activeTab : pathToTab[pathname];
     document.title =
-      tabTitles[currentTab ?? ""] ?? "IRoomReserve | Dashboard";
+      tabTitles[currentTab ?? ""] ?? "iRoomReserve | Dashboard";
   }, [activeTab, pathname]);
 
   // Show loading while auth resolves

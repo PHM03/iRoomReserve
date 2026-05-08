@@ -94,6 +94,15 @@ function getFirebaseAdminConfig() {
   };
 }
 
+function getFirebaseStorageBucket() {
+  const rawValue =
+    process.env.FIREBASE_STORAGE_BUCKET?.trim() ??
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() ??
+    "";
+
+  return rawValue.replace(/^gs:\/\//, "").replace(/\/$/, "");
+}
+
 if (!admin.apps.length) {
   clearInvalidProxyEnv();
 
@@ -103,6 +112,7 @@ if (!admin.apps.length) {
   );
 
   const { projectId, clientEmail, privateKey } = getFirebaseAdminConfig();
+  const storageBucket = getFirebaseStorageBucket();
 
   try {
     admin.initializeApp({
@@ -111,6 +121,7 @@ if (!admin.apps.length) {
         clientEmail,
         privateKey,
       }),
+      ...(storageBucket ? { storageBucket } : {}),
     });
   } catch (error) {
     const errorWithCode =
@@ -133,6 +144,7 @@ if (!admin.apps.length) {
 
 export const auth = admin.auth();
 export const db = admin.firestore();
+export const storage = admin.storage();
 export const Timestamp = admin.firestore.Timestamp;
 
 export function deleteField() {

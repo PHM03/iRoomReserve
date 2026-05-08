@@ -235,6 +235,7 @@ export default function ReserveRoomPage() {
     name: string;
     path: string;
     size: number;
+    url: string;
   } | null>(null);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [approvalDocumentError, setApprovalDocumentError] = useState('');
@@ -419,6 +420,16 @@ export default function ReserveRoomPage() {
     }
   }, [selectedTimeConflict, selectedUserConflict, timeError]);
 
+  useEffect(() => {
+    console.log('[reservation-form] concept paper state updated', {
+      file: approvalDocument,
+      hasFile: Boolean(approvalDocument),
+      name: approvalDocument?.name ?? null,
+      size: approvalDocument?.size ?? null,
+      type: approvalDocument?.type ?? null,
+    });
+  }, [approvalDocument]);
+
   function getFloorsForActiveBuilding(): string[] {
     if (!activeCampus) return [];
     if (activeCampus === 'digi') return BUILDING_FLOORS.digi;
@@ -541,6 +552,13 @@ export default function ReserveRoomPage() {
     event: React.ChangeEvent<HTMLInputElement>
   ) {
     const nextFile = event.target.files?.[0] ?? null;
+    console.log('[reservation-form] selected concept paper file', {
+      file: nextFile,
+      hasFile: Boolean(nextFile),
+      name: nextFile?.name ?? null,
+      size: nextFile?.size ?? null,
+      type: nextFile?.type ?? null,
+    });
     setApprovalDocument(nextFile);
     setUploadedApprovalDocument(null);
     setApprovalDocumentError('');
@@ -554,11 +572,18 @@ export default function ReserveRoomPage() {
 
     try {
       const uploadedDocument = await uploadReservationDocument(nextFile);
+      console.log('[reservation-form] concept paper uploaded successfully', {
+        hasFileUrl: Boolean(uploadedDocument.url),
+        name: uploadedDocument.name,
+        path: uploadedDocument.path,
+        size: uploadedDocument.size,
+      });
       setUploadedApprovalDocument({
         contentType: uploadedDocument.contentType,
         name: uploadedDocument.name,
         path: uploadedDocument.path,
         size: uploadedDocument.size,
+        url: uploadedDocument.url,
       });
     } catch (error) {
       setApprovalDocumentError(
@@ -742,6 +767,7 @@ export default function ReserveRoomPage() {
               approvalDocumentName: uploadedApprovalDocument.name,
               approvalDocumentPath: uploadedApprovalDocument.path,
               approvalDocumentSize: uploadedApprovalDocument.size,
+              approvalDocumentUrl: uploadedApprovalDocument.url,
             }
           : {}),
         equipment,
@@ -1603,7 +1629,15 @@ export default function ReserveRoomPage() {
                         )}
                         {uploadedApprovalDocument && (
                           <p className="mt-1.5 text-xs font-bold text-primary">
-                            Uploaded: {uploadedApprovalDocument.name}
+                            Uploaded:{' '}
+                            <a
+                              href={uploadedApprovalDocument.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline underline-offset-2 hover:text-primary-hover"
+                            >
+                              {uploadedApprovalDocument.name}
+                            </a>
                           </p>
                         )}
                         {!uploadedApprovalDocument && approvalDocument && !documentUploading && !approvalDocumentError && (
@@ -1669,7 +1703,7 @@ export default function ReserveRoomPage() {
 
                   <button
                     onClick={handleSubmitReservation}
-                    disabled={submitting || validatingApprover}
+                    disabled={submitting || validatingApprover || documentUploading}
                     className="btn-primary flex w-full items-center justify-center px-4 py-3"
                   >
                     {submitting || validatingApprover ? (

@@ -144,6 +144,30 @@ function isVisiblePendingReservationForBuildingAdmin(
   return currentStep?.role === "building_admin";
 }
 
+async function getApprovalDocumentUrl(reservation: DashboardReservation) {
+  const storedUrl =
+    typeof reservation.approvalDocumentUrl === "string"
+      ? reservation.approvalDocumentUrl
+      : null;
+
+  try {
+    return (
+      (await createReservationDocumentSignedUrl({
+      path:
+        typeof reservation.approvalDocumentPath === "string"
+          ? reservation.approvalDocumentPath
+          : null,
+      })) ?? storedUrl
+    );
+  } catch (error) {
+    console.warn("Failed to resolve reservation approval document URL", {
+      error,
+      reservationId: reservation.id,
+    });
+    return storedUrl;
+  }
+}
+
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
@@ -203,12 +227,7 @@ export async function GET(request: NextRequest) {
 
           return {
             ...reservation,
-            approvalDocumentUrl: await createReservationDocumentSignedUrl({
-              path:
-                typeof reservation.approvalDocumentPath === "string"
-                  ? reservation.approvalDocumentPath
-                  : null,
-            }),
+            approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
           } as DashboardReservation;
         })
       )

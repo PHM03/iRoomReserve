@@ -1,6 +1,7 @@
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
 import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import type { AdminTab } from '@/components/layout/NavBar';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import type { Reservation } from '@/lib/reservations/reservations';
 import type { Room } from '@/lib/rooms/rooms';
 import { formatTimeRange } from '@/lib/utils/dateTime';
@@ -9,6 +10,7 @@ import { formatReservationDates, RoleBadge, StatusBadge } from './shared';
 interface AdminOverviewTabProps {
   allReservations: Reservation[];
   availableCount: number;
+  buildingId: string;
   buildingName: string;
   computeEffectiveStatus: (room: Room) => { status: string; detail: string };
   currentUserId?: string | null;
@@ -23,6 +25,7 @@ interface AdminOverviewTabProps {
 export default function AdminOverviewTab({
   allReservations,
   availableCount,
+  buildingId,
   buildingName,
   computeEffectiveStatus,
   currentUserId,
@@ -33,144 +36,167 @@ export default function AdminOverviewTab({
   rooms,
   setActiveTab,
 }: AdminOverviewTabProps) {
+  const dashboardStats = [
+    { label: 'Total Rooms', value: rooms.length, valueClass: 'text-black' },
+    { label: 'Reserved', value: reservedCount, valueClass: 'ui-text-blue' },
+    { label: 'Available', value: availableCount, valueClass: 'ui-text-green' },
+    {
+      label: 'Pending Requests',
+      value: pendingCount,
+      valueClass: 'ui-text-yellow',
+      action: () => setActiveTab('pending'),
+    },
+    { label: 'Occupied', value: ongoingCount, valueClass: 'ui-text-orange' },
+  ];
+
+  const dashboardRoomRows = rooms
+    .map((room) => ({
+      room,
+      effective: computeEffectiveStatus(room),
+      floorLabel: getFloorDisplayLabel(room.floor, {
+        id: buildingId,
+        name: buildingName,
+      }),
+    }))
+    .sort(
+      (left, right) =>
+        left.floorLabel.localeCompare(right.floorLabel) ||
+        left.room.name.localeCompare(right.room.name, undefined, { numeric: true })
+    );
+
   return (
-    <div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-        <div className="glass-card p-4">
-          <p className="text-xs text-black font-bold">Total Rooms</p>
-          <p className="text-2xl font-bold text-black mt-1">{rooms.length}</p>
-        </div>
-        <div className="glass-card p-4">
-          <p className="text-xs text-black font-bold">Reserved</p>
-          <p className="text-2xl font-bold ui-text-blue mt-1">{reservedCount}</p>
-        </div>
-        <div className="glass-card p-4">
-          <p className="text-xs text-black font-bold">Available</p>
-          <p className="text-2xl font-bold ui-text-green mt-1">{availableCount}</p>
-        </div>
-        <button
-          onClick={() => setActiveTab('pending')}
-          className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"
-        >
-          <p className="text-xs text-black font-bold">Pending Requests</p>
-          <p className="text-2xl font-bold ui-text-yellow mt-1">{pendingCount}</p>
-          <p className="text-[10px] text-black mt-0.5">Click to review →</p>
-        </button>
-        <div className="glass-card p-4">
-          <p className="text-xs text-black font-bold">Occupied</p>
-          <p className="text-2xl font-bold ui-text-orange mt-1">{ongoingCount}</p>
-        </div>
+    <div className="space-y-2">
+      <div className="grid grid-cols-5 gap-2">
+        {dashboardStats.map((stat) => {
+          const content = (
+            <>
+              <p className="truncate text-[11px] font-bold text-black/65">{stat.label}</p>
+              <p className={`mt-0.5 text-xl font-bold leading-none ${stat.valueClass}`}>
+                {stat.value}
+              </p>
+            </>
+          );
+
+          return stat.action ? (
+            <button
+              key={stat.label}
+              type="button"
+              onClick={stat.action}
+              className="glass-card p-2 text-left transition-all hover:!border-yellow-500/40"
+            >
+              {content}
+            </button>
+          ) : (
+            <div key={stat.label} className="glass-card p-2">
+              {content}
+            </div>
+          );
+        })}
       </div>
 
-      <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-4">
-        <h3 className="text-lg font-bold text-gray-800">
-          Live Room Status <span className="text-sm text-gray-600 font-normal ml-2">({buildingName})</span>
-        </h3>
-      </div>
-      {rooms.length === 0 ? (
-        <div className="glass-card p-8 text-center mb-8">
-          <p className="text-sm text-black">No rooms configured yet.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-          {rooms.map((room) => {
-            const effective = computeEffectiveStatus(room);
-            const borderColor =
-              effective.status === 'Occupied'
-                ? 'border-orange-500/40'
-                : effective.status === 'Reserved'
-                  ? 'border-blue-500/40'
-                  : effective.status === 'Unavailable'
-                    ? 'border-red-500/40'
-                    : 'border-green-500/40';
+      <div className="grid gap-2 lg:grid-cols-[1.15fr_1fr_0.9fr]">
+        <section className="glass-card p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-black">Live Room Status</h3>
+            <span className="text-[11px] font-bold text-black/55">{rooms.length} rooms</span>
+          </div>
 
-            return (
-              <div key={room.id} className={`glass-card p-4 border-l-4 ${borderColor}`}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-black">{room.name}</h4>
-                    <p className="text-xs text-black">
-                      {room.floor} · Cap: {room.capacity}
+          {dashboardRoomRows.length === 0 ? (
+            <p className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-3 text-center text-xs text-black">
+              No rooms configured yet.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {dashboardRoomRows.slice(0, 10).map(({ room, effective, floorLabel }) => (
+                <div
+                  key={room.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-black">{room.name}</p>
+                    <p className="truncate text-[10px] text-black/60">
+                      {floorLabel} | Cap {room.capacity}
                     </p>
                   </div>
                   <StatusBadge status={effective.status} />
                 </div>
-                {effective.detail && <p className="text-xs text-black mt-2">{effective.detail}</p>}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              ))}
 
-      <BleSummaryCard
-        buildingName={buildingName}
-        className="mb-8"
-        detailsHref="/admin/ble-status"
-      />
+              {dashboardRoomRows.length > 10 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manage-rooms')}
+                  className="w-full rounded-lg px-2 py-1 text-center text-[11px] font-bold text-primary hover:bg-primary/5"
+                >
+                  +{dashboardRoomRows.length - 10} more rooms
+                </button>
+              ) : null}
+            </div>
+          )}
+        </section>
 
-      <MyReservationTimetable
-        className="mb-8"
-        currentUserId={currentUserId}
-        reservations={allReservations}
-      />
+        <section className="glass-card p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-black">Pending Requests</h3>
+            {requests.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab('pending')}
+                className="text-[11px] font-bold text-primary hover:text-primary-hover"
+              >
+                View all
+              </button>
+            ) : null}
+          </div>
 
-      <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
-        <h3 className="text-lg font-bold text-gray-800">Pending Requests</h3>
-        {requests.length > 0 && (
-          <button
-            onClick={() => setActiveTab('pending')}
-            className="text-sm text-primary font-bold hover:text-primary-hover transition-colors"
-          >
-            View all ({requests.length}) →
-          </button>
-        )}
-      </div>
-      {requests.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <p className="text-sm text-black">No requests waiting for approval.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {requests.slice(0, 3).map((request) => (
-            <button
-              key={request.id}
-              onClick={() => setActiveTab('pending')}
-              className="glass-card p-4 w-full text-left hover:!border-yellow-500/30 transition-all cursor-pointer"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center ui-text-yellow font-bold text-sm shrink-0">
-                  {request.userName
-                    .split(' ')
-                    .map((name) => name[0])
-                    .join('')
-                    .toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-black text-sm">{request.userName}</h4>
+          {requests.length === 0 ? (
+            <p className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-3 text-center text-xs text-black">
+              No requests waiting for approval.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {requests.slice(0, 7).map((request) => (
+                <button
+                  key={request.id}
+                  type="button"
+                  onClick={() => setActiveTab('pending')}
+                  className="w-full rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5 text-left transition-all hover:border-yellow-500/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs font-bold text-black">{request.userName}</p>
                     <RoleBadge role={request.userRole} />
                   </div>
-                  <p className="text-xs text-black mt-0.5">
+                  <p className="mt-0.5 truncate text-[10px] text-black/60">
                     {request.roomName} | {formatReservationDates(request.dates, request.date)} |{' '}
                     {formatTimeRange(request.startTime, request.endTime)}
                   </p>
-                </div>
-                <svg className="w-5 h-5 text-black shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-          ))}
-          {requests.length > 3 && (
-            <button
-              onClick={() => setActiveTab('pending')}
-              className="w-full text-center py-2 text-sm font-bold text-primary/70 hover:text-primary transition-colors"
-            >
-              +{requests.length - 3} more pending...
-            </button>
+                </button>
+              ))}
+              {requests.length > 7 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pending')}
+                  className="w-full rounded-lg px-2 py-1 text-center text-[11px] font-bold text-primary hover:bg-primary/5"
+                >
+                  +{requests.length - 7} more pending
+                </button>
+              ) : null}
+            </div>
           )}
-        </div>
-      )}
+        </section>
+
+        <BleSummaryCard
+          buildingName={buildingName}
+          detailsHref="/admin/ble-status"
+          variant="compact"
+        />
+      </div>
+
+      <MyReservationTimetable
+        compact
+        currentUserId={currentUserId}
+        reservations={allReservations}
+      />
     </div>
   );
 }

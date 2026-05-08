@@ -13,17 +13,17 @@ import { getManagedBuildingDisplayLabel } from '@/components/admin/dashboard/sha
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
+import type { AdminRequest } from '@/lib/admin/adminRequests';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { getBuildingById } from '@/lib/buildings/buildings';
 import { getFeedbackByBuilding } from '@/lib/feedback/feedback';
 import type { Feedback } from '@/lib/feedback/feedback';
 import type { FeedbackSentimentSummary } from '@/lib/feedback/feedback-sentiment';
-import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
-import { getBuildingById } from '@/lib/buildings/buildings';
+import type { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
 import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
 import type { Room } from '@/lib/rooms/rooms';
-import type { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
 import type { Reservation } from '@/lib/reservations/reservations';
 import { isRoomInClass, type Schedule } from '@/lib/schedules/schedules';
-import type { AdminRequest } from '@/lib/admin/adminRequests';
 
 interface AdminDashboardProps {
   firstName: string;
@@ -213,25 +213,35 @@ export default function AdminDashboard({
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
-      <div className="mb-8">
+    <main
+      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 ${
+        activeTab === 'dashboard'
+          ? 'py-3 pt-[82px] pb-4'
+          : 'py-8 pt-[100px] pb-24 md:pb-8'
+      }`}
+    >
+      <div className={activeTab === 'dashboard' ? 'mb-2' : 'mb-8'}>
         {activeTab === 'dashboard' ? (
-          <div>
-            <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
-              <h2 className="text-2xl font-bold text-gray-800">Welcome, {firstName}</h2>
-              <p className="text-gray-600 mt-1">
+          <div className="flex flex-col gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div>
+                <h2 className="text-base font-bold text-gray-800">
+                  Welcome, {firstName}
+                </h2>
+              </div>
+              <p className="text-xs font-bold text-gray-600">
                 Managing: <span className="text-primary font-bold">{buildingName}</span>
               </p>
             </div>
             {managedBuildings.length > 1 && (
-              <div className="mt-4 max-w-xs">
-                <label className="block text-xs font-bold uppercase tracking-wide text-black mb-2">
+              <div className="w-full sm:w-64">
+                <label className="sr-only">
                   Active Building
                 </label>
                 <select
                   value={buildingId}
                   onChange={(event) => setSelectedBuildingId(event.target.value)}
-                  className="glass-input w-full px-4 py-3 bg-dark/6 appearance-none cursor-pointer"
+                  className="glass-input w-full appearance-none bg-dark/6 px-3 py-1.5 text-xs font-bold"
                   style={{ backgroundImage: 'none' }}
                 >
                   {managedBuildings.map((building) => (
@@ -250,6 +260,7 @@ export default function AdminDashboard({
         <AdminOverviewTab
           allReservations={allReservations}
           availableCount={availableCount}
+          buildingId={buildingId}
           buildingName={buildingName}
           computeEffectiveStatus={computeEffectiveStatus}
           currentUserId={firebaseUser?.uid}
