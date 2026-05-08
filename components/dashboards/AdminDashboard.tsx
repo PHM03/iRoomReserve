@@ -109,7 +109,7 @@ export default function AdminDashboard({
   }, [reloadDashboard]);
 
   useEffect(() => {
-    if (buildingId && activeTab === 'add-rooms') {
+    if (buildingId && activeTab === 'manage-rooms') {
       getBuildingById(buildingId).then((building) => {
         if (building) {
           setBuildingFloors(building.floors);
@@ -262,7 +262,7 @@ export default function AdminDashboard({
         />
       )}
 
-      {activeTab === 'add-rooms' && (
+      {activeTab === 'manage-rooms' && (
         <AdminRoomsTab
           activeBuildingLabel={activeBuildingLabel}
           buildingFloors={buildingFloors}

@@ -15,7 +15,7 @@ import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 
 export type AdminTab =
   | 'dashboard'
-  | 'add-rooms'
+  | 'manage-rooms'
   | 'feedback'
   | 'status-scheduling'
   | 'room-history'
@@ -37,7 +37,7 @@ interface NavBarProps {
 const adminLinks: Array<{ label: string; tab: AdminTab }> = [
   { label: 'Dashboard', tab: 'dashboard' },
   { label: 'Pending', tab: 'pending' },
-  { label: 'Add Rooms', tab: 'add-rooms' },
+  { label: 'Manage Rooms', tab: 'manage-rooms' },
   { label: 'Feedback', tab: 'feedback' },
   { label: 'Room History', tab: 'room-history' },
   { label: 'Inbox', tab: 'inbox' },
