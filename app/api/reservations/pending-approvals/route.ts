@@ -52,6 +52,30 @@ function sortReservations(
   );
 }
 
+async function getApprovalDocumentUrl(reservation: PendingApprovalReservation) {
+  const storedUrl =
+    typeof reservation.approvalDocumentUrl === "string"
+      ? reservation.approvalDocumentUrl
+      : null;
+
+  try {
+    return (
+      (await createReservationDocumentSignedUrl({
+      path:
+        typeof reservation.approvalDocumentPath === "string"
+          ? reservation.approvalDocumentPath
+          : null,
+      })) ?? storedUrl
+    );
+  } catch (error) {
+    console.warn("Failed to resolve reservation approval document URL", {
+      error,
+      reservationId: reservation.id,
+    });
+    return storedUrl;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -81,12 +105,7 @@ export async function GET(request: NextRequest) {
 
           return {
             ...reservation,
-            approvalDocumentUrl: await createReservationDocumentSignedUrl({
-              path:
-                typeof reservation.approvalDocumentPath === "string"
-                  ? reservation.approvalDocumentPath
-                  : null,
-            }),
+            approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
           };
         })
       )

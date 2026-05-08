@@ -3,6 +3,7 @@ import { formatTimeRange } from '@/lib/utils/dateTime';
 
 type MyReservationTimetableProps = {
   className?: string;
+  compact?: boolean;
   currentUserId?: string | null;
   reservations: Reservation[];
 };
@@ -102,10 +103,74 @@ function buildEntriesByDay(
 
 export default function MyReservationTimetable({
   className,
+  compact = false,
   currentUserId,
   reservations,
 }: MyReservationTimetableProps) {
   const entriesByDay = buildEntriesByDay(reservations, currentUserId);
+
+  if (compact) {
+    return (
+      <section className={className}>
+        <div className="mb-2 flex items-center justify-between rounded-xl border border-white/30 bg-white px-3 py-2">
+          <h3 className="text-sm font-bold text-gray-800">My Reservation Timetable</h3>
+          <span className="text-[11px] font-bold text-gray-500">Weekly strip</span>
+        </div>
+
+        <div className="glass-card !rounded-xl p-2">
+          <div className="grid grid-cols-6 gap-2">
+            {TIMETABLE_DAYS.map((day) => {
+              const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
+                (left, right) =>
+                  left.startTime.localeCompare(right.startTime) ||
+                  left.roomName.localeCompare(right.roomName, undefined, {
+                    numeric: true,
+                  })
+              );
+
+              return (
+                <div
+                  key={day.value}
+                  className="min-h-[112px] rounded-lg border border-dark/10 bg-white/70 p-2"
+                >
+                  <h4 className="mb-1.5 truncate text-xs font-extrabold text-black">
+                    {day.label.slice(0, 3)}
+                  </h4>
+
+                  {entries.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-dark/10 bg-dark/3 px-1.5 py-4 text-center text-[10px] font-bold text-black/45">
+                      None
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {entries.slice(0, 2).map((entry) => (
+                        <div
+                          key={`${entry.buildingName}:${entry.roomName}:${entry.startTime}:${entry.endTime}`}
+                          className="rounded-lg border border-green-500/20 bg-green-500/10 px-2 py-1.5"
+                        >
+                          <p className="truncate text-[11px] font-bold text-black">
+                            {entry.roomName}
+                          </p>
+                          <p className="truncate text-[10px] font-bold text-primary">
+                            {formatTimeRange(entry.startTime, entry.endTime)}
+                          </p>
+                        </div>
+                      ))}
+                      {entries.length > 2 && (
+                        <p className="text-center text-[10px] font-bold text-black/55">
+                          +{entries.length - 2} more
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={className}>

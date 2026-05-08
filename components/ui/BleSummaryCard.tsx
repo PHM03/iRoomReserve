@@ -23,6 +23,7 @@ interface BleSummaryCardProps {
   pollIntervalMs?: number;
   detailsHref?: string;
   onViewDetails?: () => void;
+  variant?: 'default' | 'compact';
 }
 
 function formatRefreshTime(value: Date | null) {
@@ -46,6 +47,7 @@ export default function BleSummaryCard({
   pollIntervalMs = BLE_MONITOR_REFRESH_INTERVAL_MS,
   detailsHref = '/dashboard/room-status',
   onViewDetails,
+  variant = 'default',
 }: BleSummaryCardProps) {
   const [occupancyData, setOccupancyData] = useState<OccupancyPayload>(
     DEFAULT_OCCUPANCY_PAYLOAD
@@ -160,6 +162,71 @@ export default function BleSummaryCard({
       View Details
     </Link>
   );
+
+  if (variant === 'compact') {
+    return (
+      <section className={`glass-card p-3 ${className}`.trim()}>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-bold text-black">BLE Beacon Summary</h3>
+          <div className="flex items-center gap-2">
+            {viewDetailsControl}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-1 text-[10px] font-bold text-black disabled:opacity-50"
+            >
+              {isRefreshing ? 'Refreshing' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-1.5 text-xs text-black/70">
+            Loading BLE summary...
+          </p>
+        ) : null}
+
+        {errorMessage ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5">
+            <span className="text-[11px] font-bold uppercase text-black/55">Hardware</span>
+            <BleStatusBadge
+              status={hardwareOnline ? 'ONLINE' : 'OFFLINE'}
+              label={hardwareOnline ? 'Online' : 'Offline'}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5">
+            <span className="text-[11px] font-bold uppercase text-black/55">Connection</span>
+            <BleStatusBadge
+              status={occupancyData.connectionStatus}
+              label={formatBleLabel(occupancyData.connectionStatus)}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5">
+            <span className="text-[11px] font-bold uppercase text-black/55">Occupancy</span>
+            <span className="text-sm font-bold text-black">{occupancyData.occupancy}</span>
+          </div>
+          <div className="rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold uppercase text-black/55">Last Updated</span>
+              <span className="truncate text-right text-xs font-bold text-black">
+                {formatBleTimestamp(occupancyData.timestamp)}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] text-black/55">
+              Last refreshed {formatRefreshTime(lastRefreshedAt)} | Next {formatRefreshCountdown(millisecondsUntilRefresh)}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={`glass-card p-5 ${className}`.trim()}>

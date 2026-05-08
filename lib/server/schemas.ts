@@ -163,6 +163,14 @@ function withStudentApprovalDocumentRequirement<
       });
     }
 
+    if (!value.approvalDocumentUrl) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require an uploaded approval document URL.",
+        path: ["approvalDocumentUrl"],
+      });
+    }
+
     if (!value.approvalDocumentMimeType) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

@@ -95,6 +95,7 @@ export interface UploadedReservationDocument {
   name: string;
   path: string;
   size: number;
+  url: string;
 }
 
 function handleReservationListenerError(
@@ -206,6 +207,15 @@ export async function uploadReservationDocument(
     formData.append("reservationId", reservationId.trim());
   }
 
+  console.log("[reservations] uploading concept paper file blob", {
+    contentType: file.type,
+    fileName: file.name,
+    isFile: file instanceof File,
+    reservationId: reservationId?.trim() || null,
+    size: file.size,
+    userId: currentUser?.uid ?? null,
+  });
+
   const response = await fetch(buildUrl("/api/reservations/upload"), {
     method: "POST",
     headers: {
@@ -235,7 +245,14 @@ export async function uploadReservationDocument(
     );
   }
 
-  return payload as UploadedReservationDocument;
+  const uploadedDocument = payload as UploadedReservationDocument;
+  console.log("[reservations] concept paper upload finished", {
+    hasFileUrl: Boolean(uploadedDocument.url),
+    path: uploadedDocument.path,
+    size: uploadedDocument.size,
+  });
+
+  return uploadedDocument;
 }
 
 export async function fetchPendingReservationsForApprover(): Promise<Reservation[]> {

@@ -10,7 +10,6 @@
 !.yarn/releases
 !.yarn/versions
 
-.cursor/
 
 # testing
 /coverage
@@ -31,6 +30,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+.cursor/
+.codex-next-dev/
+.codex
+.codex/
+*.codex
+codex-*.log
+.codex-*.log
+storage.rules
+
 
 # env files (can opt-in for committing if needed)
 .env

@@ -40,14 +40,10 @@ import {
   isRoomInClass,
 } from '@/lib/schedules/schedules';
 import { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
-import {
-  AdminRequest,
-  respondToAdminRequest,
-} from '@/lib/admin/adminRequests';
 import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
 import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
 import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
-import { formatDate, formatDateTime, formatTimeRange } from '@/lib/utils/dateTime';
+import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 import { getBuildingFloorOptions, getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -261,12 +257,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const [schedRoomId, setSchedRoomId] = useState('');
 
   // Inbox state
-  const [adminRequests, setAdminRequests] = useState<AdminRequest[]>([]);
-  const [inboxFilter, setInboxFilter] = useState<'all' | 'open' | 'responded' | 'closed'>('all');
-  const [inboxReplyingTo, setInboxReplyingTo] = useState<string | null>(null);
-  const [inboxReplyText, setInboxReplyText] = useState('');
-  const [inboxSubmitting, setInboxSubmitting] = useState(false);
-  const [inboxExpandedId, setInboxExpandedId] = useState<string | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
   useEffect(() => {
@@ -283,7 +273,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
         fetchAdminDashboardSnapshot(buildingId),
         getFeedbackByBuilding(buildingId),
       ]);
-      setAdminRequests(snapshot.adminRequests);
       setAllReservations(snapshot.allReservations);
       setFeedbackList(feedbackSnapshot.feedback);
       setFeedbackSummary(feedbackSnapshot.summary);
@@ -294,7 +283,6 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       setSchedules(snapshot.schedules);
     } catch (error) {
       console.warn('Failed to load admin dashboard snapshot:', error);
-      setAdminRequests([]);
       setAllReservations([]);
       setFeedbackList([]);
       setFeedbackSummary(null);
@@ -574,6 +562,26 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   const unavailableCount = rooms.filter((r) => r.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
   const pendingCount = requests.length;
+  const dashboardStats = [
+    { label: 'Total Rooms', value: rooms.length, valueClass: 'text-black' },
+    { label: 'Reserved', value: reservedCount, valueClass: 'ui-text-blue' },
+    { label: 'Available', value: availableCount, valueClass: 'ui-text-green' },
+    { label: 'Pending Requests', value: pendingCount, valueClass: 'ui-text-yellow', action: () => setActiveTab('pending') },
+    { label: 'Occupied', value: ongoingCount, valueClass: 'ui-text-orange' },
+  ];
+  const dashboardRoomRows = rooms
+    .map((room) => ({
+      room,
+      effective: computeEffectiveStatus(room),
+      floorLabel: getFloorDisplayLabel(room.floor, {
+        id: room.buildingId,
+        name: room.buildingName,
+      }),
+    }))
+    .sort((left, right) =>
+      left.floorLabel.localeCompare(right.floorLabel) ||
+      left.room.name.localeCompare(right.room.name, undefined, { numeric: true })
+    );
 
   // Filtered rooms for search & floor filter
   const uniqueFloors = Array.from(new Set(rooms.map((r) => r.floor))).sort((a, b) => {
@@ -649,26 +657,32 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
+    <main
+      className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 ${
+        activeTab === 'dashboard'
+          ? 'py-3 pt-[82px] pb-4'
+          : 'py-8 pt-[100px] pb-24 md:pb-8'
+      }`}
+    >
       {/* ─── Header ───────────────────────── */}
-      <div className="mb-8">
+      <div className={activeTab === 'dashboard' ? 'mb-2' : 'mb-8'}>
         {activeTab === 'dashboard' ? (
-          <div>
-            <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
-              <h2 className="text-2xl font-bold text-gray-800">Welcome, {firstName} 🏛️</h2>
-              <p className="text-gray-600 mt-1">
+          <div className="flex flex-col gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="text-base font-bold text-gray-800">Welcome, {firstName}</h2>
+              <p className="text-xs font-bold text-gray-600">
                 Managing: <span className="text-primary font-bold">{buildingName}</span>
               </p>
             </div>
             {managedBuildings.length > 1 && (
-              <div className="mt-4 max-w-xs">
-                <label className="block text-xs font-bold uppercase tracking-wide text-black mb-2">
+              <div className="w-full sm:w-64">
+                <label className="sr-only">
                   Active Building
                 </label>
                 <select
                   value={buildingId ?? ''}
                   onChange={(event) => setSelectedBuildingId(event.target.value)}
-                  className="glass-input w-full px-4 py-3 bg-dark/6 appearance-none cursor-pointer"
+                  className="glass-input w-full appearance-none bg-dark/6 px-3 py-1.5 text-xs font-bold"
                   style={{ backgroundImage: 'none' }}
                 >
                   {managedBuildings.map((building) => (
@@ -1430,101 +1444,138 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ─── TAB: DASHBOARD OVERVIEW ───────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       {activeTab === 'dashboard' && (
-        <div>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Total Rooms</p><p className="text-2xl font-bold text-black mt-1">{rooms.length}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Reserved</p><p className="text-2xl font-bold ui-text-blue mt-1">{reservedCount}</p></div>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Available</p><p className="text-2xl font-bold ui-text-green mt-1">{availableCount}</p></div>
-            <button onClick={() => setActiveTab('pending')} className="glass-card p-4 text-left hover:!border-yellow-500/40 transition-all cursor-pointer"><p className="text-xs text-black font-bold">Pending Requests</p><p className="text-2xl font-bold ui-text-yellow mt-1">{pendingCount}</p><p className="text-[10px] text-black mt-0.5">Click to review →</p></button>
-            <div className="glass-card p-4"><p className="text-xs text-black font-bold">Occupied</p><p className="text-2xl font-bold ui-text-orange mt-1">{ongoingCount}</p></div>
+        <div className="space-y-2">
+          <div className="grid grid-cols-5 gap-2">
+            {dashboardStats.map((stat) => {
+              const content = (
+                <>
+                  <p className="truncate text-[11px] font-bold text-black/65">{stat.label}</p>
+                  <p className={`mt-0.5 text-xl font-bold leading-none ${stat.valueClass}`}>
+                    {stat.value}
+                  </p>
+                </>
+              );
+
+              return stat.action ? (
+                <button
+                  key={stat.label}
+                  type="button"
+                  onClick={stat.action}
+                  className="glass-card p-2 text-left transition-all hover:!border-yellow-500/40"
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={stat.label} className="glass-card p-2">
+                  {content}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Live Room Status Grid */}
-          <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Live Room Status <span className="text-sm text-gray-600 font-normal ml-2">({buildingName})</span></h3>
-          </div>
-          {rooms.length === 0 ? (
-            <div className="glass-card p-8 text-center mb-8"><p className="text-sm text-black">No rooms configured yet.</p></div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-              {rooms.map((room) => {
-                const effective = computeEffectiveStatus(room);
-                const borderColor = effective.status === 'Occupied' ? 'border-orange-500/40' : effective.status === 'Reserved' ? 'border-blue-500/40' : effective.status === 'Unavailable' ? 'border-red-500/40' : 'border-green-500/40';
-                return (
-                  <div key={room.id} className={`glass-card p-4 border-l-4 ${borderColor}`}>
-                    <div className="flex justify-between items-start">
-                      <div><h4 className="font-bold text-black">{room.name}</h4><p className="text-xs text-black">{getFloorDisplayLabel(room.floor, {
-                        id: room.buildingId,
-                        name: room.buildingName,
-                      })} · Cap: {room.capacity}</p></div>
+          <div className="grid gap-2 lg:grid-cols-[1.15fr_1fr_0.9fr]">
+            <section className="glass-card p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-black">Live Room Status</h3>
+                <span className="text-[11px] font-bold text-black/55">{rooms.length} rooms</span>
+              </div>
+
+              {dashboardRoomRows.length === 0 ? (
+                <p className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-3 text-center text-xs text-black">
+                  No rooms configured yet.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {dashboardRoomRows.slice(0, 10).map(({ room, effective, floorLabel }) => (
+                    <div
+                      key={room.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-black">
+                          {room.name}
+                        </p>
+                        <p className="truncate text-[10px] text-black/60">
+                          {floorLabel} | Cap {room.capacity}
+                        </p>
+                      </div>
                       <StatusBadge status={effective.status} />
                     </div>
-                    {effective.detail && <p className="text-xs text-black mt-2">{effective.detail}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  ))}
+                  {dashboardRoomRows.length > 10 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('add-rooms')}
+                      className="w-full rounded-lg px-2 py-1 text-center text-[11px] font-bold text-primary hover:bg-primary/5"
+                    >
+                      +{dashboardRoomRows.length - 10} more rooms
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
 
-          <BleSummaryCard
-            buildingName={buildingName}
-            className="mb-8"
-            detailsHref="/admin/ble-status"
-          />
+            <section className="glass-card p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-black">Pending Requests</h3>
+                {requests.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('pending')}
+                    className="text-[11px] font-bold text-primary hover:text-primary-hover"
+                  >
+                    View all
+                  </button>
+                )}
+              </div>
+
+              {requests.length === 0 ? (
+                <p className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-3 text-center text-xs text-black">
+                  No requests waiting for approval.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {requests.slice(0, 7).map((req) => (
+                    <button
+                      key={req.id}
+                      type="button"
+                      onClick={() => setActiveTab('pending')}
+                      className="w-full rounded-lg border border-dark/10 bg-white/70 px-2 py-1.5 text-left transition-all hover:border-yellow-500/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-xs font-bold text-black">{req.userName}</p>
+                        <RoleBadge role={req.userRole} />
+                      </div>
+                      <p className="mt-0.5 truncate text-[10px] text-black/60">
+                        {req.roomName} | {formatReservationDates(req.dates, req.date)} | {formatTimeRange(req.startTime, req.endTime)}
+                      </p>
+                    </button>
+                  ))}
+                  {requests.length > 7 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('pending')}
+                      className="w-full rounded-lg px-2 py-1 text-center text-[11px] font-bold text-primary hover:bg-primary/5"
+                    >
+                      +{requests.length - 7} more pending
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <BleSummaryCard
+              buildingName={buildingName}
+              detailsHref="/admin/ble-status"
+              variant="compact"
+            />
+          </div>
 
           <MyReservationTimetable
-            className="mb-8"
+            compact
             currentUserId={firebaseUser?.uid}
             reservations={allReservations}
           />
-
-          {/* Pending Requests Preview */}
-          <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
-            <h3 className="text-lg font-bold text-gray-800">Pending Requests</h3>
-            {requests.length > 0 && (
-              <button onClick={() => setActiveTab('pending')} className="text-sm text-primary font-bold hover:text-primary-hover transition-colors">
-                View all ({requests.length}) →
-              </button>
-            )}
-          </div>
-          {requests.length === 0 ? (
-            <div className="glass-card p-8 text-center"><p className="text-sm text-black">No requests waiting for approval.</p></div>
-          ) : (
-            <div className="space-y-3">
-              {requests.slice(0, 3).map((req) => (
-                <button
-                  key={req.id}
-                  onClick={() => setActiveTab('pending')}
-                  className="glass-card p-4 w-full text-left hover:!border-yellow-500/30 transition-all cursor-pointer"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center ui-text-yellow font-bold text-sm shrink-0">
-                      {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-black text-sm">{req.userName}</h4>
-                        <RoleBadge role={req.userRole} />
-                      </div>
-                      <p className="text-xs text-black mt-0.5">{req.roomName} | {formatReservationDates(req.dates, req.date)} | {formatTimeRange(req.startTime, req.endTime)}</p>
-                    </div>
-                    <svg className="w-5 h-5 text-black shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
-              {requests.length > 3 && (
-                <button
-                  onClick={() => setActiveTab('pending')}
-                  className="w-full text-center py-2 text-sm font-bold text-primary/70 hover:text-primary transition-colors"
-                >
-                  +{requests.length - 3} more pending...
-                </button>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -1830,216 +1881,15 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ─── TAB: INBOX ──────────────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
-      {activeTab === 'inbox' && (() => {
-        const filteredInbox = inboxFilter === 'all'
-          ? adminRequests
-          : adminRequests.filter((r) => r.status === inboxFilter);
-        const openCount = adminRequests.filter((r) => r.status === 'open').length;
-
-        const handleInboxReply = async (requestId: string) => {
-          if (!inboxReplyText.trim()) return;
-          setInboxSubmitting(true);
-          try {
-            await respondToAdminRequest(requestId, inboxReplyText.trim());
-            setInboxReplyingTo(null);
-            setInboxReplyText('');
-            await reloadDashboard();
-          } catch (err) {
-            console.error('Failed to respond:', err);
-          }
-          setInboxSubmitting(false);
-        };
-
-        const typeIcon = (type: string) => {
-          switch (type) {
-            case 'equipment': return '🔧';
-            case 'general': return '💬';
-            default: return '📋';
-          }
-        };
-
-        const formatRequestTimestamp = (ts: { toDate?: () => Date } | undefined): string => {
-          return formatDateTime(ts);
-        };
-
-        return (
-          <div>
-            {/* Staff-to-staff messaging (Admin <-> Utility/Faculty) */}
-            <MessagesSection
-              title="Staff Messages"
-              subtitle="Direct conversations with utility staff and faculty."
-            />
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-6 py-4 border border-white/30">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                  User Requests
-                  {openCount > 0 && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-blue">
-                      {openCount} new
-                    </span>
-                  )}
-                </h3>
-                <p className="text-gray-600 mt-1 text-sm">
-                  Support requests from users in <span className="ui-text-teal font-bold">{buildingName}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-              {(['all', 'open', 'responded', 'closed'] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setInboxFilter(f)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
-                    inboxFilter === f
-                      ? 'bg-primary text-white border border-primary'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:text-primary'
-                  }`}
-                >
-                  {f === 'all' ? `All (${adminRequests.length})` : `${f} (${adminRequests.filter(r => r.status === f).length})`}
-                </button>
-              ))}
-            </div>
-
-            {/* Messages */}
-            <div className="space-y-4">
-              {filteredInbox.length === 0 ? (
-                <div className="glass-card p-12 !rounded-xl text-center">
-                  <svg className="w-14 h-14 text-black mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                  <p className="text-sm text-black font-bold">No messages</p>
-                  <p className="text-xs text-black mt-1">
-                    {inboxFilter === 'all' ? 'Your inbox is empty' : `No ${inboxFilter} messages`}
-                  </p>
-                </div>
-              ) : (
-                filteredInbox.map((req) => {
-                  const isExpanded = inboxExpandedId === req.id;
-                  return (
-                    <div key={req.id} className="glass-card !rounded-xl overflow-hidden">
-                      {/* Clickable Header */}
-                      <button
-                        onClick={() => setInboxExpandedId(isExpanded ? null : req.id)}
-                        className="w-full p-5 text-left hover:bg-primary/10 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm shrink-0">
-                              {req.userName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <h4 className="text-sm font-bold text-black">{req.userName}</h4>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                  req.status === 'open' ? 'ui-badge-blue' :
-                                  req.status === 'responded' ? 'ui-badge-green' :
-                                  'ui-badge-gray'
-                                } capitalize`}>
-                                  {req.status}
-                                </span>
-                              </div>
-                              <p className="text-xs text-black">
-                                <span className="mr-1">{typeIcon(req.type)}</span>
-                                {req.type} · {req.subject}
-                                {req.createdAt && <span className="ml-2 text-black"> | {formatRequestTimestamp(req.createdAt)}</span>}
-                              </p>
-                            </div>
-                          </div>
-                          <svg className={`w-5 h-5 text-black transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </button>
-
-                      {/* Expanded Detail */}
-                      {isExpanded && (
-                        <div className="border-t border-dark/5 px-5 pb-5">
-                          {/* User's Message */}
-                          <div className="mt-4">
-                            <p className="text-xs font-bold text-black mb-2">Message</p>
-                            <p className="text-sm text-black leading-relaxed bg-dark/3 border border-dark/5 rounded-xl p-3">{req.message}</p>
-                          </div>
-
-                          {/* Admin Response */}
-                          {req.adminResponse && (
-                            <div className="mt-4">
-                              <p className="text-xs font-bold ui-text-green mb-2">Your Response</p>
-                              <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
-                                <p className="text-sm text-black leading-relaxed">{req.adminResponse}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Reply Section */}
-                          {req.status === 'open' && (
-                            <>
-                              {inboxReplyingTo === req.id ? (
-                                <div className="space-y-3 mt-4 pt-4 border-t border-dark/5">
-                                  <textarea
-                                    value={inboxReplyText}
-                                    onChange={(e) => setInboxReplyText(e.target.value)}
-                                    className="glass-input w-full px-4 py-3 min-h-[100px] resize-none"
-                                    placeholder="Type your response..."
-                                    autoFocus
-                                  />
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => handleInboxReply(req.id)}
-                                      disabled={inboxSubmitting || !inboxReplyText.trim()}
-                                      className="btn-primary px-5 py-2 text-sm flex items-center gap-2"
-                                    >
-                                      {inboxSubmitting ? (
-                                        <>
-                                          <svg className="animate-spin h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                          </svg>
-                                          Sending...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                          </svg>
-                                          Send Response
-                                        </>
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => { setInboxReplyingTo(null); setInboxReplyText(''); }}
-                                      className="px-4 py-2 text-sm font-bold text-black hover:text-primary transition-all"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setInboxReplyingTo(req.id)}
-                                  className="mt-4 px-4 py-2 rounded-xl text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                  </svg>
-                                  Reply
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {activeTab === 'inbox' && (
+        <div>
+          {/* Staff-to-staff messaging (Admin <-> Utility/Faculty) */}
+          <MessagesSection
+            title="Staff Messages"
+            subtitle="Direct conversations with utility staff and faculty."
+          />
+        </div>
+      )}
     </main>
   );
 }
