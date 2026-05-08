@@ -23,7 +23,7 @@ interface AdminRoomStatusSectionProps {
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Ongoing':
+      case 'Occupied':
         return 'ui-badge-orange';
       case 'Reserved':
         return 'ui-badge-blue';
@@ -80,7 +80,7 @@ export default function AdminRoomStatusSection({
                   {floorGroup.rooms.map((room) => {
                     const effective = computeEffectiveStatus(room);
                     const statusBorder =
-                      effective.status === 'Ongoing'
+                      effective.status === 'Occupied'
                         ? 'border-orange-500/40'
                         : effective.status === 'Reserved'
                           ? 'border-blue-500/40'
@@ -134,7 +134,7 @@ export default function AdminRoomStatusSection({
                                 : 'ui-button-gray'
                             }`}
                           >
-                            Ongoing
+                            Occupied
                           </button>
                           <button
                             onClick={() => onStatusChange(room.id, 'Unavailable')}

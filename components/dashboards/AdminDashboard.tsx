@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BleSummaryCard from '@/components/ui/BleSummaryCard';
-import TodayClassSchedulesPanel from '@/components/dashboards/TodayClassSchedulesPanel';
+import MyReservationTimetable from '@/components/dashboards/MyReservationTimetable';
 import MessagesSection from '@/components/messages/MessagesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
@@ -531,7 +531,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       }
 
       return {
-        status: 'Ongoing',
+        status: 'Occupied',
         detail:
           normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth'
             ? 'Bluetooth beacon connected'
@@ -563,13 +563,13 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
       }
 
       return activeReservation.checkedInAt
-        ? { status: 'Ongoing', detail: `Checked in: ${activeReservation.userName}` }
+        ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
         : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
     }
     return { status: 'Available', detail: '' };
   };
 
-  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Ongoing').length;
+  const ongoingCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Occupied').length;
   const reservedCount = rooms.filter((r) => computeEffectiveStatus(r).status === 'Reserved').length;
   const unavailableCount = rooms.filter((r) => r.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
@@ -651,7 +651,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
       {/* ─── Header ───────────────────────── */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8">
         {activeTab === 'dashboard' ? (
           <div>
             <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
@@ -680,73 +680,7 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
               </div>
             )}
           </div>
-        ) : <div />}
-
-        {/* Notification Bell */}
-        <div className="relative">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2.5 rounded-xl glass-card !p-2.5 hover:!border-primary/40 transition-all"
-          >
-            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                {notifications.length}
-              </span>
-            )}
-          </button>
-
-          {/* Notification Dropdown */}
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 !rounded-xl overflow-hidden z-50 border border-dark/12 shadow-2xl shadow-black/20" style={{ background: 'rgba(248, 246, 242, 0.98)', backdropFilter: 'blur(20px)' }}>
-              <div className="flex items-center justify-between p-4 border-b border-dark/10">
-                <h4 className="font-bold text-black text-sm">Notifications</h4>
-                {notifications.length > 0 && (
-                  <button
-                    onClick={handleMarkAllRead}
-                    className="text-xs text-primary font-bold hover:text-primary-hover transition-colors"
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center">
-                    <p className="text-sm text-black/80">No new notifications</p>
-                  </div>
-                ) : (
-                  notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className="p-3 border-b border-dark/5 hover:bg-primary/8 transition-colors flex items-start gap-3"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-primary/12 border border-primary/18 flex items-center justify-center shrink-0 mt-0.5">
-                        <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-black">{notif.title}</p>
-                        <p className="text-[11px] text-black/80 mt-0.5 leading-relaxed">{notif.message}</p>
-                      </div>
-                      <button
-                        onClick={() => handleDismissNotification(notif.id)}
-                        className="text-black/70 hover:text-primary transition-colors shrink-0"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        ) : null}
       </div>
 
       {/* ════════════════════════════════════════════════════════════ */}
@@ -1539,12 +1473,10 @@ export default function AdminDashboard({ firstName, activeTab }: AdminDashboardP
             detailsHref="/admin/ble-status"
           />
 
-          <TodayClassSchedulesPanel
-            buildingId={buildingId}
-            buildingName={buildingName}
+          <MyReservationTimetable
             className="mb-8"
-            key={buildingId}
-            scope="building"
+            currentUserId={firebaseUser?.uid}
+            reservations={allReservations}
           />
 
           {/* Pending Requests Preview */}

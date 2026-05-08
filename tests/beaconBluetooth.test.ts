@@ -10,7 +10,7 @@ import {
   isReservationActiveTimeSlot,
   normalizeRoomCheckInMethod,
   resolveRoomStatus,
-} from '../lib/roomStatus';
+} from '../lib/rooms/roomStatus';
 
 describe('beaconBluetooth', () => {
   it('builds a device request filtered to the expected beacon name and service', () => {

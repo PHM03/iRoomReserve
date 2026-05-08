@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 
 import BleStatus from '@/components/ble/BleStatus';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -27,6 +27,25 @@ function formatReservationDates(dates?: string[], fallbackDate?: string) {
   return dateList.map((date) => formatDate(date)).join(', ');
 }
 
+// ---------------------------------------------------------------------------
+// localStorage helpers (same approach as Inbox badge system)
+// ---------------------------------------------------------------------------
+const LS_PREFIX = 'res_lastSeen';
+
+function readLsNumber(key: string): number {
+  if (!key) return 0;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? Number(raw) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function makeLsKey(uid: string, tab: string): string {
+  return `${LS_PREFIX}${tab}_${uid}`;
+}
+
 export default function MyReservationsPage() {
   const { firebaseUser } = useAuth();
   const uid = firebaseUser?.uid;
@@ -35,6 +54,25 @@ export default function MyReservationsPage() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('pending');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // localStorage keys for "last seen" counts per tab.
+  const lsKeyPending   = uid ? makeLsKey(uid, 'Pending')   : '';
+  const lsKeyApproved  = uid ? makeLsKey(uid, 'Approved')  : '';
+  const lsKeyRejected  = uid ? makeLsKey(uid, 'Rejected')  : '';
+  const lsKeyCompleted = uid ? makeLsKey(uid, 'Completed') : '';
+
+  const [lastSeenPendingCount,   setLastSeenPendingCount]   = useState(() => readLsNumber(lsKeyPending));
+  const [lastSeenApprovedCount,  setLastSeenApprovedCount]  = useState(() => readLsNumber(lsKeyApproved));
+  const [lastSeenRejectedCount,  setLastSeenRejectedCount]  = useState(() => readLsNumber(lsKeyRejected));
+  const [lastSeenCompletedCount, setLastSeenCompletedCount] = useState(() => readLsNumber(lsKeyCompleted));
+
+  // Re-read localStorage when the user changes (login/logout).
+  useEffect(() => {
+    setLastSeenPendingCount(readLsNumber(lsKeyPending));
+    setLastSeenApprovedCount(readLsNumber(lsKeyApproved));
+    setLastSeenRejectedCount(readLsNumber(lsKeyRejected));
+    setLastSeenCompletedCount(readLsNumber(lsKeyCompleted));
+  }, [lsKeyPending, lsKeyApproved, lsKeyRejected, lsKeyCompleted]);
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -128,13 +166,48 @@ export default function MyReservationsPage() {
     return reservations.filter((r) => r.status === key).length;
   };
 
-  const filters: { key: FilterTab; label: string }[] = [
-    { key: 'pending', label: 'Pending' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'all', label: 'All' },
+  // Badge counts: show only NEW items since user last clicked that tab.
+  const pendingCount   = getCount('pending');
+  const approvedCount  = getCount('approved');
+  const rejectedCount  = getCount('rejected');
+  const completedCount = getCount('completed');
+
+  const pendingBadge   = Math.max(0, pendingCount   - lastSeenPendingCount);
+  const approvedBadge  = Math.max(0, approvedCount  - lastSeenApprovedCount);
+  const rejectedBadge  = Math.max(0, rejectedCount  - lastSeenRejectedCount);
+  const completedBadge = Math.max(0, completedCount - lastSeenCompletedCount);
+
+  const filters: { key: FilterTab; label: string; badge?: number }[] = [
+    { key: 'pending',   label: 'Pending',   badge: pendingBadge   || undefined },
+    { key: 'approved',  label: 'Approved',  badge: approvedBadge  || undefined },
+    { key: 'rejected',  label: 'Rejected',  badge: rejectedBadge  || undefined },
+    { key: 'completed', label: 'Completed', badge: completedBadge || undefined },
+    { key: 'all',       label: 'All' },
   ];
+
+  // When the user clicks a tab, persist the "last seen" count so the badge clears.
+  const handleTabClick = useCallback(
+    (tab: FilterTab) => {
+      setActiveFilter(tab);
+
+      const persist = (key: string, count: number, setter: (n: number) => void) => {
+        setter(count);
+        try { localStorage.setItem(key, String(count)); }
+        catch { /* quota exceeded — non-critical */ }
+      };
+
+      switch (tab) {
+        case 'pending':   persist(lsKeyPending,   pendingCount,   setLastSeenPendingCount);   break;
+        case 'approved':  persist(lsKeyApproved,  approvedCount,  setLastSeenApprovedCount);  break;
+        case 'rejected':  persist(lsKeyRejected,  rejectedCount,  setLastSeenRejectedCount);  break;
+        case 'completed': persist(lsKeyCompleted, completedCount, setLastSeenCompletedCount); break;
+      }
+    },
+    [
+      lsKeyPending, lsKeyApproved, lsKeyRejected, lsKeyCompleted,
+      pendingCount, approvedCount, rejectedCount, completedCount,
+    ]
+  );
 
   const handleCancel = async (reservationId: string) => {
     if (!firebaseUser) return;
@@ -250,25 +323,26 @@ export default function MyReservationsPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         {filters.map((filter) => {
           const isActive = activeFilter === filter.key;
-          const count = getCount(filter.key);
           return (
             <button
               key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
+              onClick={() => handleTabClick(filter.key)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
                 isActive
                   ? 'bg-primary text-white border-primary'
                   : 'bg-white text-gray-700 border-gray-200 hover:text-primary'
               }`}
             >
               {filter.label}
-              {count > 0 && (
+              {filter.badge !== undefined && (
                 <span
-                  className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    isActive ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-600'
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'border border-primary/20 bg-primary/10 text-primary'
                   }`}
                 >
-                  {count}
+                  {filter.badge}
                 </span>
               )}
             </button>

@@ -13,7 +13,7 @@ import { isStaffRole } from '@/lib/messages/messages';
 import {
   Notification as AppNotification,
   onAllNotifications,
-} from '@/lib//notifications/notifications';
+} from '@/lib/notifications/notifications';
 import {
   approveReservation,
   fetchPendingReservationsForApprover,

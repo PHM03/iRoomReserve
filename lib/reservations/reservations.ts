@@ -20,7 +20,7 @@ import {
   type ReservationApprovalStep,
 } from "@/lib/reservations/reservation-approval";
 import { auth, db } from "@/lib/firebase/firebase";
-import { type RoomCheckInMethod } from "@/lib/roomStatus";
+import { type RoomCheckInMethod } from "@/lib/rooms/roomStatus";
 import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 import { createGuardedSnapshotCallback } from "@/lib/firebase/firestoreListener";
 

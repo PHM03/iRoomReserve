@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Building } from '../lib/buildings';
+import type { Building } from '../lib/buildings/buildings';
 import {
   buildCampusOptions,
   compareFloors,

@@ -5,7 +5,7 @@ import {
   getManagedBuildingIdsForCampus,
   isCampusManagedBuilding,
   resolveCampusAssignment,
-} from '../lib/campusAssignments';
+} from '../lib/buildings/campusAssignments';
 import {
   assertCanManageBuilding,
   assertCanViewBuildingFeedback,

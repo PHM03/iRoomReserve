@@ -13,7 +13,7 @@ import {
   getRoomBleBeaconId,
   getTelemetryRoomLabel,
   isBeaconHardwareOnline,
-} from '@/lib/bleMonitor';
+} from '@/lib/occupancy/bleMonitor';
 import {
   DEFAULT_OCCUPANCY_PAYLOAD,
   type OccupancyPayload,
