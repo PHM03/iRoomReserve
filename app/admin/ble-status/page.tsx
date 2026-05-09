@@ -2,7 +2,7 @@
 
 import AdminNoBuildingAssigned from '@/components/admin/AdminNoBuildingAssigned';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import BleAdminMonitor from '@/components/BleAdminMonitor';
+import BleAdminMonitor from '@/components/ble/BleAdminMonitor';
 import { useAdminStatusPages } from '@/hooks/useAdminStatusPages';
 
 export default function AdminBleStatusPage() {
@@ -16,7 +16,7 @@ export default function AdminBleStatusPage() {
   } = useAdminStatusPages();
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[100px] py-8 relative z-10">
       {!buildingId || !buildingName ? (
         <AdminNoBuildingAssigned />
       ) : (

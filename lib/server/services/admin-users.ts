@@ -4,15 +4,15 @@ import {
   getCampusName,
   getManagedBuildingIdsForCampus,
   resolveCampusAssignment,
-} from "../../campusAssignments";
-import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/domain/roles";
-import { type ReservationCampus } from "@/lib/campuses";
+} from "@/lib/buildings/campusAssignments";
+import { normalizeRole, USER_ROLES, type UserRole } from "@/lib/auth/roles";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
 import {
   auth as adminAuth,
   db,
   deleteField,
   serverTimestamp,
-} from "@/lib/configs/firebase-admin";
+} from "@/lib/firebase/firebase-admin";
 
 async function clearManagedCampusIfNeeded(uid: string) {
   const userSnapshot = await db.collection("users").doc(uid).get();

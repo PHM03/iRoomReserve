@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import type { AdminTab } from '@/components/NavBar';
+import type { AdminTab } from '@/components/layout/NavBar';
 
 interface AdminTabContextType {
   activeTab: AdminTab;

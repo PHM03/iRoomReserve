@@ -8,6 +8,15 @@ import {
   scheduleInputSchema,
 } from '../lib/server/schemas';
 
+const approvalDocument = {
+  approvalDocumentMimeType: 'application/pdf',
+  approvalDocumentName: 'concept-paper.pdf',
+  approvalDocumentPath: 'concept_papers/user-1/concept-paper.pdf',
+  approvalDocumentSize: 1024,
+  approvalDocumentUrl:
+    'https://demo.supabase.co/storage/v1/object/sign/reservation-documents/reservations/pending/user-1/concept-paper.pdf?token=token',
+};
+
 describe('server schemas', () => {
   it('accepts a valid Main Campus single reservation payload', () => {
     const result = createReservationSchema.safeParse({
@@ -26,6 +35,7 @@ describe('server schemas', () => {
         endTime: '09:00',
         programDepartmentOrganization: 'BSIT',
         purpose: 'Study session',
+        ...approvalDocument,
         advisorEmail: 'advisor@sdca.edu.ph',
         dsasEmail: 'dsas@sdca.edu.ph',
         registrarEmail: 'registrar@sdca.edu.ph',
@@ -53,6 +63,7 @@ describe('server schemas', () => {
         endTime: '09:00',
         programDepartmentOrganization: 'BSIT',
         purpose: 'Study session',
+        ...approvalDocument,
         buildingAdminEmail: 'building-admin@sdca.edu.ph',
       },
     });
@@ -77,6 +88,7 @@ describe('server schemas', () => {
         endTime: '09:00',
         programDepartmentOrganization: 'BSIT',
         purpose: 'Study session',
+        ...approvalDocument,
         buildingAdminEmail: 'building-admin@sdca.edu.ph',
       },
     });

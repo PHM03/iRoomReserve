@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { handleApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated, assertRole } from "@/lib/server/route-guards";

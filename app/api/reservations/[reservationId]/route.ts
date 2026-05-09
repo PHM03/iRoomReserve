@@ -15,6 +15,8 @@ import {
   rejectReservationRecord,
 } from "@/lib/server/services/reservations";
 
+export const runtime = "nodejs";
+
 const reservationActionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("approve"),

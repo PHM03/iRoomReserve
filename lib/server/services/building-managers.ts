@@ -1,9 +1,9 @@
 import "server-only";
 
-import { resolveCampusAssignment } from "../../campusAssignments";
-import { inferCampusFromBuilding } from "@/lib/campuses";
-import { db } from "@/lib/configs/firebase-admin";
-import { normalizeRole, USER_ROLES } from "@/lib/domain/roles";
+import { resolveCampusAssignment } from "@/lib/buildings/campusAssignments";
+import { inferCampusFromBuilding } from "@/lib/buildings/campuses";
+import { db } from "@/lib/firebase/firebase-admin";
+import { normalizeRole, USER_ROLES } from "@/lib/auth/roles";
 
 export async function getAssignedManagerIds(buildingId: string) {
   const campus = inferCampusFromBuilding({ id: buildingId });

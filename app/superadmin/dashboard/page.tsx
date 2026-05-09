@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   onAllUsers,
@@ -12,11 +13,12 @@ import {
   disableUserAccount,
   enableUserAccount,
   ManagedUser,
-} from '@/lib/auth';
-import { getCampusName } from '@/lib/campusAssignments';
-import { type ReservationCampus } from '@/lib/campuses';
-import { USER_ROLES } from '@/lib/domain/roles';
-import { seedBuildings } from '@/lib/seedBuildings';
+} from '@/lib/auth/auth';
+import { getCampusName } from '@/lib/buildings/campusAssignments';
+import { type ReservationCampus } from '@/lib/buildings/campuses';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { onReservationsByUser, Reservation } from '@/lib/reservations/reservations';
+import { seedBuildings } from '@/lib/buildings/seedBuildings';
 
 type Tab = 'all' | 'students' | 'faculty' | 'utility' | 'admins' | 'pending';
 
@@ -26,6 +28,8 @@ export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('pending');
   const [allUsers, setAllUsers] = useState<ManagedUser[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showAccountTooltip, setShowAccountTooltip] = useState(false);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   // ─── Approval Modal State ─────────────────────────────────────
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -53,9 +57,35 @@ export default function SuperAdminDashboard() {
 
   // Real-time listener for ALL users
   useEffect(() => {
-    const unsub = onAllUsers(setAllUsers);
-    return () => unsub();
+    let cancelled = false;
+
+    const unsub = onAllUsers((nextUsers) => {
+      if (cancelled) return;
+      setAllUsers(nextUsers);
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, []);
+
+  // Real-time listener for current user's reservations (timetable)
+  useEffect(() => {
+    const uid = firebaseUser?.uid;
+    if (!uid) return;
+
+    let cancelled = false;
+    const unsub = onReservationsByUser(uid, (next) => {
+      if (cancelled) return;
+      setReservations(next);
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [firebaseUser?.uid]);
 
   // ─── Computed Data ────────────────────────────────────────────
   const pendingUsers = allUsers.filter((u) => u.status === 'pending');
@@ -224,6 +254,7 @@ export default function SuperAdminDashboard() {
     );
   };
   const handleApproveWithBuilding = handleApproveWithCampus;
+  const accountEmail = profile?.email ?? firebaseUser.email ?? '';
 
   return (
     <div className="min-h-screen relative isolate">
@@ -259,12 +290,25 @@ export default function SuperAdminDashboard() {
 
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm font-bold">
-                  SA
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowAccountTooltip(true)}
+                  onMouseLeave={() => setShowAccountTooltip(false)}
+                >
+                  <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm font-bold">
+                    SA
+                  </div>
+                  {showAccountTooltip ? (
+                    <div className="absolute right-0 top-full mt-2 w-56 glass-card !rounded-xl p-3 shadow-xl z-50">
+                      <p className="text-xs font-bold text-black">Super Admin</p>
+                      {accountEmail ? (
+                        <p className="mt-0.5 truncate text-[11px] text-black/70">
+                          {accountEmail}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
-                <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ui-badge-purple">
-                  Super Admin
-                </span>
               </div>
               <button
                 onClick={handleLogout}
@@ -387,6 +431,13 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* My Reservation Timetable */}
+        <MyReservationTimetable
+          className="mb-8"
+          currentUserId={firebaseUser?.uid}
+          reservations={reservations}
+        />
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 mb-6 glass-card !rounded-xl p-1">

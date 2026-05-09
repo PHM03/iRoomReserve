@@ -25,12 +25,12 @@ export default function AdminPageHeader({
 }: AdminPageHeaderProps) {
   return (
     <section className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h2 className="text-2xl font-bold text-black">{title}</h2>
-        <div className="mt-2 text-sm text-black">{description}</div>
+      <div className="bg-white rounded-xl px-6 py-4 border border-white/30">
+        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        <div className="mt-2 text-sm text-gray-600">{description}</div>
       </div>
 
-      <div className="w-full max-w-sm rounded-2xl border border-primary/20 bg-primary/5 p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-[#d9a3a4] bg-[#f9eded] p-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-black">
           Active Building
         </p>

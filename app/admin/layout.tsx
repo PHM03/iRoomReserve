@@ -3,10 +3,10 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import NavBar from '@/components/NavBar';
+import NavBar from '@/components/layout/NavBar';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { normalizeRole, USER_ROLES } from '@/lib/domain/roles';
+import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 
 function LoadingState() {
   return (
@@ -93,6 +93,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <NavBar
           user={{
             name: displayName,
+            email: profile?.email || firebaseUser?.email || undefined,
             initials,
             role: profile?.role || USER_ROLES.ADMIN,
           }}

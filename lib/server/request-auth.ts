@@ -2,11 +2,11 @@ import "server-only";
 
 import type { NextRequest } from "next/server";
 
-import { normalizeAssignedBuildings } from "@/lib/assignedBuildings";
-import { type ReservationCampus } from "@/lib/campuses";
-import { auth as adminAuth, db } from "@/lib/configs/firebase-admin";
-import { normalizeRole, type UserRole } from "@/lib/domain/roles";
-import { resolveCampusAssignment } from "../campusAssignments";
+import { normalizeAssignedBuildings } from "@/lib/admin/assignedBuildings";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
+import { auth as adminAuth, db } from "@/lib/firebase/firebase-admin";
+import { normalizeRole, type UserRole } from "@/lib/auth/roles";
+import { resolveCampusAssignment } from "@/lib/buildings/campusAssignments";
 
 export interface RequestAuthContext {
   uid: string | null;

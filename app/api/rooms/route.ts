@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
@@ -14,6 +14,7 @@ import { createRoomRecord } from "@/lib/server/services/rooms";
 
 interface RoomRecord {
   id: string;
+  beaconId?: string | null;
   name: string;
   floor: string;
   roomType: string;
@@ -27,6 +28,11 @@ interface RoomRecord {
   activeReservationId?: string | null;
 }
 
+interface RoomFloorCount {
+  floor: string;
+  count: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -34,7 +40,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const buildingId = searchParams.get("buildingId");
+    const countsOnly = searchParams.get("counts") === "true";
     const floor = searchParams.get("floor");
+    const countFloors = searchParams
+      .get("floors")
+      ?.split("|")
+      .map((value) => value.trim())
+      .filter(Boolean);
     const roomIds = searchParams
       .get("roomIds")
       ?.split(",")
@@ -46,6 +58,34 @@ export async function GET(request: NextRequest) {
       throw new Error(
         "Firebase Admin Firestore is not configured. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY."
       );
+    }
+
+    if (countsOnly) {
+      if (!buildingId) {
+        return NextResponse.json(
+          { error: { code: "missing_building_id", message: "buildingId is required." } },
+          { status: 400 }
+        );
+      }
+
+      const buildingRoomsQuery = adminDb
+        .collection("rooms")
+        .where("buildingId", "==", buildingId);
+      const [totalSnapshot, ...floorSnapshots] = await Promise.all([
+        buildingRoomsQuery.count().get(),
+        ...(countFloors ?? []).map((countFloor) =>
+          buildingRoomsQuery.where("floor", "==", countFloor).count().get()
+        ),
+      ]);
+      const floors: RoomFloorCount[] = (countFloors ?? []).map((countFloor, index) => ({
+        floor: countFloor,
+        count: floorSnapshots[index]?.data().count ?? 0,
+      }));
+
+      return NextResponse.json({
+        floors,
+        total: totalSnapshot.data().count,
+      });
     }
 
     const baseSnapshot = roomIds?.length
@@ -62,6 +102,8 @@ export async function GET(request: NextRequest) {
       .filter((roomDoc) => roomDoc.exists)
       .map((roomDoc) => {
         const data = roomDoc.data() as {
+          beaconId?: string | null;
+          bleBeaconId?: string | null;
           name?: string;
           floor?: string;
           roomType?: string;
@@ -77,6 +119,12 @@ export async function GET(request: NextRequest) {
 
         return {
           id: roomDoc.id,
+          beaconId:
+            typeof data.bleBeaconId === "string" && data.bleBeaconId.trim().length > 0
+              ? data.bleBeaconId.trim()
+              : typeof data.beaconId === "string" && data.beaconId.trim().length > 0
+                ? data.beaconId.trim()
+                : null,
           name: data.name ?? "",
           floor: data.floor ?? "",
           roomType: data.roomType ?? "",

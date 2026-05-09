@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
@@ -52,6 +52,8 @@ export async function GET(
     }
 
     const data = roomSnapshot.data() as {
+      beaconId?: string | null;
+      bleBeaconId?: string | null;
       name?: string;
       floor?: string;
       roomType?: string;
@@ -67,6 +69,12 @@ export async function GET(
 
     const room = {
       id: roomSnapshot.id,
+      beaconId:
+        typeof data.bleBeaconId === "string" && data.bleBeaconId.trim().length > 0
+          ? data.bleBeaconId.trim()
+          : typeof data.beaconId === "string" && data.beaconId.trim().length > 0
+            ? data.beaconId.trim()
+            : null,
       name: data.name ?? "",
       floor: data.floor ?? "",
       roomType: data.roomType ?? "",
