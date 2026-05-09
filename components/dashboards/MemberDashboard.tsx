@@ -140,7 +140,7 @@ export default function MemberDashboard({
       <div className="mb-8 flex items-start justify-between">
         <div className="bg-white rounded-xl px-6 py-4 border border-white/30">
           <h2 className="text-2xl font-bold text-gray-800">
-            Welcome back, {firstName} {welcomeEmoji}
+            Welcome, {firstName} {welcomeEmoji}
           </h2>
           <p className="text-gray-600 mt-1">
             Here&apos;s an overview of your reservations

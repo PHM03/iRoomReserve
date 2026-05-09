@@ -180,7 +180,7 @@ export default function MyReservationsPage() {
   const filters: { key: FilterTab; label: string; badge?: number }[] = [
     { key: 'pending',   label: 'Pending',   badge: pendingBadge   || undefined },
     { key: 'approved',  label: 'Approved',  badge: approvedBadge  || undefined },
-    { key: 'rejected',  label: 'Rejected',  badge: rejectedBadge  || undefined },
+    { key: 'rejected',  label: 'Rejected/Cancelled',  badge: rejectedBadge  || undefined },
     { key: 'completed', label: 'Completed', badge: completedBadge || undefined },
     { key: 'all',       label: 'All' },
   ];
