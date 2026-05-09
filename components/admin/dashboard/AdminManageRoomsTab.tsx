@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getBuildingFloorOptions, getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import {
     addRoom,
@@ -87,6 +87,22 @@ function SearchIcon({ className }: { className: string }) {
     );
 }
 
+function ChevronDownIcon({ className }: { className: string }) {
+    return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+    );
+}
+
+function CheckIcon({ className }: { className: string }) {
+    return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    );
+}
+
 function PencilIcon({ className }: { className: string }) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,6 +156,10 @@ export default function AdminManageRoomsTab({
     const [roomsLoading, setRoomsLoading] = useState(true);
     const [roomLoadError, setRoomLoadError] = useState('');
     const [roomReloadKey, setRoomReloadKey] = useState(0);
+    const [isBuildingSwitcherOpen, setIsBuildingSwitcherOpen] = useState(false);
+    const [isFloorFilterOpen, setIsFloorFilterOpen] = useState(false);
+    const buildingSwitcherRef = useRef<HTMLDivElement | null>(null);
+    const floorFilterRef = useRef<HTMLDivElement | null>(null);
 
     const floorOptions = useMemo(
         () =>
@@ -154,10 +174,10 @@ export default function AdminManageRoomsTab({
         () => sortFloors(floorOptions.map((floorOption) => floorOption.value)),
         [floorOptions]
     );
-    const floorCountsByFloor = useMemo(
-        () => new Map(roomCounts.floors.map((floorCount) => [floorCount.floor, floorCount.count])),
-        [roomCounts.floors]
-    );
+    const activeRoomFloorFilterLabel =
+        roomFloorFilter === 'all'
+            ? 'All'
+            : getFloorDisplayLabel(roomFloorFilter, { id: buildingId, name: buildingName });
     const hasAnyRooms = roomCounts.total > 0;
     const filteredRooms = useMemo(
         () =>
@@ -174,6 +194,33 @@ export default function AdminManageRoomsTab({
             }),
         [roomFloorFilter, roomSearch, rooms]
     );
+
+    useEffect(() => {
+        const handleDocumentClick = (event: MouseEvent) => {
+            if (!buildingSwitcherRef.current?.contains(event.target as Node)) {
+                setIsBuildingSwitcherOpen(false);
+            }
+
+            if (!floorFilterRef.current?.contains(event.target as Node)) {
+                setIsFloorFilterOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsBuildingSwitcherOpen(false);
+                setIsFloorFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('click', handleDocumentClick);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('click', handleDocumentClick);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
 
     useEffect(() => {
         setRoomFloorFilter(DEFAULT_ROOM_FLOOR_FILTER);
@@ -270,6 +317,11 @@ export default function AdminManageRoomsTab({
         setEditAcStatus(room.acStatus || 'No Air Conditioning');
         setEditTvStatus(room.tvProjectorStatus || 'No Television or Projector');
         setEditBeaconId(room.beaconId || '');
+    };
+
+    const handleBuildingSwitcherSelect = (nextBuildingId: string) => {
+        onBuildingChange(nextBuildingId);
+        setIsBuildingSwitcherOpen(false);
     };
 
     const handleAddRoomBuildingChange = (nextBuildingId: string) => {
@@ -369,9 +421,48 @@ export default function AdminManageRoomsTab({
             <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
                     <h3 className="text-2xl font-bold text-gray-900">Manage Rooms</h3>
-                    <span className="inline-flex w-fit items-center rounded-full border border-[#a12124]/20 bg-[#a12124]/10 px-3 py-1 text-xs font-bold text-[#7f1d1d]">
-                        Active Building: {activeBuildingLabel}
-                    </span>
+                    <div ref={buildingSwitcherRef} className="relative w-fit">
+                        <button
+                            type="button"
+                            onClick={() => setIsBuildingSwitcherOpen((current) => !current)}
+                            className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#a12124]/30 bg-[#a12124]/10 px-3 py-1 text-xs font-bold text-[#7f1d1d] shadow-sm transition-all hover:border-[#a12124]/45 hover:bg-[#a12124]/15 hover:shadow focus:outline-none focus:ring-2 focus:ring-[#a12124]/25"
+                            aria-haspopup="menu"
+                            aria-expanded={isBuildingSwitcherOpen}
+                        >
+                            <span>Active Building: {activeBuildingLabel}</span>
+                            <ChevronDownIcon
+                                className={`h-3.5 w-3.5 transition-transform ${isBuildingSwitcherOpen ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+
+                        {isBuildingSwitcherOpen && (
+                            <div
+                                className="absolute left-0 z-20 mt-2 min-w-44 overflow-hidden rounded-xl border border-[#a12124]/15 bg-white py-1 shadow-lg"
+                                role="menu"
+                            >
+                                {managedBuildings.map((building) => {
+                                    const isActive = building.id === buildingId;
+
+                                    return (
+                                        <button
+                                            key={building.id}
+                                            type="button"
+                                            onClick={() => handleBuildingSwitcherSelect(building.id)}
+                                            className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold transition-colors ${isActive
+                                                    ? 'bg-[#a12124]/10 text-[#7f1d1d]'
+                                                    : 'text-gray-700 hover:bg-[#a12124]/5 hover:text-[#a12124]'
+                                                }`}
+                                            role="menuitemradio"
+                                            aria-checked={isActive}
+                                        >
+                                            <span>{getManagedBuildingOptionLabel(building)}</span>
+                                            {isActive && <CheckIcon className="h-3.5 w-3.5 shrink-0" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <button
                     onClick={() => setAddRoomStep(1)}
@@ -395,31 +486,73 @@ export default function AdminManageRoomsTab({
                         />
                     </div>
 
-                    <div className="flex flex-wrap gap-2 sm:flex-1 sm:justify-end">
-                        {roomFloorOptions.map((floor) => {
-                            const count = floorCountsByFloor.get(floor) ?? 0;
-                            return (
-                                <button
-                                    key={floor}
-                                    onClick={() => setRoomFloorFilter(floor)}
-                                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${roomFloorFilter === floor
-                                            ? 'border border-[#a12124] bg-[#a12124] text-white shadow-sm'
-                                            : 'border border-gray-200 bg-white text-gray-700 hover:border-[#a12124]/30 hover:bg-[#a12124]/5 hover:text-[#a12124]'
-                                        }`}
+                    <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
+                        <label htmlFor="admin-room-floor-filter" className="shrink-0 text-sm font-bold text-gray-700">
+                            Filter by Floor:
+                        </label>
+                        <div ref={floorFilterRef} className="relative">
+                            <button
+                                type="button"
+                                id="admin-room-floor-filter"
+                                onClick={() => setIsFloorFilterOpen((current) => !current)}
+                                className="flex min-w-44 items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:border-[#a12124] focus:outline-none focus:ring-2 focus:ring-[#a12124]/30"
+                                aria-haspopup="listbox"
+                                aria-expanded={isFloorFilterOpen}
+                            >
+                                <span>{activeRoomFloorFilterLabel}</span>
+                                <ChevronDownIcon
+                                    className={`h-4 w-4 text-[#a12124] transition-transform ${isFloorFilterOpen ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+
+                            {isFloorFilterOpen && (
+                                <div
+                                    className="absolute right-0 z-50 mt-2 min-w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg"
+                                    role="listbox"
+                                    aria-labelledby="admin-room-floor-filter"
                                 >
-                                    {getFloorDisplayLabel(floor, { id: buildingId, name: buildingName })} ({count})
-                                </button>
-                            );
-                        })}
-                        <button
-                            onClick={() => setRoomFloorFilter('all')}
-                            className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${roomFloorFilter === 'all'
-                                    ? 'border border-[#a12124] bg-[#a12124] text-white shadow-sm'
-                                    : 'border border-gray-200 bg-white text-gray-700 hover:border-[#a12124]/30 hover:bg-[#a12124]/5 hover:text-[#a12124]'
-                                }`}
-                        >
-                            All ({roomCounts.total})
-                        </button>
+                                    {[...roomFloorOptions, 'all'].map((floor, index, options) => {
+                                        const isAllOption = floor === 'all';
+                                        const isSelected = roomFloorFilter === floor;
+                                        const optionLabel = isAllOption
+                                            ? 'All'
+                                            : getFloorDisplayLabel(floor, { id: buildingId, name: buildingName });
+                                        const roundedClass =
+                                            index === 0
+                                                ? 'rounded-t-2xl'
+                                                : index === options.length - 1
+                                                    ? 'rounded-b-2xl'
+                                                    : '';
+
+                                        return (
+                                            <div
+                                                key={floor}
+                                                role="option"
+                                                tabIndex={0}
+                                                aria-selected={isSelected}
+                                                onClick={() => {
+                                                    setRoomFloorFilter(floor);
+                                                    setIsFloorFilterOpen(false);
+                                                }}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        setRoomFloorFilter(floor);
+                                                        setIsFloorFilterOpen(false);
+                                                    }
+                                                }}
+                                                className={`cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-[#a12124]/5 hover:text-[#a12124] ${isSelected
+                                                        ? 'bg-[#a12124]/10 font-bold text-[#a12124]'
+                                                        : 'font-medium text-gray-700'
+                                                    } ${roundedClass}`}
+                                            >
+                                                {optionLabel}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

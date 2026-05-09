@@ -5,20 +5,89 @@ import type { RoomHistoryEntry } from '@/lib/rooms/roomHistory';
 import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 import { RoleBadge, StatusBadge } from './shared';
 
+type HistoryStatusFilter = 'approved' | 'rejectedCancelled' | 'active' | 'completed' | 'all';
+type HistoryDateSortDirection = 'asc' | 'desc';
+
+const HISTORY_STATUS_FILTERS: Array<{ key: HistoryStatusFilter; label: string }> = [
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejectedCancelled', label: 'Rejected/Cancelled' },
+  { key: 'active', label: 'Active' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'all', label: 'All' },
+];
+
+const MONTH_FILTER_OPTIONS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 interface AdminRoomHistoryTabProps {
   roomHistory: RoomHistoryEntry[];
+}
+
+function getHistoryDateValue(date: string) {
+  const dateValue = new Date(`${date}T00:00:00`).getTime();
+  return Number.isNaN(dateValue) ? 0 : dateValue;
 }
 
 export default function AdminRoomHistoryTab({
   roomHistory,
 }: AdminRoomHistoryTabProps) {
-  const [historyFilter, setHistoryFilter] = useState('all');
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  const [historyFilter, setHistoryFilter] = useState<HistoryStatusFilter>('approved');
+  const [historyYearFilter, setHistoryYearFilter] = useState<string>(() => String(currentYear));
+  const [historyMonthFilter, setHistoryMonthFilter] = useState<string>(() => String(currentMonth));
+  const [historyDateSortDirection, setHistoryDateSortDirection] =
+    useState<HistoryDateSortDirection>('desc');
   const [historySearch, setHistorySearch] = useState('');
 
+  const availableHistoryYears = useMemo(() => {
+    const years = roomHistory
+      .map((entry) => new Date(`${entry.date}T00:00:00`).getFullYear())
+      .filter((year) => !Number.isNaN(year));
+
+    return [...new Set([currentYear, ...years])].sort((left, right) => right - left);
+  }, [currentYear, roomHistory]);
+
   const filteredHistory = useMemo(
-    () =>
-      roomHistory.filter((entry) => {
-        if (historyFilter !== 'all' && entry.status !== historyFilter) {
+    () => {
+      const filteredEntries = roomHistory.filter((entry) => {
+        const normalizedStatus = entry.status.toLowerCase();
+
+        if (historyFilter !== 'all' && normalizedStatus !== historyFilter) {
+          if (
+            historyFilter !== 'rejectedCancelled' ||
+            (normalizedStatus !== 'rejected' && normalizedStatus !== 'cancelled')
+          ) {
+            return false;
+          }
+        }
+
+        const entryDate = new Date(`${entry.date}T00:00:00`);
+
+        if (
+          historyYearFilter !== 'all' &&
+          entryDate.getFullYear() !== Number(historyYearFilter)
+        ) {
+          return false;
+        }
+
+        if (
+          historyMonthFilter !== 'all' &&
+          entryDate.getMonth() !== Number(historyMonthFilter)
+        ) {
           return false;
         }
 
@@ -31,8 +100,18 @@ export default function AdminRoomHistoryTab({
         }
 
         return true;
-      }),
-    [historyFilter, historySearch, roomHistory]
+      });
+
+      return filteredEntries.sort((left, right) => {
+        const leftDate = getHistoryDateValue(left.date);
+        const rightDate = getHistoryDateValue(right.date);
+
+        return historyDateSortDirection === 'desc'
+          ? rightDate - leftDate
+          : leftDate - rightDate;
+      });
+    },
+    [historyDateSortDirection, historyFilter, historyMonthFilter, historySearch, historyYearFilter, roomHistory]
   );
 
   return (
@@ -42,28 +121,57 @@ export default function AdminRoomHistoryTab({
       </div>
 
       <div className="glass-card p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={historySearch}
-              onChange={(event) => setHistorySearch(event.target.value)}
-              placeholder="Search by name or room..."
-              className="glass-input w-full px-4 py-2.5 text-sm"
-            />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={historySearch}
+                onChange={(event) => setHistorySearch(event.target.value)}
+                placeholder="Search by name or room..."
+                className="glass-input w-full px-4 py-2.5 text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={historyYearFilter}
+                onChange={(event) => setHistoryYearFilter(event.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:border-[#a12124] focus:outline-none focus:ring-2 focus:ring-[#a12124]/25"
+              >
+                <option value="all">All Years</option>
+                {availableHistoryYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={historyMonthFilter}
+                onChange={(event) => setHistoryMonthFilter(event.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all focus:border-[#a12124] focus:outline-none focus:ring-2 focus:ring-[#a12124]/25"
+              >
+                <option value="all">All Months</option>
+                {MONTH_FILTER_OPTIONS.map((month, index) => (
+                  <option key={month} value={index}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="flex gap-2 flex-wrap items-center">
-            {['all', 'approved', 'rejected', 'active', 'completed', 'cancelled'].map((filter) => (
+            {HISTORY_STATUS_FILTERS.map((filter) => (
               <button
-                key={filter}
-                onClick={() => setHistoryFilter(filter)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold capitalize transition-all ${
-                  historyFilter === filter
+                key={filter.key}
+                onClick={() => setHistoryFilter(filter.key)}
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                  historyFilter === filter.key
                     ? 'bg-primary text-white border border-primary'
                     : 'bg-white text-gray-700 border border-gray-200 hover:text-primary'
                 }`}
               >
-                {filter === 'all' ? 'All Status' : filter}
+                {filter.label}
               </button>
             ))}
           </div>
@@ -96,7 +204,20 @@ export default function AdminRoomHistoryTab({
                     Type
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    Date
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setHistoryDateSortDirection((currentDirection) =>
+                          currentDirection === 'desc' ? 'asc' : 'desc'
+                        )
+                      }
+                      className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-primary"
+                    >
+                      Date
+                      <span aria-hidden="true">
+                        {historyDateSortDirection === 'desc' ? '\u2193' : '\u2191'}
+                      </span>
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">
                     Time

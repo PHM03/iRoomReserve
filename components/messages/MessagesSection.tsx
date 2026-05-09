@@ -1140,7 +1140,7 @@ export default function MessagesSection(props: MessagesSectionProps) {
   return (
     <section className="mb-8">
       {(props.title || props.subtitle) && (
-        <div className="mb-5 rounded-[28px] border border-white/40 bg-white/80 p-5 shadow-sm backdrop-blur">
+        <div className="mb-5 rounded-2xl border border-white/40 bg-white p-5 shadow-sm">
           {props.title && (
             <h2 className="text-xl font-bold text-black">{props.title}</h2>
           )}
