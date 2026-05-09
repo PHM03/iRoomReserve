@@ -1,7 +1,7 @@
 import { formatDate } from '@/lib/utils/dateTime';
 
 export function RoleBadge({ role }: { role: string }) {
-  const style = role === 'Faculty' ? 'ui-badge-green' : 'ui-badge-blue';
+  const style = role === 'Faculty Professor' ? 'ui-badge-green' : 'ui-badge-blue';
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${style}`}>
