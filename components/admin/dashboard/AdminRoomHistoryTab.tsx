@@ -38,7 +38,7 @@ export default function AdminRoomHistoryTab({
   return (
     <div>
       <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-6">
-        <h3 className="text-xl font-bold text-gray-800">Room History</h3>
+        <h3 className="text-xl font-bold text-gray-800">Reservation History</h3>
       </div>
 
       <div className="glass-card p-4 mb-6">

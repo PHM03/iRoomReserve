@@ -289,7 +289,7 @@ export default function AdminDashboard({
         />
       )}
 
-      {activeTab === 'room-history' && (
+      {activeTab === 'reservation-history' && (
         <AdminRoomHistoryTab roomHistory={roomHistory} />
       )}
 

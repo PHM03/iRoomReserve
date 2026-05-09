@@ -30,7 +30,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       pending: "iRoomReserve | Pending",
       "manage-rooms": "iRoomReserve | Manage Rooms",
       feedback: "iRoomReserve | Feedback",
-      "room-history": "iRoomReserve | Room History",
+      "reservation-history": "iRoomReserve | Reservation History",
       inbox: "iRoomReserve | Inbox",
       "status-scheduling": "iRoomReserve | Status & Scheduling",
       "room-status-monitor": "iRoomReserve | Room Status Monitor",

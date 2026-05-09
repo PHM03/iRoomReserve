@@ -18,7 +18,7 @@ export type AdminTab =
   | 'manage-rooms'
   | 'feedback'
   | 'status-scheduling'
-  | 'room-history'
+  | 'reservation-history'
   | 'inbox'
   | 'pending';
 
@@ -39,7 +39,7 @@ const adminLinks: Array<{ label: string; tab: AdminTab }> = [
   { label: 'Pending', tab: 'pending' },
   { label: 'Manage Rooms', tab: 'manage-rooms' },
   { label: 'Feedback', tab: 'feedback' },
-  { label: 'Room History', tab: 'room-history' },
+  { label: 'Reservation History', tab: 'reservation-history' },
   { label: 'Inbox', tab: 'inbox' },
 ];
 
