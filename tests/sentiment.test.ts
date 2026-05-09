@@ -4,7 +4,7 @@ import {
   analyzeSentiment,
   averageSentimentScores,
   getSentimentLabel,
-} from '../lib/sentiment';
+} from '../lib/ai/sentiment';
 
 describe('sentiment', () => {
   it('returns a safe neutral result for empty input', () => {

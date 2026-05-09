@@ -2,21 +2,21 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import type { AdminTab } from '@/components/NavBar';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
+import type { AdminTab } from '@/components/layout/NavBar';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
 import {
   onPendingReservationsByBuilding,
   onReservationsByBuilding,
   approveReservation,
   rejectReservation,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   onUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   Notification,
-} from '@/lib/notifications';
+} from '@/lib/notifications/notifications';
 import {
   Room,
   RoomInput,
@@ -25,13 +25,13 @@ import {
   deleteRoom,
   updateRoomStatus,
   onRoomsByBuilding,
-} from '@/lib/rooms';
+} from '@/lib/rooms/rooms';
 import {
   Feedback,
   onFeedbackByBuilding,
   respondToFeedback,
-} from '@/lib/feedback';
-import { getBuildingById } from '@/lib/buildings';
+} from '@/lib/feedback/feedback';
+import { getBuildingById } from '@/lib/buildings/buildings';
 import {
   Schedule,
   ScheduleInput,
@@ -40,16 +40,16 @@ import {
   deleteSchedule,
   onSchedulesByBuilding,
   isRoomInClass,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 import {
   RoomHistoryEntry,
   onRoomHistoryByBuilding,
-} from '@/lib/roomHistory';
+} from '@/lib/rooms/roomHistory';
 import {
   AdminRequest,
   onAdminRequestsByBuilding,
   respondToAdminRequest,
-} from '@/lib/adminRequests';
+} from '@/lib/admin/adminRequests';
 
 interface UseAdminDashboardOptions {
   activeTab: AdminTab;
@@ -118,16 +118,43 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
   useEffect(() => {
     if (!buildingId || !firebaseUser?.uid) return;
 
-    const unsubReservations = onPendingReservationsByBuilding(buildingId, setRequests);
-    const unsubAllReservations = onReservationsByBuilding(buildingId, setAllReservations);
-    const unsubRooms = onRoomsByBuilding(buildingId, setRooms);
-    const unsubFeedback = onFeedbackByBuilding(buildingId, setFeedbackList);
-    const unsubNotifs = onUnreadNotifications(firebaseUser.uid, setNotifications);
-    const unsubSchedules = onSchedulesByBuilding(buildingId, setSchedules);
-    const unsubHistory = onRoomHistoryByBuilding(buildingId, setRoomHistory);
-    const unsubAdminRequests = onAdminRequestsByBuilding(buildingId, setAdminRequests);
+    let cancelled = false;
+
+    const unsubReservations = onPendingReservationsByBuilding(buildingId, (nextRequests) => {
+      if (cancelled) return;
+      setRequests(nextRequests);
+    });
+    const unsubAllReservations = onReservationsByBuilding(buildingId, (nextReservations) => {
+      if (cancelled) return;
+      setAllReservations(nextReservations);
+    });
+    const unsubRooms = onRoomsByBuilding(buildingId, (nextRooms) => {
+      if (cancelled) return;
+      setRooms(nextRooms);
+    });
+    const unsubFeedback = onFeedbackByBuilding(buildingId, (nextFeedback) => {
+      if (cancelled) return;
+      setFeedbackList(nextFeedback);
+    });
+    const unsubNotifs = onUnreadNotifications(firebaseUser.uid, (nextNotifications) => {
+      if (cancelled) return;
+      setNotifications(nextNotifications);
+    });
+    const unsubSchedules = onSchedulesByBuilding(buildingId, (nextSchedules) => {
+      if (cancelled) return;
+      setSchedules(nextSchedules);
+    });
+    const unsubHistory = onRoomHistoryByBuilding(buildingId, (nextHistory) => {
+      if (cancelled) return;
+      setRoomHistory(nextHistory);
+    });
+    const unsubAdminRequests = onAdminRequestsByBuilding(buildingId, (nextAdminRequests) => {
+      if (cancelled) return;
+      setAdminRequests(nextAdminRequests);
+    });
 
     return () => {
+      cancelled = true;
       unsubReservations();
       unsubAllReservations();
       unsubRooms();
@@ -140,7 +167,7 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
   }, [buildingId, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (buildingId && activeTab === 'add-rooms') {
+    if (buildingId && activeTab === 'manage-rooms') {
       getBuildingById(buildingId).then((building) => {
         if (building) setBuildingFloors(building.floors);
       });
@@ -323,7 +350,7 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
 
   const computeEffectiveStatus = (room: Room): { status: string; detail: string } => {
     if (room.status === 'Unavailable') return { status: 'Unavailable', detail: 'Manual override' };
-    if (room.status === 'Ongoing') return { status: 'Ongoing', detail: 'Checked in' };
+    if (room.status === 'Occupied') return { status: 'Occupied', detail: 'Checked in' };
     if (room.status === 'Reserved') return { status: 'Reserved', detail: 'Reserved' };
 
     const activeClass = isRoomInClass(schedules, room.id);
@@ -343,14 +370,14 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
 
     if (activeReservation) {
       return activeReservation.checkedInAt
-        ? { status: 'Ongoing', detail: `Checked in: ${activeReservation.userName}` }
+        ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
         : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
     }
 
     return { status: 'Available', detail: '' };
   };
 
-  const ongoingCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Ongoing').length;
+  const ongoingCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Occupied').length;
   const reservedCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Reserved').length;
   const unavailableCount = rooms.filter((room) => room.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;

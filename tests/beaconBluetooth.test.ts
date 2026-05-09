@@ -3,14 +3,14 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBeaconRequestOptions,
   getBluetoothErrorMessage,
-} from '../lib/beaconBluetooth';
+} from '../lib/occupancy/beaconBluetooth';
 import {
   DEFAULT_RESERVATION_TIME_ZONE,
   getReservationRoomStatus,
   isReservationActiveTimeSlot,
   normalizeRoomCheckInMethod,
   resolveRoomStatus,
-} from '../lib/roomStatus';
+} from '../lib/rooms/roomStatus';
 
 describe('beaconBluetooth', () => {
   it('builds a device request filtered to the expected beacon name and service', () => {

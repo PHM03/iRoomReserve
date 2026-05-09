@@ -8,7 +8,7 @@ import {
   sampleRooms,
   sampleTimeslot,
   startHelpMeChooseChat,
-} from '../lib/roomAssistantChat';
+} from '../lib/ai/roomAssistantChat';
 
 const availabilityByRoomId: Record<string, boolean> = {
   'glass-101': false,

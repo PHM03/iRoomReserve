@@ -9,11 +9,126 @@ service cloud.firestore {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "approved" &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "utility", "super_admin", "Admin", "Utility", "Super Admin"];
+        (
+          isAdminRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+          isUtilityRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+          isSuperAdminRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role)
+        );
+    }
+
+    function isAdminRoleValue(role) {
+      return role in [
+        "Administrator",
+        "Admin",
+        "admin",
+        "administrator",
+        "Building Admin",
+        "building admin",
+        "building_admin"
+      ];
+    }
+
+    function isUtilityRoleValue(role) {
+      return role in [
+        "Utility Staff",
+        "Utility",
+        "utility staff",
+        "utility"
+      ];
+    }
+
+    function isFacultyRoleValue(role) {
+      return role in [
+        "Faculty Professor",
+        "Faculty",
+        "faculty professor",
+        "faculty"
+      ];
+    }
+
+    function isSuperAdminRoleValue(role) {
+      return role in [
+        "Super Admin",
+        "super_admin"
+      ];
+    }
+
+    // Helper: caller is one of the staff roles allowed to use the messaging mesh
+    // (Administrator, Utility Staff, Faculty Professor, Super Admin).
+    function isStaffMember() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "approved" &&
+        (
+          isAdminRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+          isUtilityRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+          isFacultyRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+          isSuperAdminRoleValue(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role)
+        );
+    }
+
+    function isApprovedUser() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "approved";
+    }
+
+    function hasUserProfile() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isApprovedFeedbackStaff() {
+      return hasUserProfile() &&
+        userProfile().status == "approved" &&
+        (
+          isAdminRoleValue(userProfile().role) ||
+          isUtilityRoleValue(userProfile().role) ||
+          isSuperAdminRoleValue(userProfile().role)
+        );
+    }
+
+    function canReadManagedBuildingData(buildingId) {
+      return isApprovedFeedbackStaff() && (
+        isSuperAdminRoleValue(userProfile().role) ||
+        userProfile().assignedBuildingId == buildingId ||
+        (
+          userProfile().assignedBuildingIds is list &&
+          buildingId in userProfile().assignedBuildingIds
+        ) ||
+        (
+          userProfile().campus == "main" &&
+          buildingId in ["gd1", "gd2", "gd3"]
+        ) ||
+        (
+          userProfile().campus == "digi" &&
+          buildingId == "sdca-digital-campus"
+        ) ||
+        (
+          userProfile().campusName == "SDCA Main Campus" &&
+          buildingId in ["gd1", "gd2", "gd3"]
+        ) ||
+        (
+          userProfile().campusName == "SDCA Digi Campus" &&
+          buildingId == "sdca-digital-campus"
+        )
+      );
+    }
+
+    function canReadBuildingFeedback(buildingId) {
+      return canReadManagedBuildingData(buildingId);
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isPrivilegedUser());
+      allow read: if isSignedIn() && (
+        request.auth.uid == userId
+        || isPrivilegedUser()
+        || isApprovedUser()
+      );
       allow create, update: if isSignedIn() && request.auth.uid == userId;
     }
 
@@ -27,16 +142,92 @@ service cloud.firestore {
     }
 
     match /feedback/{docId} {
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(["roomId", "userId"]) &&
+        request.resource.data.roomId is string &&
+        request.resource.data.userId == request.auth.uid &&
+        (
+          request.resource.data.text is string ||
+          request.resource.data.message is string
+        );
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        (
+          resource.data.buildingId is string &&
+          canReadBuildingFeedback(resource.data.buildingId)
+        )
+      );
+      allow update, delete: if false;
     }
 
     match /buildings/{docId} {
       allow read: if isSignedIn();
     }
 
+    match /rooms/{docId} {
+      allow read: if isSignedIn() &&
+        resource.data.buildingId is string &&
+        canReadManagedBuildingData(resource.data.buildingId);
+    }
+
+    match /schedules/{docId} {
+      allow read: if isSignedIn() &&
+        resource.data.buildingId is string &&
+        canReadManagedBuildingData(resource.data.buildingId);
+    }
+
+    // Reservations are private to the owner, except that any signed-in user can
+    // read APPROVED reservations so the room availability date picker can paint
+    // booked days red without leaking other users' pending requests.
     match /reservations/{docId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId
+        || resource.data.status == "approved"
+        || (
+          resource.data.buildingId is string &&
+          canReadManagedBuildingData(resource.data.buildingId)
+        )
+      );
+    }
+
+    // Staff-to-staff messaging (Administrator <-> Utility Staff <-> Faculty
+    // Professor). Documents are immutable on create except for the `isRead`
+    // flag, which only the receiver can flip.
+    match /messages/{docId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.senderId
+        || request.auth.uid == resource.data.receiverId
+      );
+
+      allow create: if (isStaffMember() || isApprovedUser())
+        && request.auth.uid == request.resource.data.senderId
+        && request.resource.data.senderId != request.resource.data.receiverId
+        && request.resource.data.isRead == false
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 0
+        && request.resource.data.subject.size() <= 200
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() <= 5000
+        && request.resource.data.keys().hasAll([
+          "senderId", "senderName", "senderRole",
+          "receiverId", "receiverName", "receiverRole",
+          "subject", "body", "isRead", "createdAt"
+        ]);
+
+      // Receiver may mark the message as read.
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.receiverId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["isRead"])
+        && request.resource.data.isRead == true;
+
+      // Sender may close their own sent message.
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.senderId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["closedBySender"])
+        && request.resource.data.closedBySender == true;
+
+      allow delete: if false;
     }
 
     match /{document=**} {

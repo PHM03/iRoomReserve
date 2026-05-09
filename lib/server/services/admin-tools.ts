@@ -1,12 +1,12 @@
 import "server-only";
 
-import { getCampusName, resolveCampusAssignment } from "../../campusAssignments";
+import { getCampusName, resolveCampusAssignment } from "@/lib/buildings/campusAssignments";
 import {
   db,
   deleteField,
   serverTimestamp,
-} from "@/lib/configs/firebase-admin";
-import { normalizeRole } from "@/lib/domain/roles";
+} from "@/lib/firebase/firebase-admin";
+import { normalizeRole } from "@/lib/auth/roles";
 
 const DEFAULT_BUILDINGS = [
   {

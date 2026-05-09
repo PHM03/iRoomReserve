@@ -1,12 +1,12 @@
 import "server-only";
 
-import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
+import { db, serverTimestamp } from "@/lib/firebase/firebase-admin";
 import {
   normalizeRoomCheckInMethod,
   normalizeRoomStatus,
   type RoomCheckInMethod,
   type RoomStatusValue,
-} from "@/lib/roomStatus";
+} from "@/lib/rooms/roomStatus";
 
 export interface RoomCreateInput {
   name: string;
@@ -34,6 +34,25 @@ export interface RoomStatusUpdateInput {
   beaconLastDisconnectedAt?: Date | string | null;
 }
 
+function normalizeBuildingName(buildingId: string, buildingName: string) {
+  const normalizedBuildingId = buildingId.trim().toLowerCase();
+  const trimmedBuildingName = buildingName.trim();
+
+  if (normalizedBuildingId === "gd1") {
+    return "GD1 Main Campus";
+  }
+
+  if (normalizedBuildingId === "gd2") {
+    return "GD2 Main Campus";
+  }
+
+  if (normalizedBuildingId === "gd3") {
+    return "GD3 Main Campus";
+  }
+
+  return trimmedBuildingName;
+}
+
 function normalizeBeaconId(value?: string | null) {
   if (typeof value !== "string") {
     return null;
@@ -54,9 +73,11 @@ export async function createRoomRecord(data: RoomCreateInput) {
   const roomRef = db.collection("rooms").doc();
   const batch = db.batch();
   const beaconId = resolveBeaconId(data);
+  const buildingName = normalizeBuildingName(data.buildingId, data.buildingName);
 
   batch.set(roomRef, {
     ...data,
+    buildingName,
     status: normalizeRoomStatus(data.status),
     beaconId,
     bleBeaconId: beaconId,
@@ -85,8 +106,16 @@ export async function updateRoomRecord(
     data.beaconId !== undefined || data.bleBeaconId !== undefined;
   const normalizedBeaconId = beaconIdProvided ? resolveBeaconId(data) : undefined;
 
+  const normalizedBuildingName =
+    data.buildingId && data.buildingName
+      ? normalizeBuildingName(data.buildingId, data.buildingName)
+      : data.buildingName;
+
   batch.update(roomRef, {
     ...data,
+    ...(normalizedBuildingName !== undefined
+      ? { buildingName: normalizedBuildingName }
+      : {}),
     ...(beaconIdProvided
       ? {
           beaconId: normalizedBeaconId,
@@ -145,7 +174,7 @@ export async function updateRoomStatusRecord(
       ? { checkInMethod: normalizedCheckInMethod }
       : {}),
     status: normalizeRoomStatus(data.status),
-    ...(data.status !== "Ongoing" && data.beaconConnected === undefined
+    ...(data.status !== "Occupied" && data.beaconConnected === undefined
       ? {
           beaconConnected: false,
           beaconDeviceName: null,

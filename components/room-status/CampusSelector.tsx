@@ -1,7 +1,7 @@
 'use client';
 
-import type { ReservationCampus } from '@/lib/campuses';
-import type { CampusOption } from '@/lib/roomStatusView';
+import type { ReservationCampus } from '@/lib/buildings/campuses';
+import type { CampusOption } from '@/lib/rooms/roomStatusView';
 
 interface CampusSelectorProps {
   onChange: (campus: ReservationCampus) => void;

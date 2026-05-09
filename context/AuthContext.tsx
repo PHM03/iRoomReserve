@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/configs/firebase';
-import { getUserProfile, logout as firebaseLogout } from '@/lib/auth';
-import { type CampusName } from '@/lib/campusAssignments';
-import { type ReservationCampus } from '@/lib/campuses';
+import { auth } from '@/lib/firebase/firebase';
+import { getUserProfile, logout as firebaseLogout } from '@/lib/auth/auth';
+import { type CampusName } from '@/lib/buildings/campusAssignments';
+import { type ReservationCampus } from '@/lib/buildings/campuses';
 
 interface UserProfile {
   firstName: string;

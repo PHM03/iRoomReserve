@@ -1,7 +1,7 @@
 import type { RequestAuthContext } from "@/lib/server/request-auth";
-import { USER_ROLES, type UserRole } from "../domain/roles";
+import { USER_ROLES, type UserRole } from "../auth/roles";
 import { ApiError } from "./api-error";
-import { isCampusManagedBuilding } from "../campusAssignments";
+import { isCampusManagedBuilding } from "@/lib/buildings/campusAssignments";
 
 export function assertAuthenticated(context: RequestAuthContext) {
   if (!context.uid) {
@@ -29,6 +29,26 @@ export function assertRole(
   if (!context.role || !allowedRoles.includes(context.role)) {
     throw new ApiError(403, "forbidden", "You do not have permission to perform this action.");
   }
+}
+
+export function assertCanViewBuildingFeedback(
+  context: RequestAuthContext,
+  buildingId: string
+) {
+  assertAuthenticated(context);
+
+  if (
+    context.role !== USER_ROLES.ADMIN &&
+    context.role !== USER_ROLES.SUPER_ADMIN
+  ) {
+    throw new ApiError(
+      403,
+      "forbidden",
+      "Only building administrators can view feedback sentiment."
+    );
+  }
+
+  assertCanManageBuilding(context, buildingId);
 }
 
 export function assertCanManageBuilding(

@@ -1,13 +1,15 @@
 'use client';
 
 import FloorAccordion from '@/components/room-status/FloorAccordion';
-import type { Room } from '@/lib/rooms';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { Room } from '@/lib/rooms/rooms';
 
 interface AdminRoomStatusSectionProps {
   buildingName?: string;
   rooms: Room[];
   statusMonitorFloorGroups: Array<{
     floor: string;
+    label: string;
     rooms: Room[];
   }>;
   computeEffectiveStatus: (room: Room) => {
@@ -21,10 +23,6 @@ interface AdminRoomStatusSectionProps {
 function StatusBadge({ status }: { status: string }) {
   const style = (() => {
     switch (status) {
-      case 'Ongoing':
-        return 'ui-badge-orange';
-      case 'Reserved':
-        return 'ui-badge-blue';
       case 'Unavailable':
         return 'ui-badge-red';
       case 'Available':
@@ -53,12 +51,14 @@ export default function AdminRoomStatusSection({
 }: AdminRoomStatusSectionProps) {
   return (
     <section className={className}>
-      <h3 className="text-xl font-bold text-black mb-6">
-        Room Status Monitor
-        {buildingName ? (
-          <span className="text-sm text-black font-normal ml-2">({buildingName})</span>
-        ) : null}
-      </h3>
+      <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-6">
+        <h3 className="text-xl font-bold text-gray-800">
+          Room Status Monitor
+          {buildingName ? (
+            <span className="text-sm text-gray-600 font-normal ml-2">({buildingName})</span>
+          ) : null}
+        </h3>
+      </div>
 
       {rooms.length === 0 ? (
         <div className="glass-card p-12 text-center">
@@ -69,20 +69,16 @@ export default function AdminRoomStatusSection({
           {statusMonitorFloorGroups.map((floorGroup) => (
             <FloorAccordion
               key={floorGroup.floor}
-              floor={floorGroup.floor}
+              floor={floorGroup.label}
               roomCount={floorGroup.rooms.length}
               renderContent={() => (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {floorGroup.rooms.map((room) => {
                     const effective = computeEffectiveStatus(room);
                     const statusBorder =
-                      effective.status === 'Ongoing'
-                        ? 'border-orange-500/40'
-                        : effective.status === 'Reserved'
-                          ? 'border-blue-500/40'
-                          : effective.status === 'Unavailable'
-                            ? 'border-red-500/40'
-                            : 'border-green-500/40';
+                      effective.status === 'Unavailable'
+                        ? 'border-red-500/40'
+                        : 'border-green-500/40';
 
                     return (
                       <div key={room.id} className={`glass-card p-5 border-l-4 ${statusBorder}`}>
@@ -90,7 +86,10 @@ export default function AdminRoomStatusSection({
                           <div>
                             <h4 className="text-lg font-bold text-black">{room.name}</h4>
                             <p className="text-sm text-black">
-                              {room.floor} | Cap: {room.capacity}
+                              {getFloorDisplayLabel(room.floor, {
+                                id: room.buildingId,
+                                name: room.buildingName,
+                              })} | Cap: {room.capacity}
                             </p>
                           </div>
                           <StatusBadge status={effective.status} />
@@ -108,26 +107,6 @@ export default function AdminRoomStatusSection({
                             }`}
                           >
                             Available
-                          </button>
-                          <button
-                            onClick={() => onStatusChange(room.id, 'Reserved')}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Reserved'
-                                ? 'ui-button-blue'
-                                : 'ui-button-gray'
-                            }`}
-                          >
-                            Reserved
-                          </button>
-                          <button
-                            onClick={() => onStatusChange(room.id, 'Ongoing')}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              room.status === 'Ongoing'
-                                ? 'ui-button-orange'
-                                : 'ui-button-gray'
-                            }`}
-                          >
-                            Ongoing
                           </button>
                           <button
                             onClick={() => onStatusChange(room.id, 'Unavailable')}

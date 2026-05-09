@@ -1,6 +1,6 @@
 import "server-only";
 
-import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
+import { db, serverTimestamp } from "@/lib/firebase/firebase-admin";
 
 export interface ScheduleCreateInput {
   roomId: string;

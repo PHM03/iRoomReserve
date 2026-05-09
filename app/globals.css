@@ -471,3 +471,106 @@ select option {
 .ui-text-teal {
   color: #0f766e;
 }
+
+/* ── Schedule Panel Slot Styles ────────────────────────────────── */
+
+.schedule-slot {
+  border: 1px solid rgba(52, 52, 52, 0.08);
+  min-height: 2.5rem;
+}
+
+.schedule-slot-available {
+  background: rgba(255, 255, 255, 0.92);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.schedule-slot-available:hover {
+  background: rgba(220, 252, 231, 0.85);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.12);
+  transform: translateX(2px);
+}
+
+.schedule-slot-available:active {
+  background: rgba(187, 247, 208, 0.92);
+  transform: translateX(0);
+}
+
+.schedule-slot-reserved {
+  background: rgba(254, 226, 226, 0.88);
+  color: #991b1b;
+  border-color: rgba(252, 165, 165, 0.6);
+}
+
+.schedule-slot-reserved:hover {
+  background: rgba(254, 202, 202, 0.95);
+  border-color: rgba(248, 113, 113, 0.7);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+.schedule-slot-conflict {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(254, 226, 226, 0.85),
+      rgba(254, 226, 226, 0.85) 4px,
+      rgba(254, 202, 202, 0.65) 4px,
+      rgba(254, 202, 202, 0.65) 8px
+    );
+  color: #7f1d1d;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.schedule-slot-conflict:hover {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(254, 202, 202, 0.92),
+      rgba(254, 202, 202, 0.92) 4px,
+      rgba(252, 165, 165, 0.72) 4px,
+      rgba(252, 165, 165, 0.72) 8px
+    );
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.schedule-slot-pending {
+  background: rgba(254, 249, 195, 0.8);
+  color: #92400e;
+  border-color: rgba(253, 224, 71, 0.5);
+}
+
+.schedule-slot-pending:hover {
+  background: rgba(254, 240, 138, 0.9);
+  border-color: rgba(250, 204, 21, 0.65);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+.schedule-panel-scroll {
+  scrollbar-width: thin;
+}
+
+.schedule-panel-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.schedule-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(52, 52, 52, 0.14);
+  border-radius: 2px;
+}
+
+@keyframes animate-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: animate-in 200ms ease-out;
+}
