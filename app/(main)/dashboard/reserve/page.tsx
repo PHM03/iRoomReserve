@@ -1,5 +1,7 @@
 'use client';
 
+import type { FormEvent } from 'react';
+
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DaySchedulePanel from '@/components/rooms/schedules/DaySchedulePanel';
@@ -669,7 +671,9 @@ export default function ReserveRoomPage() {
     router.push('/dashboard/reserve');
   }
 
-  async function handleSubmitReservation() {
+  async function handleSubmitReservation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
     if (
       !firebaseUser ||
       !selectedBuildingId ||
@@ -1570,7 +1574,7 @@ export default function ReserveRoomPage() {
                   </div>
                 )}
 
-                <div className="space-y-6">
+                <form onSubmit={handleSubmitReservation} className="space-y-6">
                   <div className="space-y-3">
                     {[
                       { key: 'fans', label: 'Fans' },
@@ -1706,7 +1710,7 @@ export default function ReserveRoomPage() {
                   )}
 
                   <button
-                    onClick={handleSubmitReservation}
+                    type="submit"
                     disabled={submitting || validatingApprover || documentUploading}
                     className="btn-primary flex w-full items-center justify-center px-4 py-3"
                   >
@@ -1730,7 +1734,7 @@ export default function ReserveRoomPage() {
                       'Submit Reservation'
                     )}
                   </button>
-                </div>
+                </form>
               </div>
             )}
           </>

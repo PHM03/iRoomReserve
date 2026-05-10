@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useState } from 'react';
+import { type FormEvent, useDeferredValue, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { Feedback, createFeedback, getAverageSentiment, getFeedbackByUser } from '@/lib/feedback/feedback';
@@ -139,7 +139,9 @@ export default function FeedbackPage() {
     setRoomAverageSentiment(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     if (!firebaseUser || !selectedReservation || rating === 0 || !trimmedComment) {
       return;
     }
@@ -220,31 +222,33 @@ export default function FeedbackPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-black">Rate Your Experience</h3>
-                  <p className="text-xs text-black/60 mt-0.5">
-                    {selectedReservation.roomName} | {selectedReservation.buildingName} |{' '}
-                    {formatDate(selectedReservation.date)}
-                  </p>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-black">Rate Your Experience</h3>
+                    <p className="text-xs text-black/60 mt-0.5">
+                      {selectedReservation.roomName} | {selectedReservation.buildingName} |{' '}
+                      {formatDate(selectedReservation.date)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseFeedback}
+                    className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={handleCloseFeedback}
-                  className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
 
-              <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-black mb-3">Rating</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
+                        type="button"
                         onClick={() => setRating(star)}
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
@@ -341,7 +345,7 @@ export default function FeedbackPage() {
                 </div>
 
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={submitting || rating === 0 || !trimmedComment}
                   className="btn-primary w-full py-3 px-4 flex items-center justify-center"
                 >
@@ -357,7 +361,7 @@ export default function FeedbackPage() {
                     'Submit Feedback'
                   )}
                 </button>
-              </div>
+              </form>
             </>
           )}
         </div>
