@@ -221,10 +221,6 @@ export default function RoomStatusPage() {
             .
           </p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-xs text-black max-w-md">
-          Floors stay collapsed by default so large buildings remain easy to
-          scan without breaking the current reservation and live status flow.
-        </div>
       </div>
 
       {campusOptions.length > 1 ? (

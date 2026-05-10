@@ -12,6 +12,7 @@ interface AdminPageHeaderProps {
   buildingName?: string;
   activeBuildingLabel: string;
   onBuildingChange: (buildingId: string) => void;
+  integratedBuildingField?: boolean;
 }
 
 export default function AdminPageHeader({
@@ -22,7 +23,46 @@ export default function AdminPageHeader({
   buildingName,
   activeBuildingLabel,
   onBuildingChange,
+  integratedBuildingField = false,
 }: AdminPageHeaderProps) {
+  if (integratedBuildingField) {
+    return (
+      <section className="w-full rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+            <div className="mt-2 text-sm text-gray-600">{description}</div>
+          </div>
+
+          <div className="w-full lg:w-72">
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-black">
+              Active Building
+            </label>
+            {managedBuildings.length > 1 ? (
+              <select
+                value={buildingId ?? ''}
+                onChange={(event) => onBuildingChange(event.target.value)}
+                className="w-full rounded-lg border border-[#e0e0e0] bg-white px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {managedBuildings.map((building) => (
+                  <option key={building.id} value={building.id}>
+                    {getManagedBuildingOptionLabel(building)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={activeBuildingLabel}
+                readOnly
+                className="w-full rounded-lg border border-[#e0e0e0] bg-white px-3 py-2 text-sm text-black focus:outline-none"
+              />
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div className="bg-white rounded-xl px-6 py-4 border border-white/30">
