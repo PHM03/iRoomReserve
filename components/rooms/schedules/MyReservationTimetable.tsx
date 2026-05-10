@@ -26,10 +26,6 @@ const TIMETABLE_DAYS = [
   { label: 'Saturday', value: 6 },
 ] as const;
 
-function getCampusLabel(campus: Reservation['campus']) {
-  return campus === 'digi' ? 'SDCA Digi Campus' : 'SDCA Main Campus';
-}
-
 function getReservationDates(reservation: Reservation) {
   const dates = reservation.dates?.length ? reservation.dates : [reservation.date];
   return [...new Set(dates.filter(Boolean))];
@@ -173,8 +169,8 @@ export default function MyReservationTimetable({
   }
 
   return (
-    <section className={className}>
-      <div className="bg-white rounded-xl px-6 py-4 mb-4 border border-white/30">
+    <section className={`rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${className ?? ''}`}>
+      <div className="mb-4">
         <h3 className="text-xl font-bold text-gray-800">
           My Reservation Timetable
         </h3>
@@ -183,8 +179,8 @@ export default function MyReservationTimetable({
         </p>
       </div>
 
-      <div className="glass-card !rounded-xl p-4 overflow-x-auto">
-        <div className="grid min-w-[900px] grid-cols-6 gap-3">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 p-4">
+        <div className="grid min-w-full grid-cols-[repeat(6,minmax(120px,1fr))] gap-3">
           {TIMETABLE_DAYS.map((day) => {
             const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
               (left, right) =>
@@ -220,13 +216,13 @@ export default function MyReservationTimetable({
                           {entry.roomName}
                         </p>
                         <p className="text-xs text-black mt-1">
-                          {entry.buildingName} | {getCampusLabel(entry.campus)}
+                          {entry.buildingName}
                         </p>
                         <p className="text-xs font-bold text-primary mt-2">
                           {formatTimeRange(entry.startTime, entry.endTime)}
                         </p>
                         {entry.purpose && (
-                          <p className="text-[11px] text-black/60 mt-1 line-clamp-2">
+                          <p className="mt-1 truncate text-[11px] text-black/60">
                             {entry.purpose}
                           </p>
                         )}

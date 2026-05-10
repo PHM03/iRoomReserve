@@ -275,7 +275,7 @@ export default function MyReservationsPage() {
       </div>
 
       {/* Year / Month Filters */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center">
+      <div className="mb-4 flex w-full flex-wrap items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <select
           value={selectedYear}
           onChange={(e) =>
@@ -377,7 +377,10 @@ export default function MyReservationsPage() {
             const roomStatus = getReservationRoomStatus(reservation, room);
 
             return (
-              <div key={reservation.id} className="glass-card p-5 !rounded-xl">
+              <div
+                key={reservation.id}
+                className="rounded-xl bg-white px-5 py-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+              >
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex-1 min-w-0">
