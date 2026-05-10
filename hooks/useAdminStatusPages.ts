@@ -144,8 +144,8 @@ export function useAdminStatusPages() {
   const handleStatusChange = async (roomId: string, status: Room['status']) => {
     try {
       await updateRoomStatus(roomId, status);
-    } catch (err) {
-      console.warn('Failed to update status:', err);
+    } catch (error) {
+      console.warn('Failed to update status:', error);
       alert('Failed to update room status. Check the console for details.');
     }
   };
@@ -194,8 +194,8 @@ export function useAdminStatusPages() {
       }
 
       resetScheduleForm();
-    } catch (err) {
-      console.warn('Failed to save schedule:', err);
+    } catch (error) {
+      console.warn('Failed to save schedule:', error);
       alert('Failed to save schedule. Check the console for details.');
     } finally {
       setAddingSchedule(false);
@@ -220,8 +220,8 @@ export function useAdminStatusPages() {
 
     try {
       await deleteSchedule(scheduleId);
-    } catch (err) {
-      console.warn('Failed to delete schedule:', err);
+    } catch (error) {
+      console.warn('Failed to delete schedule:', error);
     }
   };
 
