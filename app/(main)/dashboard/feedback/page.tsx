@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useDeferredValue, useEffect, useState } from 'react';
+import { type SubmitEvent, useDeferredValue, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { Feedback, createFeedback, getAverageSentiment, getFeedbackByUser } from '@/lib/feedback/feedback';
@@ -139,7 +139,7 @@ export default function FeedbackPage() {
     setRoomAverageSentiment(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!firebaseUser || !selectedReservation || rating === 0 || !trimmedComment) {
