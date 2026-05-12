@@ -1,31 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   approveReservation,
   rejectReservation,
   type Reservation,
 } from '@/lib/reservations/reservations';
 import { formatTimeRange } from '@/lib/utils/dateTime';
-import { formatReservationDates, RoleBadge } from './shared';
+import { formatReservationDates, RoleBadge, getManagedBuildingOptionLabel } from './shared';
+
+interface BuildingOption {
+  id: string;
+  name: string;
+}
 
 interface AdminPendingTabProps {
+  activeBuildingLabel: string;
   approverEmail?: string | null;
-  buildingName: string;
+  buildingId: string;
   requests: Reservation[];
+  managedBuildings: BuildingOption[];
+  onBuildingChange: (buildingId: string) => void;
   onReload: () => Promise<void>;
+}
+
+function ChevronDownIcon({ className }: { className: string }) {
+  return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      </svg>
+  );
+}
+
+function CheckIcon({ className }: { className: string }) {
+  return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+  );
 }
 
 export default function AdminPendingTab({
   approverEmail,
-  buildingName,
   requests,
+  activeBuildingLabel,
+  buildingId,
+  managedBuildings,
+  onBuildingChange,
   onReload,
 }: AdminPendingTabProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectingReservationId, setRejectingReservationId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [reservationActionError, setReservationActionError] = useState('');
+  const [isBuildingSwitcherOpen, setIsBuildingSwitcherOpen] = useState(false);
+  const buildingSwitcherRef = useRef<HTMLDivElement | null>(null);
 
   const handleApprove = async (id: string) => {
     if (!approverEmail) {
@@ -76,22 +105,82 @@ export default function AdminPendingTab({
     }
   };
 
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+        if (!buildingSwitcherRef.current?.contains(event.target as Node)) {
+            setIsBuildingSwitcherOpen(false);
+        }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsBuildingSwitcherOpen(false);
+        }
+    };
+
+      document.addEventListener('click', handleDocumentClick);
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+          document.removeEventListener('click', handleDocumentClick);
+          document.removeEventListener('keydown', handleKeyDown);
+      };
+  }, []);
+
+  const handleBuildingSwitcherSelect = (nextBuildingId: string) => {
+    onBuildingChange(nextBuildingId);
+    setIsBuildingSwitcherOpen(false);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-6 py-4 border border-white/30">
-        <div>
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
             Pending Reservations
-            {requests.length > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-yellow">
-                {requests.length} pending
-              </span>
-            )}
           </h3>
-          <p className="text-gray-600 mt-1 text-sm">
-            Review and approve reservation requests for{' '}
-            <span className="ui-text-teal font-bold">{buildingName}</span>
-          </p>
+          <div ref={buildingSwitcherRef} className="relative w-fit">
+            <button
+              type="button"
+              onClick={() => setIsBuildingSwitcherOpen((current) => !current)}
+              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#a12124]/30 bg-[#a12124]/10 px-3 py-1 text-xs font-bold text-[#7f1d1d] shadow-sm transition-all hover:border-[#a12124]/45 hover:bg-[#a12124]/15 hover:shadow focus:outline-none focus:ring-2 focus:ring-[#a12124]/25"
+              aria-haspopup="menu"
+              aria-expanded={isBuildingSwitcherOpen}
+            >
+              <span>Active Building: {activeBuildingLabel}</span>
+              <ChevronDownIcon
+                className={`h-3.5 w-3.5 transition-transform ${isBuildingSwitcherOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isBuildingSwitcherOpen && (
+              <div
+                className="absolute left-0 z-20 mt-2 min-w-44 overflow-hidden rounded-xl border border-[#a12124]/15 bg-white py-1 shadow-lg"
+                role="menu"
+              >
+                {managedBuildings.map((building) => {
+                  const isActive = building.id === buildingId;
+
+                  return (
+                    <button
+                      key={building.id}
+                      type="button"
+                      onClick={() => handleBuildingSwitcherSelect(building.id)}
+                      className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold transition-colors ${isActive
+                          ? 'bg-[#a12124]/10 text-[#7f1d1d]'
+                          : 'text-gray-700 hover:bg-[#a12124]/5 hover:text-[#a12124]'
+                        }`}
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                    >
+                      <span>{getManagedBuildingOptionLabel(building)}</span>
+                      {isActive && <CheckIcon className="h-3.5 w-3.5 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

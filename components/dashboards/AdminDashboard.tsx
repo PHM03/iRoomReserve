@@ -311,9 +311,12 @@ export default function AdminDashboard({
       {activeTab === 'pending' && (
         <AdminPendingTab
           approverEmail={approverEmail}
-          buildingName={buildingName}
+          activeBuildingLabel={activeBuildingLabel}
+          buildingId={buildingId}
           requests={requests}
           onReload={reloadDashboard}
+          managedBuildings={managedBuildings}
+          onBuildingChange={setSelectedBuildingId}
         />
       )}
 
