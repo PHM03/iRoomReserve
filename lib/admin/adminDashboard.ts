@@ -33,6 +33,10 @@ export interface AdminDashboardSnapshot {
 
 interface FetchAdminDashboardSnapshotOptions {
   includeRooms?: boolean;
+  includeRoomHistory?: boolean;
+  includeSchedules?: boolean;
+  includeApprovedReservations?: boolean;
+  includePendingRequests?: boolean;
 }
 
 function reviveTimestamp(value: TimestampLike) {
@@ -88,35 +92,42 @@ export async function fetchAdminDashboardSnapshot(
     "/api/admin/dashboard",
     {
       method: "GET",
-      params: { buildingId, includeRooms: options.includeRooms ?? true },
+      params: {
+        buildingId,
+        includeApprovedReservations: options.includeApprovedReservations ?? true,
+        includePendingRequests: options.includePendingRequests ?? true,
+        includeRoomHistory: options.includeRoomHistory ?? true,
+        includeRooms: options.includeRooms ?? true,
+        includeSchedules: options.includeSchedules ?? true,
+      },
     }
   );
 
   return {
-    adminRequests: snapshot.adminRequests.map((request) =>
+    adminRequests: (snapshot.adminRequests ?? []).map((request) =>
       reviveRecordTimestamps(request, ["createdAt"])
     ),
-    allReservations: snapshot.allReservations.map((reservation) =>
+    allReservations: (snapshot.allReservations ?? []).map((reservation) =>
       reviveRecordTimestamps(reservation, [
         "checkedInAt",
         "createdAt",
         "updatedAt",
       ])
     ),
-    notifications: snapshot.notifications.map((notification) =>
+    notifications: (snapshot.notifications ?? []).map((notification) =>
       reviveRecordTimestamps(notification, ["createdAt"])
     ),
-    requests: snapshot.requests.map((reservation) =>
+    requests: (snapshot.requests ?? []).map((reservation) =>
       reviveRecordTimestamps(reservation, [
         "checkedInAt",
         "createdAt",
         "updatedAt",
       ])
     ),
-    roomHistory: snapshot.roomHistory.map((entry) =>
+    roomHistory: (snapshot.roomHistory ?? []).map((entry) =>
       reviveRecordTimestamps(entry, ["createdAt"])
     ),
-    rooms: snapshot.rooms.map((room) =>
+    rooms: (snapshot.rooms ?? []).map((room) =>
       reviveRecordTimestamps(room, [
         "beaconLastConnectedAt",
         "beaconLastDisconnectedAt",
@@ -125,7 +136,7 @@ export async function fetchAdminDashboardSnapshot(
         "updatedAt",
       ])
     ),
-    schedules: snapshot.schedules.map((schedule) =>
+    schedules: (snapshot.schedules ?? []).map((schedule) =>
       reviveRecordTimestamps(schedule, ["createdAt", "updatedAt"])
     ),
   };

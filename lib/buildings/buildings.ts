@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  documentId,
   getDocs,
   getDoc,
   updateDoc,
@@ -43,6 +44,14 @@ function mapBuilding(
         campus: data.campus,
       }) ?? "main",
   };
+}
+
+function chunkValues<T>(values: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
 }
 
 // ─── Get All Buildings ──────────────────────────────────────────
@@ -139,4 +148,61 @@ export function onBuildings(
   );
 
   return listener.wrap(unsubscribe);
+}
+
+export function onBuildingsByIds(
+  buildingIds: string[],
+  callback: (buildings: Building[]) => void
+): Unsubscribe {
+  const uniqueBuildingIds = [...new Set(buildingIds.filter(Boolean))];
+  if (uniqueBuildingIds.length === 0) {
+    return () => {};
+  }
+
+  const listener = createGuardedSnapshotCallback(callback);
+  const buildingsByChunk = new Map<number, Building[]>();
+  const buildingIdChunks = chunkValues(uniqueBuildingIds, 10);
+
+  const emit = () => {
+    listener.emit(
+      [...buildingsByChunk.values()]
+        .flat()
+        .sort((left, right) => left.name.localeCompare(right.name))
+    );
+  };
+
+  const unsubscribers = buildingIdChunks.map((buildingIdChunk, chunkIndex) =>
+    onSnapshot(
+      query(collection(db, "buildings"), where(documentId(), "in", buildingIdChunk)),
+      (snapshot) => {
+        if (listener.isCancelled()) {
+          return;
+        }
+
+        buildingsByChunk.set(
+          chunkIndex,
+          snapshot.docs.map((buildingDoc) =>
+            mapBuilding(
+              buildingDoc.id,
+              buildingDoc.data() as Omit<Building, "id" | "campus"> & {
+                campus?: string | null;
+              }
+            )
+          )
+        );
+        emit();
+      },
+      (error) => {
+        if (listener.isCancelled()) {
+          return;
+        }
+
+        console.warn("Firestore listener error (buildings by ids):", error);
+      }
+    )
+  );
+
+  return listener.wrap(() => {
+    unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
 }

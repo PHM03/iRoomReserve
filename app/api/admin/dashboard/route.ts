@@ -144,6 +144,14 @@ function isVisiblePendingReservationForBuildingAdmin(
   return currentStep?.role === "building_admin";
 }
 
+function parseBooleanFlag(value: string | null, defaultValue: boolean) {
+  if (value === null) {
+    return defaultValue;
+  }
+
+  return value !== "false";
+}
+
 async function getApprovalDocumentUrl(reservation: DashboardReservation) {
   const storedUrl =
     typeof reservation.approvalDocumentUrl === "string"
@@ -177,7 +185,23 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const buildingId = searchParams.get("buildingId")?.trim() ?? "";
-    const includeRooms = searchParams.get("includeRooms") !== "false";
+    const includeRooms = parseBooleanFlag(searchParams.get("includeRooms"), true);
+    const includeApprovedReservations = parseBooleanFlag(
+      searchParams.get("includeApprovedReservations"),
+      true
+    );
+    const includePendingRequests = parseBooleanFlag(
+      searchParams.get("includePendingRequests"),
+      true
+    );
+    const includeSchedules = parseBooleanFlag(
+      searchParams.get("includeSchedules"),
+      true
+    );
+    const includeRoomHistory = parseBooleanFlag(
+      searchParams.get("includeRoomHistory"),
+      true
+    );
 
     if (!buildingId) {
       return NextResponse.json(
@@ -197,24 +221,34 @@ export async function GET(request: NextRequest) {
 
     const [
       roomsSnapshot,
-      reservationsSnapshot,
-      notificationsSnapshot,
+      approvedReservationsSnapshot,
+      pendingReservationsSnapshot,
       schedulesSnapshot,
       roomHistorySnapshot,
-      adminRequestsSnapshot,
     ] = await Promise.all([
       includeRooms
         ? adminDb.collection("rooms").where("buildingId", "==", buildingId).get()
         : Promise.resolve(null),
-      adminDb.collection("reservations").where("buildingId", "==", buildingId).get(),
-      adminDb
-        .collection("notifications")
-        .where("recipientUid", "==", authContext.uid)
-        .where("read", "==", false)
-        .get(),
-      adminDb.collection("schedules").where("buildingId", "==", buildingId).get(),
-      adminDb.collection("roomHistory").where("buildingId", "==", buildingId).get(),
-      adminDb.collection("adminRequests").where("buildingId", "==", buildingId).get(),
+      includeApprovedReservations
+        ? adminDb
+            .collection("reservations")
+            .where("buildingId", "==", buildingId)
+            .where("status", "==", "approved")
+            .get()
+        : Promise.resolve(null),
+      includePendingRequests
+        ? adminDb
+            .collection("reservations")
+            .where("buildingId", "==", buildingId)
+            .where("status", "==", "pending")
+            .get()
+        : Promise.resolve(null),
+      includeSchedules
+        ? adminDb.collection("schedules").where("buildingId", "==", buildingId).get()
+        : Promise.resolve(null),
+      includeRoomHistory
+        ? adminDb.collection("roomHistory").where("buildingId", "==", buildingId).get()
+        : Promise.resolve(null),
     ]);
 
     const rooms = roomsSnapshot
@@ -222,41 +256,33 @@ export async function GET(request: NextRequest) {
           .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
           .sort(sortRooms)
       : [];
-    const allReservations = (
+    const allReservations = (approvedReservationsSnapshot?.docs ?? [])
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
+      .sort(sortReservations);
+    const pendingRequests = (pendingReservationsSnapshot?.docs ?? [])
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
+      .filter(isVisiblePendingReservationForBuildingAdmin);
+    const requests = groupReservationsForDisplay(
       await Promise.all(
-        reservationsSnapshot.docs.map(async (doc) => {
-          const reservation = {
-            id: doc.id,
-            ...doc.data(),
-          } as DashboardReservation;
-
-          return {
+        pendingRequests
+          .sort(sortReservations)
+          .map(async (reservation) => ({
             ...reservation,
             approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
-          } as DashboardReservation;
-        })
+          }))
       )
-    ).sort(sortReservations);
-    const requests = groupReservationsForDisplay(
-      allReservations.filter(isVisiblePendingReservationForBuildingAdmin)
     );
-    const notifications = notificationsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardNotification)
-      .sort(sortByCreatedAtDesc);
-    const schedules = schedulesSnapshot.docs
+    const schedules = (schedulesSnapshot?.docs ?? [])
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardSchedule)
       .sort(sortSchedules);
-    const roomHistory = roomHistorySnapshot.docs
+    const roomHistory = (roomHistorySnapshot?.docs ?? [])
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoomHistoryEntry)
-      .sort(sortByCreatedAtDesc);
-    const adminRequests = adminRequestsSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardAdminRequest)
       .sort(sortByCreatedAtDesc);
 
     return NextResponse.json({
-      adminRequests,
+      adminRequests: [] as DashboardAdminRequest[],
       allReservations,
-      notifications,
+      notifications: [] as DashboardNotification[],
       requests,
       roomHistory,
       rooms,

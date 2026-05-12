@@ -69,18 +69,31 @@ export default function AdminDashboard({
     if (!buildingId || !firebaseUser?.uid) {
       return;
     }
+    if (activeTab === 'inbox') {
+      return;
+    }
 
     try {
-      const [snapshot, feedbackSnapshot] = await Promise.all([
-        fetchAdminDashboardSnapshot(buildingId, {
-          includeRooms: activeTab === 'dashboard',
-        }),
-        getFeedbackByBuilding(buildingId),
-      ]);
+      if (activeTab === 'feedback') {
+        const feedbackSnapshot = await getFeedbackByBuilding(buildingId);
+        setFeedbackList(feedbackSnapshot.feedback);
+        setFeedbackSummary(feedbackSnapshot.summary);
+        return;
+      }
+
+      if (activeTab === 'manage-rooms') {
+        return;
+      }
+
+      const snapshot = await fetchAdminDashboardSnapshot(buildingId, {
+        includeApprovedReservations: activeTab === 'dashboard',
+        includePendingRequests: activeTab === 'dashboard' || activeTab === 'pending',
+        includeRoomHistory: activeTab === 'reservation-history',
+        includeRooms: activeTab === 'dashboard',
+        includeSchedules: activeTab === 'dashboard',
+      });
 
       setAllReservations(snapshot.allReservations);
-      setFeedbackList(feedbackSnapshot.feedback);
-      setFeedbackSummary(feedbackSnapshot.summary);
       setRequests(snapshot.requests);
       setRoomHistory(snapshot.roomHistory);
       setRooms(snapshot.rooms);
@@ -88,12 +101,14 @@ export default function AdminDashboard({
     } catch (error) {
       console.warn('Failed to load admin dashboard snapshot:', error);
       setAllReservations([]);
-      setFeedbackList([]);
-      setFeedbackSummary(null);
       setRequests([]);
       setRoomHistory([]);
       setRooms([]);
       setSchedules([]);
+      if (activeTab === 'feedback') {
+        setFeedbackList([]);
+        setFeedbackSummary(null);
+      }
     }
   }, [activeTab, buildingId, firebaseUser?.uid]);
 

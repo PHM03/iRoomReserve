@@ -95,21 +95,14 @@ export async function GET(request: NextRequest) {
       .where("status", "==", "pending")
       .get();
 
-    const reservations = (
-      await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const reservation = {
+    const reservations = snapshot.docs
+      .map(
+        (doc) =>
+          ({
             id: doc.id,
             ...doc.data(),
-          } as PendingApprovalReservation;
-
-          return {
-            ...reservation,
-            approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
-          };
-        })
+          }) as PendingApprovalReservation
       )
-    )
       .filter((reservation) => {
         const currentStep = getCurrentApprovalStep(
           Array.isArray(reservation.approvalFlow)
@@ -124,7 +117,14 @@ export async function GET(request: NextRequest) {
       })
       .sort(sortReservations);
 
-    return NextResponse.json(groupReservationsForDisplay(reservations));
+    const reservationsWithDocuments = await Promise.all(
+      reservations.map(async (reservation) => ({
+        ...reservation,
+        approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
+      }))
+    );
+
+    return NextResponse.json(groupReservationsForDisplay(reservationsWithDocuments));
   } catch (error) {
     return handleApiError(error);
   }
