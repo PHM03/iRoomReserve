@@ -3,14 +3,81 @@
 import { useMemo, useState } from 'react';
 
 import AdminClassSchedulesSection from '@/components/admin/AdminClassSchedulesSection';
+import { getBuildingFloorOptions } from '@/lib/buildings/floorLabels';
 import AdminNoBuildingAssigned from '@/components/admin/AdminNoBuildingAssigned';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
-import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import { useAdminStatusPages } from '@/hooks/useAdminStatusPages';
+import type { Room } from '@/lib/rooms/rooms';
+import type { Schedule } from '@/lib/schedules/schedules';
 
-const FLOOR_FILTER_OPTIONS = ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor'];
+type ScheduleFilterFields = Schedule & {
+  floor?: unknown;
+  floorLabel?: unknown;
+  floorName?: unknown;
+  floorNumber?: unknown;
+  level?: unknown;
+  room?: unknown;
+  roomFloor?: unknown;
+};
+
+let lastLoggedScheduleId: string | null = null;
+
+function normalizeScheduleFilterValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as { label?: unknown; name?: unknown };
+    return (
+      normalizeScheduleFilterValue(record.name) ||
+      normalizeScheduleFilterValue(record.label)
+    );
+  }
+
+  return '';
+}
+
+function logFirstScheduleObject(schedule?: Schedule) {
+  if (
+    process.env.NODE_ENV === 'production' ||
+    !schedule ||
+    schedule.id === lastLoggedScheduleId
+  ) {
+    return;
+  }
+
+  lastLoggedScheduleId = schedule.id;
+  console.log('Schedule object:', schedule);
+}
+
+function getScheduleRoomFilterValue(schedule: Schedule) {
+  const scheduleFields = schedule as ScheduleFilterFields;
+  return (
+    normalizeScheduleFilterValue(scheduleFields.roomName) ||
+    normalizeScheduleFilterValue(scheduleFields.room) ||
+    normalizeScheduleFilterValue(scheduleFields.roomId)
+  );
+}
+
+function getRoomFilterValue(room: Room) {
+  return normalizeScheduleFilterValue(room.name) || normalizeScheduleFilterValue(room.id);
+}
+
+function getStoredRoomFloor(room: Room) {
+  return room.floor;
+}
 
 export default function AdminClassSchedulesPage() {
+  const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
+  const [selectedFloor, setSelectedFloor] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
+  const [clearButtonPressed, setClearButtonPressed] = useState(false);
+  const [lastActiveBuildingId, setLastActiveBuildingId] = useState('');
   const {
     managedBuildings,
     buildingId,
@@ -38,38 +105,103 @@ export default function AdminClassSchedulesPage() {
     handleSaveSchedule,
     handleEditSchedule,
     handleDeleteSchedule,
-  } = useAdminStatusPages();
-  const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
-  const [selectedRoom, setSelectedRoom] = useState('');
-  const [selectedFloor, setSelectedFloor] = useState('');
-  const [clearButtonPressed, setClearButtonPressed] = useState(false);
-  const roomLookup = useMemo(
-    () => Object.fromEntries(rooms.map((room) => [room.id, room] as const)),
-    [rooms]
-  );
+  } = useAdminStatusPages({
+    scheduleSelectionRequired: true,
+    selectedScheduleFloor: selectedFloor,
+    selectedScheduleRoom: selectedRoom,
+  });
+
+  // Reset floor/room selections when the active building changes.
+  if (buildingId && buildingId !== lastActiveBuildingId) {
+    setLastActiveBuildingId(buildingId);
+    setSelectedFloor('');
+    setSelectedRoom('');
+  }
+
+  logFirstScheduleObject(schedules[0]);
+
+  // Debug: surface the active filter values and schedule counts at runtime.
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[page] schedules filter state', {
+      selectedFloor,
+      selectedRoom,
+      roomsCount: rooms.length,
+      schedulesCount: schedules.length,
+    });
+  }
   const hasActiveScheduleFilters = Boolean(selectedRoom || selectedFloor);
-  const roomFilterOptions = useMemo(
+  const availableFloors = getBuildingFloorOptions({ id: buildingId, name: buildingName });
+  const selectedFloorRooms = useMemo(
     () =>
-      [...new Set(schedules.map((schedule) => schedule.roomName).filter(Boolean))]
-        .sort((left, right) => left.localeCompare(right, undefined, { numeric: true })),
-    [schedules]
+      selectedFloor
+        ? rooms.filter(
+            (room) =>
+              room.buildingId === buildingId &&
+              getStoredRoomFloor(room) === selectedFloor
+          )
+        : [],
+    [buildingId, rooms, selectedFloor]
   );
+  const availableRooms = useMemo(() => {
+    if (!selectedFloor) {
+      return [];
+    }
+
+    return [
+      ...new Set(
+        selectedFloorRooms.map(getRoomFilterValue).filter(Boolean)
+      ),
+    ].sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+  }, [selectedFloor, selectedFloorRooms]);
+  const selectedRoomIds = useMemo(
+    () =>
+      new Set(
+        selectedRoom
+          ? selectedFloorRooms
+              .filter(
+                (room) =>
+                  room.id === selectedRoom || getRoomFilterValue(room) === selectedRoom
+              )
+              .map((room) => room.id)
+          : selectedFloorRooms.map((room) => room.id)
+      ),
+    [selectedFloorRooms, selectedRoom]
+  );
+  const handleScheduleFloorChange = (nextFloor: string) => {
+    setSelectedFloor(nextFloor);
+    setSelectedRoom('');
+  };
   const filteredSchedules = useMemo(() => {
+    if (!selectedFloor) {
+      return [];
+    }
+
     const query = scheduleSearchQuery.trim().toLowerCase();
 
-    return schedules.filter((schedule) =>
-      (!query ||
-        [schedule.subjectName, schedule.roomName, schedule.instructorName]
+    return schedules.filter((schedule) => {
+      const roomValue = getScheduleRoomFilterValue(schedule);
+
+      if (
+        query &&
+        ![schedule.subjectName, roomValue, schedule.instructorName]
           .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(query))) &&
-      (!selectedRoom || schedule.roomName === selectedRoom) &&
-      (!selectedFloor ||
-        getFloorDisplayLabel(roomLookup[schedule.roomId]?.floor ?? '', {
-          id: roomLookup[schedule.roomId]?.buildingId,
-          name: roomLookup[schedule.roomId]?.buildingName,
-        }) === selectedFloor)
-    );
-  }, [roomLookup, scheduleSearchQuery, schedules, selectedFloor, selectedRoom]);
+          .some((value) => value.toLowerCase().includes(query))
+      ) {
+        return false;
+      }
+
+      if (!selectedRoomIds.has(schedule.roomId)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    scheduleSearchQuery,
+    schedules,
+    selectedFloor,
+    selectedRoomIds,
+  ]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[100px] py-8 relative z-10">
@@ -120,6 +252,22 @@ export default function AdminClassSchedulesPage() {
 
           <div className="flex w-full flex-row items-center gap-3 rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             <label className="flex items-center gap-2 text-sm font-bold text-gray-800">
+              <span>Floor</span>
+              <select
+                value={selectedFloor}
+                onChange={(event) => handleScheduleFloorChange(event.target.value)}
+                className="min-w-[150px] rounded-lg border border-[#e0e0e0] bg-white px-[14px] py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">Select Floor</option>
+                {availableFloors.map((floor) => (
+                  <option key={floor.value} value={floor.value}>
+                    {floor.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-2 text-sm font-bold text-gray-800">
               <span>Room</span>
               <select
                 value={selectedRoom}
@@ -127,25 +275,9 @@ export default function AdminClassSchedulesPage() {
                 className="min-w-[150px] rounded-lg border border-[#e0e0e0] bg-white px-[14px] py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <option value="">Select Room</option>
-                {roomFilterOptions.map((roomName) => (
-                  <option key={roomName} value={roomName}>
-                    {roomName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex items-center gap-2 text-sm font-bold text-gray-800">
-              <span>Floor</span>
-              <select
-                value={selectedFloor}
-                onChange={(event) => setSelectedFloor(event.target.value)}
-                className="min-w-[150px] rounded-lg border border-[#e0e0e0] bg-white px-[14px] py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                <option value="">Select Floor</option>
-                {FLOOR_FILTER_OPTIONS.map((floor) => (
-                  <option key={floor} value={floor}>
-                    {floor}
+                {availableRooms.map((room) => (
+                  <option key={room} value={room}>
+                    {room}
                   </option>
                 ))}
               </select>

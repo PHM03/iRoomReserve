@@ -4,6 +4,7 @@ import { formatTimeRange } from '@/lib/utils/dateTime';
 type MyReservationTimetableProps = {
   className?: string;
   compact?: boolean;
+  compactVariant?: 'weekly' | 'today';
   currentUserId?: string | null;
   reservations: Reservation[];
 };
@@ -100,12 +101,76 @@ function buildEntriesByDay(
 export default function MyReservationTimetable({
   className,
   compact = false,
+  compactVariant = 'weekly',
   currentUserId,
   reservations,
 }: MyReservationTimetableProps) {
   const entriesByDay = buildEntriesByDay(reservations, currentUserId);
 
   if (compact) {
+    if (compactVariant === 'today') {
+      const today = new Date();
+      const todayValue = today.getDay();
+      const todayConfig = TIMETABLE_DAYS.find((day) => day.value === todayValue);
+      const todayEntries = [...(entriesByDay.get(todayValue)?.values() ?? [])].sort(
+        (left, right) =>
+          left.startTime.localeCompare(right.startTime) ||
+          left.roomName.localeCompare(right.roomName, undefined, {
+            numeric: true,
+          })
+      );
+
+      return (
+        <section className={`glass-card p-3 sm:p-4 ${className ?? ''}`.trim()}>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-extrabold text-black">
+                Reservation Timetable
+              </h3>
+              <p className="mt-0.5 truncate text-[11px] font-bold text-black/50">
+                {todayConfig?.label ?? 'Today'}
+              </p>
+            </div>
+            <span className="rounded-lg border border-primary/15 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+              Today
+            </span>
+          </div>
+
+          {todayEntries.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-dark/15 bg-dark/5 px-3 py-5 text-center text-xs font-bold text-black/55">
+              No approved reservations today.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {todayEntries.slice(0, 4).map((entry) => (
+                <div
+                  key={`${entry.buildingName}:${entry.roomName}:${entry.startTime}:${entry.endTime}`}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-green-500/15 bg-green-500/10 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-extrabold text-black">
+                      {entry.roomName}
+                    </p>
+                    <p className="truncate text-[10px] font-bold text-black/50">
+                      {entry.purpose || entry.buildingName}
+                    </p>
+                  </div>
+                  <p className="whitespace-nowrap text-[11px] font-extrabold text-primary">
+                    {formatTimeRange(entry.startTime, entry.endTime)}
+                  </p>
+                </div>
+              ))}
+              {todayEntries.length > 4 ? (
+                <p className="text-center text-[10px] font-bold text-black/55">
+                  +{todayEntries.length - 4} more today
+                </p>
+              ) : null}
+            </div>
+          )}
+        </section>
+      );
+    }
+
     return (
       <section className={className}>
         <div className="mb-2 flex items-center justify-between rounded-xl border border-white/30 bg-white px-3 py-2">

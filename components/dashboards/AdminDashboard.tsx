@@ -13,6 +13,7 @@ import { getManagedBuildingDisplayLabel } from '@/components/admin/dashboard/sha
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
 import { fetchAdminDashboardSnapshot } from '@/lib/admin/adminDashboard';
+import type { AdminDashboardSummary } from '@/lib/admin/adminDashboard';
 import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
 import { getBuildingById } from '@/lib/buildings/buildings';
 import { getFeedbackByBuilding } from '@/lib/feedback/feedback';
@@ -27,6 +28,14 @@ import { isRoomInClass, type Schedule } from '@/lib/schedules/schedules';
 interface AdminDashboardProps {
   firstName: string;
   activeTab: AdminTab;
+}
+
+function getLocalDateKey(date: Date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 export default function AdminDashboard({
@@ -64,6 +73,8 @@ export default function AdminDashboard({
   const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [buildingFloors, setBuildingFloors] = useState(0);
+  const [dashboardSummary, setDashboardSummary] =
+    useState<AdminDashboardSummary | null>(null);
 
   const reloadDashboard = useCallback(async () => {
     if (!buildingId || !firebaseUser?.uid) {
@@ -91,9 +102,15 @@ export default function AdminDashboard({
         includeRoomHistory: activeTab === 'reservation-history',
         includeRooms: activeTab === 'dashboard',
         includeSchedules: activeTab === 'dashboard',
+        includeSummary: activeTab === 'dashboard',
+        pendingLimit: activeTab === 'dashboard' ? 3 : undefined,
+        reservationDate: activeTab === 'dashboard' ? getLocalDateKey() : undefined,
+        roomLimit: activeTab === 'dashboard' ? 5 : undefined,
+        scheduleDayOfWeek: activeTab === 'dashboard' ? new Date().getDay() : undefined,
       });
 
       setAllReservations(snapshot.allReservations);
+      setDashboardSummary(snapshot.summary);
       setRequests(snapshot.requests);
       setRoomHistory(snapshot.roomHistory);
       setRooms(snapshot.rooms);
@@ -105,6 +122,7 @@ export default function AdminDashboard({
       setRoomHistory([]);
       setRooms([]);
       setSchedules([]);
+      setDashboardSummary(null);
       if (activeTab === 'feedback') {
         setFeedbackList([]);
         setFeedbackSummary(null);
@@ -209,7 +227,11 @@ export default function AdminDashboard({
   ).length;
   const unavailableCount = rooms.filter((room) => room.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;
-  const pendingCount = requests.length;
+  const summaryOngoingCount = dashboardSummary?.occupiedRooms ?? ongoingCount;
+  const summaryReservedCount = dashboardSummary?.reservedRooms ?? reservedCount;
+  const summaryUnavailableCount = dashboardSummary?.unavailableRooms ?? unavailableCount;
+  const summaryAvailableCount = dashboardSummary?.availableRooms ?? availableCount;
+  const pendingCount = dashboardSummary?.pendingRequests ?? requests.length;
   const approverEmail = profile?.email || firebaseUser?.email;
 
   if (!buildingId || !buildingName) {
@@ -228,16 +250,16 @@ export default function AdminDashboard({
     <main
       className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 ${
         activeTab === 'dashboard'
-          ? 'py-3 pt-[82px] pb-4'
+          ? 'py-4 pt-[88px] pb-6'
           : 'py-8 pt-[100px] pb-24 md:pb-8'
       }`}
     >
-      <div className={activeTab === 'dashboard' ? 'mb-2' : 'mb-8'}>
+      <div className={activeTab === 'dashboard' ? 'mb-3' : 'mb-8'}>
         {activeTab === 'dashboard' ? (
-          <div className="flex flex-col gap-2 rounded-xl border border-white/30 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-3 rounded-xl border border-white/40 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2.5">
               <div>
-                <h2 className="text-base font-bold text-gray-800">
+                <h2 className="text-lg font-extrabold text-gray-800">
                   Welcome, {firstName}
                 </h2>
               </div>
@@ -271,17 +293,21 @@ export default function AdminDashboard({
       {activeTab === 'dashboard' && (
         <AdminOverviewTab
           allReservations={allReservations}
-          availableCount={availableCount}
+          approverEmail={approverEmail}
+          availableCount={summaryAvailableCount}
           buildingId={buildingId}
           buildingName={buildingName}
           computeEffectiveStatus={computeEffectiveStatus}
           currentUserId={firebaseUser?.uid}
-          ongoingCount={ongoingCount}
+          dashboardSummary={dashboardSummary}
+          ongoingCount={summaryOngoingCount}
+          onReload={reloadDashboard}
           pendingCount={pendingCount}
           requests={requests}
-          reservedCount={reservedCount}
+          reservedCount={summaryReservedCount}
           rooms={rooms}
           setActiveTab={setActiveTab}
+          unavailableCount={summaryUnavailableCount}
         />
       )}
 

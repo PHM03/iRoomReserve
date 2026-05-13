@@ -29,14 +29,34 @@ export interface AdminDashboardSnapshot {
   roomHistory: RoomHistoryEntry[];
   rooms: Room[];
   schedules: Schedule[];
+  summary: AdminDashboardSummary | null;
+}
+
+export interface AdminDashboardSummary {
+  availableRooms: number;
+  occupiedRooms: number;
+  pendingRequests: number;
+  pendingPreviewLimit: number | null;
+  reservedRooms: number;
+  roomPreviewLimit: number | null;
+  roomsHasMore: boolean;
+  totalRooms: number;
+  unavailableRooms: number;
 }
 
 interface FetchAdminDashboardSnapshotOptions {
+  includeApprovedReservations?: boolean;
+  includePendingRequests?: boolean;
   includeRooms?: boolean;
   includeRoomHistory?: boolean;
   includeSchedules?: boolean;
-  includeApprovedReservations?: boolean;
-  includePendingRequests?: boolean;
+  includeSummary?: boolean;
+  pendingLimit?: number;
+  reservationDate?: string;
+  roomLimit?: number;
+  roomSearch?: string;
+  roomStatus?: string;
+  scheduleDayOfWeek?: number;
 }
 
 function reviveTimestamp(value: TimestampLike) {
@@ -99,6 +119,13 @@ export async function fetchAdminDashboardSnapshot(
         includeRoomHistory: options.includeRoomHistory ?? true,
         includeRooms: options.includeRooms ?? true,
         includeSchedules: options.includeSchedules ?? true,
+        includeSummary: options.includeSummary ?? false,
+        pendingLimit: options.pendingLimit,
+        reservationDate: options.reservationDate,
+        roomLimit: options.roomLimit,
+        roomSearch: options.roomSearch,
+        roomStatus: options.roomStatus,
+        scheduleDayOfWeek: options.scheduleDayOfWeek,
       },
     }
   );
@@ -139,5 +166,6 @@ export async function fetchAdminDashboardSnapshot(
     schedules: (snapshot.schedules ?? []).map((schedule) =>
       reviveRecordTimestamps(schedule, ["createdAt", "updatedAt"])
     ),
+    summary: snapshot.summary ?? null,
   };
 }

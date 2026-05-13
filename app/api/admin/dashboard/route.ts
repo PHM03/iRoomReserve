@@ -50,6 +50,25 @@ type DashboardSchedule = {
   startTime?: string;
 } & Record<string, unknown>;
 
+type DashboardSummary = {
+  availableRooms: number;
+  occupiedRooms: number;
+  pendingRequests: number;
+  pendingPreviewLimit: number | null;
+  reservedRooms: number;
+  roomPreviewLimit: number | null;
+  roomsHasMore: boolean;
+  totalRooms: number;
+  unavailableRooms: number;
+};
+
+const ROOM_STATUS_FILTERS = new Set([
+  "Available",
+  "Reserved",
+  "Occupied",
+  "Unavailable",
+]);
+
 function getTimestampSeconds(value: unknown) {
   if (!value || typeof value !== "object") {
     return 0;
@@ -152,6 +171,56 @@ function parseBooleanFlag(value: string | null, defaultValue: boolean) {
   return value !== "false";
 }
 
+function parsePositiveInteger(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
+function parseDayOfWeek(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsedValue) || parsedValue < 0 || parsedValue > 6) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
+function normalizeRoomStatusFilter(value: string | null) {
+  const trimmedValue = value?.trim() ?? "";
+  return ROOM_STATUS_FILTERS.has(trimmedValue) ? trimmedValue : null;
+}
+
+function matchesRoomSearch(room: DashboardRoom, searchValue: string) {
+  if (!searchValue) {
+    return true;
+  }
+
+  const searchableText = [
+    room.name,
+    room.floor,
+    room.roomType,
+    room.status,
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return searchableText.includes(searchValue);
+}
+
+async function getAggregateCount(query: FirebaseFirestore.Query) {
+  const snapshot = await query.count().get();
+  return snapshot.data().count ?? 0;
+}
+
 async function getApprovalDocumentUrl(reservation: DashboardReservation) {
   const storedUrl =
     typeof reservation.approvalDocumentUrl === "string"
@@ -202,6 +271,16 @@ export async function GET(request: NextRequest) {
       searchParams.get("includeRoomHistory"),
       true
     );
+    const includeSummary = parseBooleanFlag(
+      searchParams.get("includeSummary"),
+      false
+    );
+    const roomLimit = parsePositiveInteger(searchParams.get("roomLimit"));
+    const pendingLimit = parsePositiveInteger(searchParams.get("pendingLimit"));
+    const reservationDate = searchParams.get("reservationDate")?.trim() || null;
+    const scheduleDayOfWeek = parseDayOfWeek(searchParams.get("scheduleDayOfWeek"));
+    const roomStatusFilter = normalizeRoomStatusFilter(searchParams.get("roomStatus"));
+    const roomSearch = searchParams.get("roomSearch")?.trim().toLowerCase() ?? "";
 
     if (!buildingId) {
       return NextResponse.json(
@@ -219,42 +298,90 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const roomsBaseQuery = adminDb
+      .collection("rooms")
+      .where("buildingId", "==", buildingId);
+    const roomPreviewQuery = roomStatusFilter
+      ? roomsBaseQuery.where("status", "==", roomStatusFilter)
+      : roomsBaseQuery;
+    const roomFetchLimit = roomLimit
+      ? roomSearch
+        ? Math.max(roomLimit * 8, 40)
+        : Math.max(roomLimit * 4, 20)
+      : null;
+    const approvedReservationsBaseQuery = adminDb
+      .collection("reservations")
+      .where("buildingId", "==", buildingId)
+      .where("status", "==", "approved");
+    const approvedReservationsQuery = reservationDate
+      ? approvedReservationsBaseQuery.where("date", "==", reservationDate)
+      : approvedReservationsBaseQuery;
+    const pendingReservationsQuery = adminDb
+      .collection("reservations")
+      .where("buildingId", "==", buildingId)
+      .where("status", "==", "pending");
+    const schedulesBaseQuery = adminDb
+      .collection("schedules")
+      .where("buildingId", "==", buildingId);
+    const schedulesQuery =
+      scheduleDayOfWeek === null
+        ? schedulesBaseQuery
+        : schedulesBaseQuery.where("dayOfWeek", "==", scheduleDayOfWeek);
+
     const [
       roomsSnapshot,
       approvedReservationsSnapshot,
       pendingReservationsSnapshot,
       schedulesSnapshot,
       roomHistorySnapshot,
+      summaryCounts,
     ] = await Promise.all([
       includeRooms
-        ? adminDb.collection("rooms").where("buildingId", "==", buildingId).get()
+        ? (roomFetchLimit ? roomPreviewQuery.limit(roomFetchLimit) : roomPreviewQuery)
+            .get()
         : Promise.resolve(null),
       includeApprovedReservations
-        ? adminDb
-            .collection("reservations")
-            .where("buildingId", "==", buildingId)
-            .where("status", "==", "approved")
-            .get()
+        ? approvedReservationsQuery.get()
         : Promise.resolve(null),
       includePendingRequests
-        ? adminDb
-            .collection("reservations")
-            .where("buildingId", "==", buildingId)
-            .where("status", "==", "pending")
-            .get()
+        ? pendingReservationsQuery.get()
         : Promise.resolve(null),
       includeSchedules
-        ? adminDb.collection("schedules").where("buildingId", "==", buildingId).get()
+        ? schedulesQuery.get()
         : Promise.resolve(null),
       includeRoomHistory
         ? adminDb.collection("roomHistory").where("buildingId", "==", buildingId).get()
         : Promise.resolve(null),
+      includeSummary
+        ? Promise.all([
+            getAggregateCount(roomsBaseQuery),
+            getAggregateCount(roomsBaseQuery.where("status", "==", "Available")),
+            getAggregateCount(roomsBaseQuery.where("status", "==", "Reserved")),
+            getAggregateCount(roomsBaseQuery.where("status", "==", "Occupied")),
+            getAggregateCount(roomsBaseQuery.where("status", "==", "Unavailable")),
+            getAggregateCount(pendingReservationsQuery),
+          ])
+        : Promise.resolve(null),
     ]);
 
+    const roomPreviewTotal =
+      roomStatusFilter && summaryCounts
+        ? summaryCounts[
+            roomStatusFilter === "Available"
+              ? 1
+              : roomStatusFilter === "Reserved"
+                ? 2
+                : roomStatusFilter === "Occupied"
+                  ? 3
+                  : 4
+          ]
+        : (summaryCounts?.[0] ?? 0);
     const rooms = roomsSnapshot
       ? roomsSnapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
+          .filter((room) => matchesRoomSearch(room, roomSearch))
           .sort(sortRooms)
+          .slice(0, roomLimit ?? undefined)
       : [];
     const allReservations = (approvedReservationsSnapshot?.docs ?? [])
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
@@ -262,14 +389,15 @@ export async function GET(request: NextRequest) {
     const pendingRequests = (pendingReservationsSnapshot?.docs ?? [])
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
       .filter(isVisiblePendingReservationForBuildingAdmin);
-    const requests = groupReservationsForDisplay(
-      await Promise.all(
-        pendingRequests
-          .sort(sortReservations)
-          .map(async (reservation) => ({
-            ...reservation,
-            approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
-          }))
+    const allRequests = groupReservationsForDisplay(
+      pendingRequests.sort(sortReservations)
+    );
+    const requests = await Promise.all(
+      (pendingLimit ? allRequests.slice(0, pendingLimit) : allRequests).map(
+        async (reservation) => ({
+          ...reservation,
+          approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
+        })
       )
     );
     const schedules = (schedulesSnapshot?.docs ?? [])
@@ -278,6 +406,22 @@ export async function GET(request: NextRequest) {
     const roomHistory = (roomHistorySnapshot?.docs ?? [])
       .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoomHistoryEntry)
       .sort(sortByCreatedAtDesc);
+    const summary: DashboardSummary | null = summaryCounts
+      ? {
+          availableRooms: summaryCounts[1],
+          occupiedRooms: summaryCounts[3],
+          pendingRequests: includePendingRequests ? allRequests.length : summaryCounts[5],
+          pendingPreviewLimit: pendingLimit,
+          reservedRooms: summaryCounts[2],
+          roomPreviewLimit: roomLimit,
+          roomsHasMore:
+            !roomSearch && roomLimit !== null
+              ? roomPreviewTotal > rooms.length
+              : roomsSnapshot !== null && roomsSnapshot.size > rooms.length,
+          totalRooms: summaryCounts[0],
+          unavailableRooms: summaryCounts[4],
+        }
+      : null;
 
     return NextResponse.json({
       adminRequests: [] as DashboardAdminRequest[],
@@ -287,6 +431,7 @@ export async function GET(request: NextRequest) {
       roomHistory,
       rooms,
       schedules,
+      summary,
     });
   } catch (error) {
     return handleApiError(error);

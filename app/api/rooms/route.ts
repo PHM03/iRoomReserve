@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     assertAuthenticated(authContext);
 
     const { searchParams } = new URL(request.url);
+    console.log("Query params:", Object.fromEntries(searchParams.entries()));
     const buildingId = searchParams.get("buildingId");
     const countsOnly = searchParams.get("counts") === "true";
     const floor = searchParams.get("floor");

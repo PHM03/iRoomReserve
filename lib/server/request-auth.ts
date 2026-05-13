@@ -76,6 +76,8 @@ export async function getRequestAuthContext(
   const fallbackRole = normalizeRole(request.headers.get("x-user-role"));
   const authHeader = request.headers.get("authorization");
 
+  console.log("Auth header:", authHeader);
+
   if (authHeader?.startsWith("Bearer ")) {
     try {
       const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
@@ -91,7 +93,10 @@ export async function getRequestAuthContext(
         assignedBuildingIds: profileContext.assignedBuildingIds,
         verified: true,
       };
-    } catch {
+    } catch (error) {
+      console.warn("Firebase ID token verification failed", {
+        error,
+      });
       // Fall through to compatibility headers when the bearer token is invalid.
     }
   }
