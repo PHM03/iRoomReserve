@@ -51,15 +51,6 @@ export default function AdminRoomStatusSection({
 }: AdminRoomStatusSectionProps) {
   return (
     <section className={className}>
-      <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block mb-6">
-        <h3 className="text-xl font-bold text-gray-800">
-          Room Status Monitor
-          {buildingName ? (
-            <span className="text-sm text-gray-600 font-normal ml-2">({buildingName})</span>
-          ) : null}
-        </h3>
-      </div>
-
       {rooms.length === 0 ? (
         <div className="glass-card p-12 text-center">
           <p className="text-sm text-black">No rooms configured. Add rooms first.</p>

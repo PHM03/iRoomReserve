@@ -284,8 +284,9 @@ export default function MemberDashboard({
         </div>
       </div>
 
+      <div className="flex w-full flex-col gap-4 bg-transparent">
       {upcomingReservations.length > 0 && (
-        <div className="mb-8">
+        <section className="w-full rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-black">Upcoming Reservations</h3>
             <Link
@@ -300,7 +301,10 @@ export default function MemberDashboard({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {upcomingReservations.map((reservation) => (
-              <div key={reservation.id} className="glass-card p-4 !rounded-xl">
+              <div
+                key={reservation.id}
+                className="bg-white border border-gray-200 shadow-sm rounded-xl p-5"
+              >
                 {(() => {
                   const bluetoothConnectionStatus =
                     getBluetoothConnectionStatus(reservation);
@@ -377,12 +381,11 @@ export default function MemberDashboard({
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-white/30">
+        <section className="w-full rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-gray-800">Recent Activity</h3>
             <Link
               href="/dashboard/reservations"
@@ -394,7 +397,7 @@ export default function MemberDashboard({
               </svg>
             </Link>
           </div>
-          <div className="bg-white border border-gray-200 shadow-sm !rounded-xl overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-gray-200">
             {recentActivity.length === 0 ? (
               <div className="p-12 text-center">
                 <svg
@@ -454,9 +457,10 @@ export default function MemberDashboard({
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         <MyReservationTimetable
+          className="w-full"
           currentUserId={uid}
           reservations={reservationHistory}
         />

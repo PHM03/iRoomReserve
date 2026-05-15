@@ -29,7 +29,7 @@ export async function apiRequest<T>(
   { body, method = "POST", params, role, userId }: ApiRequestOptions = {}
 ): Promise<T> {
   const currentUser = auth.currentUser;
-  const token = currentUser ? await currentUser.getIdToken() : null;
+  const token = currentUser ? await currentUser.getIdToken(true) : null;
 
   const response = await fetch(buildUrl(input, params), {
     method,

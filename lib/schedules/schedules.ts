@@ -195,6 +195,85 @@ export function onSchedulesByBuildingIds(
   });
 }
 
+/**
+ * Subscribe to schedules for a specific building, filtered to a set of room IDs.
+ *
+ * Including `buildingId` in the query is critical: Firestore security rules
+ * cannot evaluate `resource.data.buildingId` when it is absent from the query
+ * constraints, causing the entire `roomId IN [...]` query to be rejected with a
+ * permission error. Adding the equality filter makes every returned document
+ * provably accessible under the building-admin rule.
+ */
+export function onSchedulesByBuildingRoomIds(
+  buildingId: string,
+  roomIds: string[],
+  callback: (schedules: Schedule[]) => void
+): Unsubscribe {
+  const uniqueRoomIds = [...new Set(roomIds.filter(Boolean))];
+
+  console.log('[schedules] onSchedulesByBuildingRoomIds', {
+    buildingId,
+    uniqueRoomIds,
+  });
+
+  if (!buildingId || uniqueRoomIds.length === 0) {
+    console.warn('[schedules] onSchedulesByBuildingRoomIds: empty buildingId or roomIds — skipping query.');
+    return () => {};
+  }
+
+  const listener = createGuardedSnapshotCallback(callback);
+  const schedulesByChunk = new Map<number, Schedule[]>();
+  const roomIdChunks = chunkValues(uniqueRoomIds, 10);
+
+  const emit = () => {
+    listener.emit([...schedulesByChunk.values()].flat().sort(sortSchedules));
+  };
+
+  const unsubscribers = roomIdChunks.map((roomIdChunk, chunkIndex) =>
+    onSnapshot(
+      query(
+        collection(db, "schedules"),
+        where("buildingId", "==", buildingId),
+        where("roomId", "in", roomIdChunk)
+      ),
+      (snapshot) => {
+        if (listener.isCancelled()) {
+          return;
+        }
+
+        // ── DEBUG: raw Firestore documents ───────────────────────────────
+        console.group(`[DEBUG] onSchedulesByBuildingRoomIds snapshot — chunk ${chunkIndex}`);
+        console.log('Query: schedules WHERE buildingId ==', buildingId, 'AND roomId IN', roomIdChunk);
+        console.log('Raw docs returned:', snapshot.size);
+        snapshot.docs.forEach((d) =>
+          console.log(' •', d.id, JSON.stringify(d.data()))
+        );
+        console.groupEnd();
+        // ─────────────────────────────────────────────────────────────────
+
+        schedulesByChunk.set(
+          chunkIndex,
+          snapshot.docs.map((scheduleDoc) => ({
+            id: scheduleDoc.id,
+            ...scheduleDoc.data(),
+          })) as Schedule[]
+        );
+        emit();
+      },
+      (error) => {
+        if (listener.isCancelled()) {
+          return;
+        }
+        console.warn("Firestore listener error (schedules by building+room ids):", error);
+      }
+    )
+  );
+
+  return listener.wrap(() => {
+    unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
+}
+
 export function isRoomInClass(
   schedules: Schedule[],
   roomId: string,

@@ -418,9 +418,9 @@ export default function AdminManageRoomsTab({
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-xl border border-white/70 bg-white px-6 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-                    <h3 className="text-2xl font-bold text-gray-900">Manage Rooms</h3>
+                    <h3 className="text-xl font-bold text-gray-800">Manage Rooms</h3>
                     <div ref={buildingSwitcherRef} className="relative w-fit">
                         <button
                             type="button"
@@ -466,7 +466,7 @@ export default function AdminManageRoomsTab({
                 </div>
                 <button
                     onClick={() => setAddRoomStep(1)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#a12124] px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#8f1c1f] hover:shadow-md"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#a12124] px-4 py-1 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#8f1c1f] hover:shadow-md"
                 >
                     <PlusIcon className="h-4 w-4" />
                     New Room

@@ -7,7 +7,7 @@ import FloorAccordion from '@/components/room-status/FloorAccordion';
 import RoomList from '@/components/room-status/RoomList';
 import { useAuth } from '@/context/AuthContext';
 import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
-import { onBuildings, type Building } from '@/lib/buildings/buildings';
+import { onBuildingsByIds, type Building } from '@/lib/buildings/buildings';
 import { inferCampusFromBuilding, type ReservationCampus } from '@/lib/buildings/campuses';
 import { onRoomsByBuildingIds, Room } from '@/lib/rooms/rooms';
 import {
@@ -52,11 +52,9 @@ export default function RoomStatusPage() {
 
     let cancelled = false;
 
-    const unsubscribeBuildings = onBuildings((allBuildings) => {
+    const unsubscribeBuildings = onBuildingsByIds(managedBuildingIds, (nextBuildings) => {
       if (cancelled) return;
-      setBuildingRecords(
-        allBuildings.filter((building) => managedBuildingIds.includes(building.id))
-      );
+      setBuildingRecords(nextBuildings);
     });
 
     return () => {
@@ -220,10 +218,6 @@ export default function RoomStatusPage() {
             </span>
             .
           </p>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-xs text-black max-w-md">
-          Floors stay collapsed by default so large buildings remain easy to
-          scan without breaking the current reservation and live status flow.
         </div>
       </div>
 

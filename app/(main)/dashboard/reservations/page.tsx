@@ -261,7 +261,7 @@ export default function MyReservationsPage() {
           type="text"
           placeholder="Search by room, campus, or purpose..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value)}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {searchQuery && (
@@ -275,11 +275,11 @@ export default function MyReservationsPage() {
       </div>
 
       {/* Year / Month Filters */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center">
+      <div className="mb-4 flex w-full flex-wrap items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <select
           value={selectedYear}
-          onChange={(e) =>
-            setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          onChange={(event) =>
+            setSelectedYear(event.target.value === 'all' ? 'all' : Number(event.target.value))
           }
           className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         >
@@ -293,8 +293,8 @@ export default function MyReservationsPage() {
 
         <select
           value={selectedMonth}
-          onChange={(e) =>
-            setSelectedMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          onChange={(event) =>
+            setSelectedMonth(event.target.value === 'all' ? 'all' : Number(event.target.value))
           }
           className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         >
@@ -377,7 +377,10 @@ export default function MyReservationsPage() {
             const roomStatus = getReservationRoomStatus(reservation, room);
 
             return (
-              <div key={reservation.id} className="glass-card p-5 !rounded-xl">
+              <div
+                key={reservation.id}
+                className="rounded-xl bg-white px-5 py-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+              >
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex-1 min-w-0">

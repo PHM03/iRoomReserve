@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     assertAuthenticated(authContext);
 
     const { searchParams } = new URL(request.url);
+    console.log("Query params:", Object.fromEntries(searchParams.entries()));
     const buildingId = searchParams.get("buildingId");
     const countsOnly = searchParams.get("counts") === "true";
     const floor = searchParams.get("floor");
@@ -91,14 +92,20 @@ export async function GET(request: NextRequest) {
     const baseSnapshot = roomIds?.length
       ? await Promise.all(roomIds.map((roomId) => adminDb.collection("rooms").doc(roomId).get()))
       : buildingId
-        ? await adminDb
-            .collection("rooms")
-            .where("buildingId", "==", buildingId)
-            .get()
-            .then((snapshot) => snapshot.docs)
+        ? await (() => {
+            let roomsQuery: FirebaseFirestore.Query = adminDb
+              .collection("rooms")
+              .where("buildingId", "==", buildingId);
+
+            if (floor) {
+              roomsQuery = roomsQuery.where("floor", "==", floor);
+            }
+
+            return roomsQuery.get().then((snapshot) => snapshot.docs);
+          })()
         : [];
 
-    let rooms: RoomRecord[] = baseSnapshot
+    const rooms: RoomRecord[] = baseSnapshot
       .filter((roomDoc) => roomDoc.exists)
       .map((roomDoc) => {
         const data = roomDoc.data() as {
@@ -144,10 +151,6 @@ export async function GET(request: NextRequest) {
           left.floor.localeCompare(right.floor) ||
           left.name.localeCompare(right.name)
       );
-
-    if (floor) {
-      rooms = rooms.filter((room) => room.floor === floor);
-    }
 
     return NextResponse.json(rooms);
   } catch (error) {

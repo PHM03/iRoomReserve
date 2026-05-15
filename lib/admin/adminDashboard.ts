@@ -29,10 +29,34 @@ export interface AdminDashboardSnapshot {
   roomHistory: RoomHistoryEntry[];
   rooms: Room[];
   schedules: Schedule[];
+  summary: AdminDashboardSummary | null;
+}
+
+export interface AdminDashboardSummary {
+  availableRooms: number;
+  occupiedRooms: number;
+  pendingRequests: number;
+  pendingPreviewLimit: number | null;
+  reservedRooms: number;
+  roomPreviewLimit: number | null;
+  roomsHasMore: boolean;
+  totalRooms: number;
+  unavailableRooms: number;
 }
 
 interface FetchAdminDashboardSnapshotOptions {
+  includeApprovedReservations?: boolean;
+  includePendingRequests?: boolean;
   includeRooms?: boolean;
+  includeRoomHistory?: boolean;
+  includeSchedules?: boolean;
+  includeSummary?: boolean;
+  pendingLimit?: number;
+  reservationDate?: string;
+  roomLimit?: number;
+  roomSearch?: string;
+  roomStatus?: string;
+  scheduleDayOfWeek?: number;
 }
 
 function reviveTimestamp(value: TimestampLike) {
@@ -88,35 +112,49 @@ export async function fetchAdminDashboardSnapshot(
     "/api/admin/dashboard",
     {
       method: "GET",
-      params: { buildingId, includeRooms: options.includeRooms ?? true },
+      params: {
+        buildingId,
+        includeApprovedReservations: options.includeApprovedReservations ?? true,
+        includePendingRequests: options.includePendingRequests ?? true,
+        includeRoomHistory: options.includeRoomHistory ?? true,
+        includeRooms: options.includeRooms ?? true,
+        includeSchedules: options.includeSchedules ?? true,
+        includeSummary: options.includeSummary ?? false,
+        pendingLimit: options.pendingLimit,
+        reservationDate: options.reservationDate,
+        roomLimit: options.roomLimit,
+        roomSearch: options.roomSearch,
+        roomStatus: options.roomStatus,
+        scheduleDayOfWeek: options.scheduleDayOfWeek,
+      },
     }
   );
 
   return {
-    adminRequests: snapshot.adminRequests.map((request) =>
+    adminRequests: (snapshot.adminRequests ?? []).map((request) =>
       reviveRecordTimestamps(request, ["createdAt"])
     ),
-    allReservations: snapshot.allReservations.map((reservation) =>
+    allReservations: (snapshot.allReservations ?? []).map((reservation) =>
       reviveRecordTimestamps(reservation, [
         "checkedInAt",
         "createdAt",
         "updatedAt",
       ])
     ),
-    notifications: snapshot.notifications.map((notification) =>
+    notifications: (snapshot.notifications ?? []).map((notification) =>
       reviveRecordTimestamps(notification, ["createdAt"])
     ),
-    requests: snapshot.requests.map((reservation) =>
+    requests: (snapshot.requests ?? []).map((reservation) =>
       reviveRecordTimestamps(reservation, [
         "checkedInAt",
         "createdAt",
         "updatedAt",
       ])
     ),
-    roomHistory: snapshot.roomHistory.map((entry) =>
+    roomHistory: (snapshot.roomHistory ?? []).map((entry) =>
       reviveRecordTimestamps(entry, ["createdAt"])
     ),
-    rooms: snapshot.rooms.map((room) =>
+    rooms: (snapshot.rooms ?? []).map((room) =>
       reviveRecordTimestamps(room, [
         "beaconLastConnectedAt",
         "beaconLastDisconnectedAt",
@@ -125,8 +163,9 @@ export async function fetchAdminDashboardSnapshot(
         "updatedAt",
       ])
     ),
-    schedules: snapshot.schedules.map((schedule) =>
+    schedules: (snapshot.schedules ?? []).map((schedule) =>
       reviveRecordTimestamps(schedule, ["createdAt", "updatedAt"])
     ),
+    summary: snapshot.summary ?? null,
   };
 }
