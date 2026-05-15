@@ -21,7 +21,7 @@ function LoginForm() {
 
   const handleToastClose = useCallback(() => setShowToast(false), []);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.SubmitEvent) => {
     event.preventDefault();
     setErrorMessage('');
 

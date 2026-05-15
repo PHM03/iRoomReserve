@@ -1,6 +1,6 @@
 'use client';
 
-import type { FormEvent } from 'react';
+import type { SubmitEvent } from 'react';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -671,7 +671,7 @@ export default function ReserveRoomPage() {
     router.push('/dashboard/reserve');
   }
 
-  async function handleSubmitReservation(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmitReservation(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (
