@@ -48,7 +48,7 @@ export default function BleSummaryCard({
   detailsHref = '/dashboard/room-status',
   onViewDetails,
   variant = 'default',
-}: BleSummaryCardProps) {
+}: Readonly<BleSummaryCardProps>) {
   const [occupancyData, setOccupancyData] = useState<OccupancyPayload>(
     DEFAULT_OCCUPANCY_PAYLOAD
   );

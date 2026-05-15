@@ -20,7 +20,11 @@ interface AdminRoomStatusSectionProps {
   className?: string;
 }
 
-function StatusBadge({ status }: { status: string }) {
+interface StatusBadgeProps {
+  status: string;
+}
+
+function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
   const style = (() => {
     switch (status) {
       case 'Unavailable':
@@ -48,7 +52,7 @@ export default function AdminRoomStatusSection({
   computeEffectiveStatus,
   onStatusChange,
   className = '',
-}: AdminRoomStatusSectionProps) {
+}: Readonly<AdminRoomStatusSectionProps>) {
   return (
     <section className={className}>
       {rooms.length === 0 ? (

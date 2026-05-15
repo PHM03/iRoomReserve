@@ -21,7 +21,23 @@ import {
   type Reservation,
 } from '@/lib/reservations/reservations';
 
-function StatusBadge({ status }: { status: string }) {
+interface StatusBadgeProps {
+  status: string;
+}
+
+interface ReservationApprovalsProps {
+  email: string;
+  targetReservationId: string | null;
+}
+
+interface UserInboxProps {
+  canCompose: boolean;
+  email: string;
+  isFaculty: boolean;
+  uid: string;
+}
+
+function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
   const style = (() => {
     switch (status) {
       case 'pending':
@@ -56,10 +72,7 @@ function formatEquipment(equipment?: Record<string, number>) {
 function ReservationApprovals({
   email,
   targetReservationId,
-}: {
-  email: string;
-  targetReservationId: string | null;
-}) {
+}: Readonly<ReservationApprovalsProps>) {
   const { firebaseUser, profile } = useAuth();
   const [requests, setRequests] = useState<Reservation[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -358,12 +371,7 @@ function UserInbox({
   email,
   isFaculty,
   uid,
-}: {
-  canCompose: boolean;
-  email: string;
-  isFaculty: boolean;
-  uid: string;
-}) {
+}: Readonly<UserInboxProps>) {
   const [composeOpen, setComposeOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const searchParams = useSearchParams();

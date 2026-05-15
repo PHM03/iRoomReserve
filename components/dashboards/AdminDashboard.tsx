@@ -41,7 +41,7 @@ function getLocalDateKey(date: Date = new Date()) {
 export default function AdminDashboard({
   firstName,
   activeTab,
-}: AdminDashboardProps) {
+}: Readonly<AdminDashboardProps>) {
   const { firebaseUser, profile } = useAuth();
   const { setActiveTab, selectedBuildingId, setSelectedBuildingId } = useAdminTab();
 

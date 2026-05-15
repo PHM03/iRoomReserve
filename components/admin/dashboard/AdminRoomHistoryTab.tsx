@@ -42,7 +42,7 @@ function getHistoryDateValue(date: string) {
 
 export default function AdminRoomHistoryTab({
   roomHistory,
-}: AdminRoomHistoryTabProps) {
+}: Readonly<AdminRoomHistoryTabProps>) {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();

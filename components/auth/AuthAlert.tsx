@@ -69,7 +69,7 @@ export default function AuthAlert({
   message,
   tone = 'error',
   className = '',
-}: AuthAlertProps) {
+}: Readonly<AuthAlertProps>) {
   const toneStyle = alertToneStyles[tone];
   return (
     <div
