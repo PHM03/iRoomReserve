@@ -261,7 +261,7 @@ export default function MyReservationsPage() {
           type="text"
           placeholder="Search by room, campus, or purpose..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value)}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         />
         {searchQuery && (
@@ -278,8 +278,8 @@ export default function MyReservationsPage() {
       <div className="mb-4 flex w-full flex-wrap items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <select
           value={selectedYear}
-          onChange={(e) =>
-            setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          onChange={(event) =>
+            setSelectedYear(event.target.value === 'all' ? 'all' : Number(event.target.value))
           }
           className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         >
@@ -293,8 +293,8 @@ export default function MyReservationsPage() {
 
         <select
           value={selectedMonth}
-          onChange={(e) =>
-            setSelectedMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))
+          onChange={(event) =>
+            setSelectedMonth(event.target.value === 'all' ? 'all' : Number(event.target.value))
           }
           className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
         >

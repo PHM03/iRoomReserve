@@ -1244,7 +1244,7 @@ export default function MessagesSection(props: MessagesSectionProps) {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by name, subject, or message..."
                 className="w-full rounded-2xl border border-dark/10 bg-white/70 py-3 pl-11 pr-10 text-sm text-black placeholder:text-black/35 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
@@ -1296,7 +1296,7 @@ export default function MessagesSection(props: MessagesSectionProps) {
               <input
                 type="text"
                 value={reservationSearch}
-                onChange={(e) => setReservationSearch(e.target.value)}
+                onChange={(event) => setReservationSearch(event.target.value)}
                 placeholder="Search by room, building, requester, or status..."
                 className="w-full rounded-2xl border border-dark/10 bg-white/70 py-3 pl-11 pr-10 text-sm text-black placeholder:text-black/35 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
               />

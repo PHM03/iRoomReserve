@@ -420,8 +420,8 @@ const NavBar: React.FC<NavBarProps> = ({
                             </p>
                           </div>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={(event) => {
+                              event.stopPropagation();
                               void markNotificationRead(notification.id);
                             }}
                             className="text-black/70 hover:text-primary transition-colors shrink-0"

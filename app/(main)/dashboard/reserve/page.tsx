@@ -955,7 +955,7 @@ export default function ReserveRoomPage() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                     className="glass-input w-full px-12 py-3"
                     placeholder="Search by room name or number"
                   />

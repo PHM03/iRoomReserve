@@ -21,8 +21,8 @@ function LoginForm() {
 
   const handleToastClose = useCallback(() => setShowToast(false), []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setErrorMessage('');
 
     if (!email || !password) {
@@ -57,8 +57,8 @@ function LoginForm() {
           router.push('/dashboard');
         }
       }, 1500);
-    } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
       const code = firebaseError.code || '';
       setErrorMessage(getAuthErrorMessage(code));
       setShowResendButton(code === 'auth/email-not-verified');
@@ -113,8 +113,8 @@ function LoginForm() {
       setErrorMessage('');
       setToastMessage('Verification email resent! Check your inbox or spam folder.');
       setShowToast(true);
-    } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
       setErrorMessage(getAuthErrorMessage(firebaseError.code || ''));
     }
   };
@@ -180,7 +180,7 @@ function LoginForm() {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 suppressHydrationWarning
                 className="glass-input w-full px-4 py-3"
                 placeholder="Enter your email"
@@ -197,7 +197,7 @@ function LoginForm() {
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   suppressHydrationWarning
                   className="glass-input w-full px-4 py-3 pr-12"
                   placeholder="Enter your password"
