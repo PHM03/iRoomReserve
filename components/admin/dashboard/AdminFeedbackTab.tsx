@@ -22,7 +22,7 @@ export default function AdminFeedbackTab({
   feedbackList,
   feedbackSummary,
   onReload,
-}: AdminFeedbackTabProps) {
+}: Readonly<AdminFeedbackTabProps>) {
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
 

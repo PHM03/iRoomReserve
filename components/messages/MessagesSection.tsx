@@ -167,7 +167,34 @@ function getReservationUpdateNote(
   return 'No additional note provided.';
 }
 
-function StatusBadge({ status }: { status: ReservationUpdateStatus }) {
+interface StatusBadgeProps {
+  status: ReservationUpdateStatus;
+}
+
+interface EmptyStateProps {
+  description: string;
+  title: string;
+}
+
+interface DetailFieldProps {
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+}
+
+interface DateFilterControlsProps {
+  customFrom: string;
+  customRange: CustomDateRange | null;
+  customTo: string;
+  onApplyCustomRange: () => void;
+  onClearCustomRange: () => void;
+  onCustomFromChange: (value: string) => void;
+  onCustomToChange: (value: string) => void;
+  onPresetChange: (preset: DatePreset) => void;
+  preset: DatePreset;
+}
+
+function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
   const style = (() => {
     switch (status) {
       case 'approved':
@@ -195,10 +222,7 @@ function StatusBadge({ status }: { status: ReservationUpdateStatus }) {
 function EmptyState({
   description,
   title,
-}: {
-  description: string;
-  title: string;
-}) {
+}: Readonly<EmptyStateProps>) {
   return (
     <div className="rounded-3xl border border-dark/5 bg-white/70 p-10 text-center">
       <p className="text-sm font-bold text-black">{title}</p>
@@ -211,11 +235,7 @@ function DetailField({
   children,
   className = '',
   label,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  label: string;
-}) {
+}: Readonly<DetailFieldProps>) {
   return (
     <div className={`rounded-2xl border border-dark/5 bg-dark/3 p-3 ${className}`}>
       <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-black/55">
@@ -236,17 +256,7 @@ function DateFilterControls({
   onCustomToChange,
   onPresetChange,
   preset,
-}: {
-  customFrom: string;
-  customRange: CustomDateRange | null;
-  customTo: string;
-  onApplyCustomRange: () => void;
-  onClearCustomRange: () => void;
-  onCustomFromChange: (value: string) => void;
-  onCustomToChange: (value: string) => void;
-  onPresetChange: (preset: DatePreset) => void;
-  preset: DatePreset;
-}) {
+}: Readonly<DateFilterControlsProps>) {
   const canApplyCustomRange = Boolean(customFrom && customTo);
   const canClearCustomRange = Boolean(customFrom || customTo || customRange);
 
@@ -320,7 +330,7 @@ function DateFilterControls({
   );
 }
 
-export default function MessagesSection(props: MessagesSectionProps) {
+export default function MessagesSection(props: Readonly<MessagesSectionProps>) {
   const { firebaseUser, profile } = useAuth();
   const registerComposeOpener = props.registerComposeOpener;
   const notifications = useMemo(

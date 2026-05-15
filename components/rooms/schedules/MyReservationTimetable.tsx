@@ -1,7 +1,7 @@
 import type { Reservation } from '@/lib/reservations/reservations';
 import { formatTimeRange } from '@/lib/utils/dateTime';
 
-type MyReservationTimetableProps = {
+interface MyReservationTimetableProps {
   className?: string;
   compact?: boolean;
   compactVariant?: 'weekly' | 'today';
@@ -104,7 +104,7 @@ export default function MyReservationTimetable({
   compactVariant = 'weekly',
   currentUserId,
   reservations,
-}: MyReservationTimetableProps) {
+}: Readonly<MyReservationTimetableProps>) {
   const entriesByDay = buildEntriesByDay(reservations, currentUserId);
 
   if (compact) {

@@ -80,7 +80,7 @@ export default function AdminClassSchedulesSection({
   onSaveSchedule,
   onEditSchedule,
   className = '',
-}: AdminClassSchedulesSectionProps) {
+}: Readonly<AdminClassSchedulesSectionProps>) {
   const timetableDays = DAY_NAMES.map((label, value) => ({ label, value })).filter(
     (day) => day.value >= 1 && day.value <= 6
   );
