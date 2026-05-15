@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
       userId,
     });
 
-    return NextResponse.json(upload, { status: 201 });
+    return NextResponse.json(upload, {
+      status: 201
+    });
   } catch (error) {
     return handleApiError(error);
   }

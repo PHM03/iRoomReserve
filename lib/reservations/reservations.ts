@@ -188,7 +188,10 @@ export async function validateReservationApprover(
   email: string
 ): Promise<{ email: string; ok: true }> {
   return apiRequest("/api/reservation-approvers/validate", {
-    body: { campus, email },
+    body: {
+      campus,
+      email
+    },
     method: "POST",
     userId: auth.currentUser?.uid,
   });
@@ -219,8 +222,12 @@ export async function uploadReservationDocument(
   const response = await fetch(buildUrl("/api/reservations/upload"), {
     method: "POST",
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(auth.currentUser?.uid ? { "x-user-id": auth.currentUser.uid } : {}),
+      ...(token ? {
+        Authorization: `Bearer ${token}`
+      } : {}),
+      ...(auth.currentUser?.uid ? {
+        "x-user-id": auth.currentUser.uid
+      } : {}),
     },
     body: formData,
   });
@@ -516,7 +523,10 @@ export async function approveReservation(
   userEmail: string
 ): Promise<void> {
   await apiRequest(`/api/reservations/${reservationId}`, {
-    body: { action: "approve", userEmail },
+    body: {
+      action: "approve",
+      userEmail
+    },
     method: "PATCH",
     userId: auth.currentUser?.uid,
   });
@@ -528,7 +538,11 @@ export async function rejectReservation(
   reason: string
 ): Promise<void> {
   await apiRequest(`/api/reservations/${reservationId}`, {
-    body: { action: "reject", userEmail, reason },
+    body: {
+      action: "reject",
+      userEmail,
+      reason
+    },
     method: "PATCH",
     userId: auth.currentUser?.uid,
   });

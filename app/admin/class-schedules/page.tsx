@@ -130,7 +130,10 @@ export default function AdminClassSchedulesPage() {
     });
   }
   const hasActiveScheduleFilters = Boolean(selectedRoom || selectedFloor);
-  const availableFloors = getBuildingFloorOptions({ id: buildingId, name: buildingName });
+  const availableFloors = getBuildingFloorOptions({
+    id: buildingId,
+    name: buildingName
+  });
   const selectedFloorRooms = useMemo(
     () =>
       selectedFloor
@@ -151,7 +154,9 @@ export default function AdminClassSchedulesPage() {
       ...new Set(
         selectedFloorRooms.map(getRoomFilterValue).filter(Boolean)
       ),
-    ].sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+    ].sort((left, right) => left.localeCompare(right, undefined, {
+      numeric: true
+    }));
   }, [selectedFloor, selectedFloorRooms]);
   const selectedRoomIds = useMemo(
     () =>

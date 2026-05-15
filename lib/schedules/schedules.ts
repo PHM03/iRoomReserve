@@ -97,7 +97,10 @@ export function onSchedulesByBuilding(
     q,
     (snapshot) => {
       const schedules: Schedule[] = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Schedule)
+        .map((d) => ({
+          id: d.id,
+          ...d.data()
+        }) as Schedule)
         .sort(sortSchedules);
       console.log("[schedules] onSchedulesByBuilding snapshot", {
         buildingId,
@@ -123,7 +126,9 @@ export function onSchedulesByBuilding(
 export async function getSchedulesByRoomId(roomId: string): Promise<Schedule[]> {
   const payload = await apiRequest<Schedule[]>("/api/schedules", {
     method: "GET",
-    params: { roomId },
+    params: {
+      roomId
+    },
     userId: auth.currentUser?.uid,
   });
 
@@ -305,7 +310,10 @@ export function onAllSchedules(
     q,
     (snapshot) => {
       const schedules: Schedule[] = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Schedule)
+        .map((d) => ({
+          id: d.id,
+          ...d.data()
+        }) as Schedule)
         .sort(sortSchedules);
       listener.emit(schedules);
     },

@@ -55,7 +55,11 @@ if (!privateKey || !clientEmail || !projectId) {
 
 // ── Init Firebase Admin ───────────────────────────────────────────────────────
 initializeApp({
-  credential: cert({ projectId, clientEmail, privateKey }),
+  credential: cert({
+    projectId,
+    clientEmail,
+    privateKey
+  }),
 });
 
 const db = getFirestore();
@@ -114,7 +118,9 @@ async function migrateRooms() {
       console.log(
         `  ✏️   [${buildingId}] "${data.name}" · floor: "${currentFloor}" → "${newFloor}"`
       );
-      batch.update(doc.ref, { floor: newFloor });
+      batch.update(doc.ref, {
+        floor: newFloor
+      });
       updatedCount++;
       batchCount++;
 

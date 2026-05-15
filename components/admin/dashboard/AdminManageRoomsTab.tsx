@@ -28,7 +28,10 @@ interface BuildingOption {
 }
 
 const DEFAULT_ROOM_FLOOR_FILTER = 'Ground Floor';
-const EMPTY_ROOM_COUNTS: RoomCountSummary = { floors: [], total: 0 };
+const EMPTY_ROOM_COUNTS: RoomCountSummary = {
+  floors: [],
+  total: 0
+};
 
 interface AdminManageRoomsTabProps {
     activeBuildingLabel: string;
@@ -177,7 +180,10 @@ export default function AdminManageRoomsTab({
     const activeRoomFloorFilterLabel =
         roomFloorFilter === 'all'
             ? 'All'
-            : getFloorDisplayLabel(roomFloorFilter, { id: buildingId, name: buildingName });
+        : getFloorDisplayLabel(roomFloorFilter, {
+          id: buildingId,
+          name: buildingName
+        });
     const hasAnyRooms = roomCounts.total > 0;
     const filteredRooms = useMemo(
         () =>
@@ -516,7 +522,10 @@ export default function AdminManageRoomsTab({
                                         const isSelected = roomFloorFilter === floor;
                                         const optionLabel = isAllOption
                                             ? 'All'
-                                            : getFloorDisplayLabel(floor, { id: buildingId, name: buildingName });
+                                          : getFloorDisplayLabel(floor, {
+                                            id: buildingId,
+                                            name: buildingName
+                                          });
                                         const roundedClass =
                                             index === 0
                                                 ? 'rounded-t-2xl'
@@ -634,7 +643,10 @@ export default function AdminManageRoomsTab({
                         <div>
                             <h4 className="text-lg font-bold text-black">Room Information</h4>
                             <p className="text-xs text-black mt-0.5">
-                                Step 2 of 2 - <span className="text-primary">{getFloorDisplayLabel(newRoomFloor, { id: buildingId, name: buildingName })}</span>
+                  Step 2 of 2 - <span className="text-primary">{getFloorDisplayLabel(newRoomFloor, {
+                    id: buildingId,
+                    name: buildingName
+                  })}</span>
                             </p>
                         </div>
                         <div className="flex items-center gap-2">

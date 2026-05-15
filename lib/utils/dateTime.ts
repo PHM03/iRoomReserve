@@ -147,7 +147,9 @@ export function formatClockTime(
     hour: 'numeric',
     hour12: true,
     minute: '2-digit',
-    ...(options.includeSeconds ? { second: '2-digit' } : {}),
+    ...(options.includeSeconds ? {
+      second: '2-digit'
+    } : {}),
   }).format(parsedDate);
 }
 

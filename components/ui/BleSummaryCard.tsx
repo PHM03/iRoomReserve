@@ -31,7 +31,9 @@ function formatRefreshTime(value: Date | null) {
     return 'Not refreshed yet';
   }
 
-  return formatClockTime(value, { includeSeconds: true });
+  return formatClockTime(value, {
+    includeSeconds: true
+  });
 }
 
 function formatRefreshCountdown(milliseconds: number) {

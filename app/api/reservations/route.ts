@@ -105,7 +105,9 @@ export async function GET(request: NextRequest) {
             message: "A maximum of 10 statuses can be requested at once.",
           },
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
     }
 
@@ -117,7 +119,9 @@ export async function GET(request: NextRequest) {
             message: "roomId, userId, or campus is required.",
           },
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
     }
 
@@ -136,7 +140,9 @@ export async function GET(request: NextRequest) {
               message: "You can only access reservations for your assigned campus.",
             },
           },
-          { status: 403 }
+          {
+            status: 403
+          }
         );
       }
     }
@@ -198,7 +204,9 @@ export async function POST(request: NextRequest) {
 
     if (payload.type === "single") {
       const id = await createReservationRecord(payload.reservation);
-      return NextResponse.json({ id });
+      return NextResponse.json({
+        id
+      });
     }
 
     const ids = await createRecurringReservationRecord(
@@ -207,7 +215,9 @@ export async function POST(request: NextRequest) {
       payload.startDate,
       payload.endDate
     );
-    return NextResponse.json({ ids });
+    return NextResponse.json({
+      ids
+    });
   } catch (error) {
     return handleApiError(error);
   }

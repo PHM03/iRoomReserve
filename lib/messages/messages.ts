@@ -221,11 +221,15 @@ export async function fetchSentMessages(uid: string): Promise<Message[]> {
 }
 
 export async function markMessageAsRead(messageId: string): Promise<void> {
-  await updateDoc(doc(db, "messages", messageId), { isRead: true });
+  await updateDoc(doc(db, "messages", messageId), {
+    isRead: true
+  });
 }
 
 export async function closeSentMessage(messageId: string): Promise<void> {
-  await updateDoc(doc(db, "messages", messageId), { closedBySender: true });
+  await updateDoc(doc(db, "messages", messageId), {
+    closedBySender: true
+  });
 }
 
 /**

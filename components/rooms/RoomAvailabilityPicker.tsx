@@ -76,10 +76,14 @@ export default function RoomAvailabilityPicker({
   const selectedDate = fromIsoDateString(value);
 
   const disabledMatcher = useMemo(() => {
-    const matchers: Array<Date | { before: Date } | { after: Date }> = [{ before: minSelectable }];
+    const matchers: Array<Date | { before: Date } | { after: Date }> = [{
+      before: minSelectable
+    }];
 
     if (maxDate) {
-      matchers.push({ after: maxDate });
+      matchers.push({
+        after: maxDate
+      });
     }
 
     return matchers;

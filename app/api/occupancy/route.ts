@@ -52,7 +52,9 @@ export async function POST(request: Request) {
         message:
           error instanceof Error ? error.message : "Invalid occupancy payload.",
       },
-      { status: 400 }
+      {
+        status: 400
+      }
     );
   }
 }
