@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getCurrentApprovalStep } from "@/lib/reservation-approval";
+import { getCurrentApprovalStep } from "@/lib/reservations/reservation-approval";
 import { handleApiError, ApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
 import { createReservationDocumentSignedUrl } from "@/lib/server/supabase-storage";
-import { db } from "@/lib/configs/firebase-admin";
+import { db } from "@/lib/firebase/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,30 @@ function sortReservations(
   );
 }
 
+async function getApprovalDocumentUrl(reservation: PendingApprovalReservation) {
+  const storedUrl =
+    typeof reservation.approvalDocumentUrl === "string"
+      ? reservation.approvalDocumentUrl
+      : null;
+
+  try {
+    return (
+      (await createReservationDocumentSignedUrl({
+      path:
+        typeof reservation.approvalDocumentPath === "string"
+          ? reservation.approvalDocumentPath
+          : null,
+      })) ?? storedUrl
+    );
+  } catch (error) {
+    console.warn("Failed to resolve reservation approval document URL", {
+      error,
+      reservationId: reservation.id,
+    });
+    return storedUrl;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -70,26 +95,14 @@ export async function GET(request: NextRequest) {
       .where("status", "==", "pending")
       .get();
 
-    const reservations = (
-      await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const reservation = {
+    const reservations = snapshot.docs
+      .map(
+        (doc) =>
+          ({
             id: doc.id,
             ...doc.data(),
-          } as PendingApprovalReservation;
-
-          return {
-            ...reservation,
-            approvalDocumentUrl: await createReservationDocumentSignedUrl({
-              path:
-                typeof reservation.approvalDocumentPath === "string"
-                  ? reservation.approvalDocumentPath
-                  : null,
-            }),
-          };
-        })
+          }) as PendingApprovalReservation
       )
-    )
       .filter((reservation) => {
         const currentStep = getCurrentApprovalStep(
           Array.isArray(reservation.approvalFlow)
@@ -104,7 +117,14 @@ export async function GET(request: NextRequest) {
       })
       .sort(sortReservations);
 
-    return NextResponse.json(reservations);
+    const reservationsWithDocuments = await Promise.all(
+      reservations.map(async (reservation) => ({
+        ...reservation,
+        approvalDocumentUrl: await getApprovalDocumentUrl(reservation),
+      }))
+    );
+
+    return NextResponse.json(groupReservationsForDisplay(reservationsWithDocuments));
   } catch (error) {
     return handleApiError(error);
   }

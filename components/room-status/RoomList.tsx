@@ -1,8 +1,9 @@
 'use client';
 
-import StatusBadge from '@/components/StatusBadge';
-import type { RoomStatusValue } from '@/lib/roomStatus';
-import type { RoomStatusViewItem } from '@/lib/roomStatusView';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { RoomStatusValue } from '@/lib/rooms/roomStatus';
+import type { RoomStatusViewItem } from '@/lib/rooms/roomStatusView';
 
 interface RoomListProps {
   items: RoomStatusViewItem[];
@@ -54,7 +55,10 @@ export default function RoomList({ items }: RoomListProps) {
             <div>
               <h3 className="text-lg font-bold text-black">{item.room.name}</h3>
               <p className="text-sm text-black">
-                {item.room.floor} | Capacity {item.room.capacity}
+                {getFloorDisplayLabel(item.room.floor, {
+                  id: item.room.buildingId,
+                  name: item.room.buildingName,
+                })} | Capacity {item.room.capacity}
               </p>
             </div>
             <StatusBadge status={item.resolved.status} />

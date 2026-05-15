@@ -113,6 +113,7 @@ export interface UploadedReservationDocument {
   name: string;
   path: string;
   size: number;
+  url: string;
 }
 
 function buildStorageObjectUrl(input: { bucket: string; path: string }) {
@@ -225,11 +226,25 @@ export async function uploadReservationDocument(input: {
     );
   }
 
+  const url = await createReservationDocumentSignedUrl({
+    bucket,
+    path,
+  });
+
+  if (!url) {
+    throw new ApiError(
+      502,
+      "storage_signed_url_missing",
+      "Supabase Storage stored the file but did not return a file access URL."
+    );
+  }
+
   return {
     bucket,
     contentType: input.file.type,
     name: input.file.name,
     path,
     size: input.file.size,
+    url,
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeRole, USER_ROLES } from '../lib/domain/roles';
+import { normalizeRole, USER_ROLES } from '../lib/auth/roles';
 
 describe('normalizeRole', () => {
   it('normalizes legacy aliases to canonical roles', () => {

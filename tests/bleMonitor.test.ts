@@ -7,7 +7,7 @@ import {
   getRoomBleBeaconId,
   getTelemetryRoomLabel,
   isBeaconHardwareOnline,
-} from '../lib/bleMonitor';
+} from '../lib/occupancy/bleMonitor';
 
 describe('bleMonitor helpers', () => {
   it('reads the beacon id from either bleBeaconId or beaconId', () => {

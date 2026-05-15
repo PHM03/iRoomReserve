@@ -1,12 +1,12 @@
 import "server-only";
 
-import { db, serverTimestamp } from "@/lib/configs/firebase-admin";
+import { db, serverTimestamp } from "@/lib/firebase/firebase-admin";
 import {
   normalizeRoomCheckInMethod,
   normalizeRoomStatus,
   type RoomCheckInMethod,
   type RoomStatusValue,
-} from "@/lib/roomStatus";
+} from "@/lib/rooms/roomStatus";
 
 export interface RoomCreateInput {
   name: string;

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { normalizeCampus, RESERVATION_CAMPUSES } from "../campuses";
-import { ALL_USER_ROLES, normalizeRole } from "../domain/roles";
-import { RESERVATION_APPROVAL_ROLES } from "../reservation-approval";
+import { normalizeCampus, RESERVATION_CAMPUSES } from "../buildings/campuses";
+import { ALL_USER_ROLES, normalizeRole } from "../auth/roles";
+import { RESERVATION_APPROVAL_ROLES } from "../reservations/reservation-approval";
 
 const nonEmptyString = z.string().trim().min(1);
 const timeString = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:mm time.");
@@ -33,7 +33,7 @@ const userRoleSchema = z.preprocess(
 export const roomStatusSchema = z.enum([
   "Available",
   "Reserved",
-  "Ongoing",
+  "Occupied",
   "Unavailable",
 ]);
 
@@ -139,15 +139,70 @@ const reservationCommonSchema = z.object({
   equipment: equipmentSchema.optional(),
 });
 
-export const digiReservationBaseSchema = reservationCommonSchema.extend({
-  campus: z.literal("digi"),
-  buildingAdminEmail: emailString,
-});
+function withStudentApprovalDocumentRequirement<
+  T extends z.ZodObject<z.core.$ZodShape>
+>(schema: T) {
+  return schema.superRefine((value, context) => {
+    if (value.userRole !== "Student") {
+      return;
+    }
 
-export const mainReservationBaseSchema = reservationCommonSchema.extend({
+    if (!value.approvalDocumentName) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require a concept paper or letter of approval.",
+        path: ["approvalDocumentName"],
+      });
+    }
+
+    if (!value.approvalDocumentPath) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require an uploaded approval document.",
+        path: ["approvalDocumentPath"],
+      });
+    }
+
+    if (!value.approvalDocumentUrl) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require an uploaded approval document URL.",
+        path: ["approvalDocumentUrl"],
+      });
+    }
+
+    if (!value.approvalDocumentMimeType) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require an uploaded approval document type.",
+        path: ["approvalDocumentMimeType"],
+      });
+    }
+
+    if (typeof value.approvalDocumentSize !== "number") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Student reservations require an uploaded approval document size.",
+        path: ["approvalDocumentSize"],
+      });
+    }
+  });
+}
+
+export const digiReservationBaseSchema = withStudentApprovalDocumentRequirement(
+  reservationCommonSchema.extend({
+  campus: z.literal("digi"),
+  buildingAdminEmail: emailString.optional(),
+  })
+);
+
+export const mainReservationBaseSchema = withStudentApprovalDocumentRequirement(
+  reservationCommonSchema.extend({
   campus: z.literal("main"),
-  advisorEmail: emailString,
-});
+  advisorEmail: emailString.optional(),
+  buildingAdminEmail: emailString.optional(),
+  })
+);
 
 export const reservationBaseSchema = z.union([
   digiReservationBaseSchema,

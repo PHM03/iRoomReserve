@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Building } from '../lib/buildings';
+import type { Building } from '../lib/buildings/buildings';
 import {
   buildCampusOptions,
   compareFloors,
   groupRoomStatusesByFloor,
   type RoomStatusViewItem,
-} from '../lib/roomStatusView';
+} from '../lib/rooms/roomStatusView';
 
 function makeBuilding(overrides: Partial<Building>): Building {
   return {

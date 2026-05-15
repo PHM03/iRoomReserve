@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { connectToBeacon, type BeaconConnection } from '@/lib/beaconBluetooth';
+import { connectToBeacon, type BeaconConnection } from '@/lib/occupancy/beaconBluetooth';
 import {
   checkInReservation,
   disconnectReservationBeacon,
   type Reservation,
-} from '@/lib/reservations';
-import { type Room } from '@/lib/rooms';
+} from '@/lib/reservations/reservations';
+import { type Room } from '@/lib/rooms/rooms';
 
 type ToastType = 'success' | 'error';
 export type BluetoothConnectionStatus =

@@ -1,8 +1,9 @@
 'use client';
 
-import type { Schedule } from '@/lib/schedules';
-import { DAY_NAMES, formatTime12h } from '@/lib/schedules';
-import type { Room } from '@/lib/rooms';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import type { Room } from '@/lib/rooms/rooms';
+import type { Schedule } from '@/lib/schedules/schedules';
+import { DAY_NAMES, formatTime12h } from '@/lib/schedules/schedules';
 
 interface AdminClassSchedulesSectionProps {
   schedules: Schedule[];
@@ -29,6 +30,34 @@ interface AdminClassSchedulesSectionProps {
   className?: string;
 }
 
+const TIMETABLE_START_HOUR = 7;
+const TIMETABLE_END_HOUR = 21;
+const PIXELS_PER_HOUR = 60;
+const HOUR_SLOTS = Array.from(
+  { length: TIMETABLE_END_HOUR - TIMETABLE_START_HOUR + 1 },
+  (_, index) => index + TIMETABLE_START_HOUR
+);
+
+function formatHourLabel(hour: number) {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+
+  return `${hour12}:00 ${period}`;
+}
+
+function getTimeOffset(time: string) {
+  const [hours = '0', minutes = '0'] = time.split(':');
+
+  return (
+    (Number(hours) - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR +
+    (Number(minutes) / 60) * PIXELS_PER_HOUR
+  );
+}
+
+function getScheduleBlockHeight(startTime: string, endTime: string) {
+  return Math.max(getTimeOffset(endTime) - getTimeOffset(startTime), 30);
+}
+
 export default function AdminClassSchedulesSection({
   schedules,
   rooms,
@@ -50,23 +79,33 @@ export default function AdminClassSchedulesSection({
   onSchedEndChange,
   onSaveSchedule,
   onEditSchedule,
-  onDeleteSchedule,
   className = '',
 }: AdminClassSchedulesSectionProps) {
+  const timetableDays = DAY_NAMES.map((label, value) => ({ label, value })).filter(
+    (day) => day.value >= 1 && day.value <= 6
+  );
+  const currentDay = new Date().getDay();
+  const timetableHeight = (TIMETABLE_END_HOUR - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR;
+
   return (
-    <section className={className}>
-      <div className="flex items-center justify-between mb-4">
+    <section
+      className={`rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${className}`}
+    >
+      <div className="mb-5 flex items-center justify-between">
         <h3 className="text-xl font-bold text-black">Class Schedules</h3>
-        <button onClick={onToggleForm} className="btn-primary px-4 py-2 text-sm">
+        <button
+          onClick={onToggleForm}
+          className="rounded-lg border-0 bg-[#8B0000] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#6e0000]"
+        >
           {showScheduleForm ? 'Cancel' : '+ Add Schedule'}
         </button>
       </div>
 
       {showScheduleForm ? (
-        <div className="glass-card p-5 mb-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mb-6 space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-bold text-black mb-1">Room</label>
+              <label className="mb-1 block text-xs font-bold text-black">Room</label>
               <select
                 value={schedRoomId}
                 onChange={(event) => onSchedRoomIdChange(event.target.value)}
@@ -75,13 +114,18 @@ export default function AdminClassSchedulesSection({
                 <option value="">Select room...</option>
                 {rooms.map((room) => (
                   <option key={room.id} value={room.id}>
-                    {room.name} ({room.floor})
+                    {room.name} (
+                    {getFloorDisplayLabel(room.floor, {
+                      id: room.buildingId,
+                      name: room.buildingName,
+                    })}
+                    )
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-black mb-1">Day</label>
+              <label className="mb-1 block text-xs font-bold text-black">Day</label>
               <select
                 value={schedDay}
                 onChange={(event) => onSchedDayChange(Number(event.target.value))}
@@ -95,7 +139,7 @@ export default function AdminClassSchedulesSection({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-black mb-1">Subject</label>
+              <label className="mb-1 block text-xs font-bold text-black">Subject</label>
               <input
                 value={schedSubject}
                 onChange={(event) => onSchedSubjectChange(event.target.value)}
@@ -104,7 +148,9 @@ export default function AdminClassSchedulesSection({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-black mb-1">Instructor</label>
+              <label className="mb-1 block text-xs font-bold text-black">
+                Instructor
+              </label>
               <input
                 value={schedInstructor}
                 onChange={(event) => onSchedInstructorChange(event.target.value)}
@@ -113,7 +159,9 @@ export default function AdminClassSchedulesSection({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-black mb-1">Start Time</label>
+              <label className="mb-1 block text-xs font-bold text-black">
+                Start Time
+              </label>
               <input
                 type="time"
                 value={schedStart}
@@ -122,7 +170,9 @@ export default function AdminClassSchedulesSection({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-black mb-1">End Time</label>
+              <label className="mb-1 block text-xs font-bold text-black">
+                End Time
+              </label>
               <input
                 type="time"
                 value={schedEnd}
@@ -145,86 +195,83 @@ export default function AdminClassSchedulesSection({
         </div>
       ) : null}
 
-      {schedules.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <p className="text-sm text-black">No class schedules assigned yet.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-            const daySchedules = schedules.filter((schedule) => schedule.dayOfWeek === day);
-
-            if (daySchedules.length === 0) {
-              return null;
-            }
-
-            return (
-              <div key={day}>
-                <h4 className="text-sm font-bold text-black mb-2">{DAY_NAMES[day]}</h4>
-                <div className="space-y-2">
-                  {daySchedules.map((schedule) => (
-                    <div
-                      key={schedule.id}
-                      className="glass-card p-4 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-black">
-                          {schedule.subjectName}
-                        </p>
-                        <p className="text-xs text-black">
-                          {schedule.roomName} · {schedule.instructorName} ·{' '}
-                          {formatTime12h(schedule.startTime)} –{' '}
-                          {formatTime12h(schedule.endTime)}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => onEditSchedule(schedule)}
-                          className="p-2 rounded-lg text-black hover:text-primary hover:bg-primary/10 transition-all"
-                          title="Edit"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => onDeleteSchedule(schedule.id)}
-                          className="p-2 rounded-lg ui-button-ghost ui-button-ghost-danger transition-all"
-                          title="Delete"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      <div className="max-h-[600px] overflow-x-auto overflow-y-auto">
+        <div
+          className="grid w-full"
+          style={{
+            gridTemplateColumns: `65px repeat(${timetableDays.length}, minmax(100px, 1fr))`,
+            minWidth: '665px',
+          }}
+        >
+            <div />
+            {timetableDays.map((day) => (
+              <div
+                key={day.value}
+                className={`border-b border-r border-[#f0f0f0] px-3 pb-2 text-center text-xs font-semibold uppercase text-[#555555] ${
+                  day.value === currentDay ? 'font-bold text-[#8B0000]' : ''
+                }`}
+              >
+                {day.label.slice(0, 3)}
               </div>
-            );
-          })}
+            ))}
+
+            <div className="relative" style={{ height: timetableHeight }}>
+              {HOUR_SLOTS.map((hour) => (
+                <div
+                key={hour}
+                  className="absolute left-0 w-full pr-2 text-right text-xs text-[#999999]"
+                  style={{
+                    top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8,
+                  }}
+                >
+                  {formatHourLabel(hour)}
+                </div>
+              ))}
+            </div>
+
+            {timetableDays.map((day) => (
+              <div
+                key={day.value}
+                className="relative border-r border-[#f0f0f0]"
+                style={{ height: timetableHeight }}
+              >
+                {HOUR_SLOTS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="absolute left-0 w-full border-t border-[#f0f0f0]"
+                    style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR }}
+                  />
+                ))}
+
+                {schedules
+                  .filter((schedule) => schedule.dayOfWeek === day.value)
+                  .map((schedule) => (
+                    <button
+                      key={schedule.id}
+                      type="button"
+                      onClick={() => onEditSchedule(schedule)}
+                      title={`${schedule.subjectName} | ${schedule.roomName} · ${schedule.instructorName} | ${formatTime12h(schedule.startTime)} - ${formatTime12h(schedule.endTime)}`}
+                      className="absolute left-2 right-2 overflow-hidden rounded-md border-l-[3px] border-[#8B0000] bg-[#fde8e8] px-2 py-1 text-left text-xs transition-all hover:bg-[#f9c8c8] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]"
+                      style={{
+                        top: getTimeOffset(schedule.startTime),
+                        height: getScheduleBlockHeight(
+                          schedule.startTime,
+                          schedule.endTime
+                        ),
+                      }}
+                    >
+                      <p className="truncate font-semibold text-[#8B0000]">
+                        {schedule.subjectName}
+                      </p>
+                      <p className="truncate text-[11px] text-[#666666]">
+                        {schedule.roomName} · {schedule.instructorName}
+                      </p>
+                    </button>
+                  ))}
+              </div>
+            ))}
         </div>
-      )}
+      </div>
     </section>
   );
 }

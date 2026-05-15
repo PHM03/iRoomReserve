@@ -1,7 +1,7 @@
 'use client';
 
-import { auth } from "@/lib/configs/firebase";
-import type { UserRole } from "@/lib/domain/roles";
+import { auth } from "@/lib/firebase/firebase";
+import type { UserRole } from "@/lib/auth/roles";
 import { buildUrl, type QueryParams } from "@/lib/utils/buildUrl";
 
 interface ApiRequestOptions {
@@ -29,7 +29,7 @@ export async function apiRequest<T>(
   { body, method = "POST", params, role, userId }: ApiRequestOptions = {}
 ): Promise<T> {
   const currentUser = auth.currentUser;
-  const token = currentUser ? await currentUser.getIdToken() : null;
+  const token = currentUser ? await currentUser.getIdToken(true) : null;
 
   const response = await fetch(buildUrl(input, params), {
     method,

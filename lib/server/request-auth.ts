@@ -2,11 +2,11 @@ import "server-only";
 
 import type { NextRequest } from "next/server";
 
-import { normalizeAssignedBuildings } from "@/lib/assignedBuildings";
-import { type ReservationCampus } from "@/lib/campuses";
-import { auth as adminAuth, db } from "@/lib/configs/firebase-admin";
-import { normalizeRole, type UserRole } from "@/lib/domain/roles";
-import { resolveCampusAssignment } from "../campusAssignments";
+import { normalizeAssignedBuildings } from "@/lib/admin/assignedBuildings";
+import { type ReservationCampus } from "@/lib/buildings/campuses";
+import { auth as adminAuth, db } from "@/lib/firebase/firebase-admin";
+import { normalizeRole, type UserRole } from "@/lib/auth/roles";
+import { resolveCampusAssignment } from "@/lib/buildings/campusAssignments";
 
 export interface RequestAuthContext {
   uid: string | null;
@@ -76,6 +76,8 @@ export async function getRequestAuthContext(
   const fallbackRole = normalizeRole(request.headers.get("x-user-role"));
   const authHeader = request.headers.get("authorization");
 
+  console.log("Auth header:", authHeader);
+
   if (authHeader?.startsWith("Bearer ")) {
     try {
       const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
@@ -91,7 +93,10 @@ export async function getRequestAuthContext(
         assignedBuildingIds: profileContext.assignedBuildingIds,
         verified: true,
       };
-    } catch {
+    } catch (error) {
+      console.warn("Firebase ID token verification failed", {
+        error,
+      });
       // Fall through to compatibility headers when the bearer token is invalid.
     }
   }

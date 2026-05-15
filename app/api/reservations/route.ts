@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { handleApiError } from "@/lib/server/api-error";
-import { getManagedBuildingIdsForCampus } from "@/lib/campusAssignments";
-import { db } from "@/lib/configs/firebase-admin";
+import { getManagedBuildingIdsForCampus } from "@/lib/buildings/campusAssignments";
+import { db } from "@/lib/firebase/firebase-admin";
+import { groupReservationsForDisplay } from "@/lib/reservations/reservation-groups";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
   assertAuthenticated,
@@ -66,6 +67,21 @@ function sortReservations(
   );
 }
 
+function applyStatusFilters(
+  reservationsQuery: FirebaseFirestore.Query,
+  statuses: string[]
+) {
+  if (statuses.length === 1) {
+    return reservationsQuery.where("status", "==", statuses[0]);
+  }
+
+  if (statuses.length > 1) {
+    return reservationsQuery.where("status", "in", statuses);
+  }
+
+  return reservationsQuery;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getRequestAuthContext(request);
@@ -80,6 +96,18 @@ export async function GET(request: NextRequest) {
       ?.split(",")
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean) ?? [];
+
+    if (statuses.length > 10) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "too_many_status_filters",
+            message: "A maximum of 10 statuses can be requested at once.",
+          },
+        },
+        { status: 400 }
+      );
+    }
 
     if (!roomId && !userId && !campus) {
       return NextResponse.json(
@@ -125,30 +153,35 @@ export async function GET(request: NextRequest) {
 
     const buildingIds =
       campus === "main" || campus === "digi"
-        ? getManagedBuildingIdsForCampus(campus)
+        ? [...new Set(getManagedBuildingIdsForCampus(campus).map((value) => value.trim()))]
         : [];
-    const snapshot = await reservationsQuery.get();
-    const reservations = snapshot.docs
-      .map(
+    const snapshots =
+      buildingIds.length > 0
+        ? await Promise.all(
+            buildingIds.map((buildingId) =>
+              applyStatusFilters(
+                reservationsQuery.where("buildingId", "==", buildingId),
+                statuses
+              ).get()
+            )
+          )
+        : [await applyStatusFilters(reservationsQuery, statuses).get()];
+    const reservations = snapshots.flatMap((snapshot) =>
+      snapshot.docs.map(
         (doc) =>
           ({
             id: doc.id,
             ...doc.data(),
           }) as ReservationQueryRecord
       )
-      .filter((reservation) =>
-        buildingIds.length === 0
-          ? true
-          : buildingIds.includes(String(reservation.buildingId ?? "").trim().toLowerCase())
-      )
-      .filter((reservation) =>
-        statuses.length === 0
-          ? true
-          : statuses.includes((reservation.status ?? "").toLowerCase())
-      )
-      .sort(sortReservations);
+    );
 
-    return NextResponse.json(reservations);
+    const normalizedReservations =
+      roomId || (!userId && !campus)
+        ? reservations.sort(sortReservations)
+        : groupReservationsForDisplay(reservations);
+
+    return NextResponse.json(normalizedReservations);
   } catch (error) {
     return handleApiError(error);
   }

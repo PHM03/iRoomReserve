@@ -7,7 +7,7 @@ import {
   exampleTimeslot,
   generateReason,
   runRecommendationExamples,
-} from '../lib/roomRecommendations';
+} from '../lib/ai/roomRecommendations';
 
 const availabilityByRoomId: Record<string, boolean> = {
   'glass-101': false,

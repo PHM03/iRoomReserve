@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import Providers from "@/components/Providers";
+import Providers from "@/components/layout/Providers";
 import "./globals.css";
 
 const centuryGothicRegular = localFont({
@@ -36,7 +36,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "iRoomReserve - Smart Room Reservation System",
+  title: {
+    default: "iRoomReserve",
+    template: "%s | iRoomReserve",
+  },
+  applicationName: "iRoomReserve",
   description: "Smart Room Reservation and Occupancy Monitoring System for St. Dominic College of Asia",
   manifest: "/manifest.json",
 };
@@ -48,7 +52,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-[#f8f9fa]">
-      <body className={`min-h-screen bg-[#f8f9fa] ${centuryGothicRegular.variable} ${centuryGothicBold.variable}`}>
+      <body suppressHydrationWarning className={`min-h-screen bg-[#f8f9fa] ${centuryGothicRegular.variable} ${centuryGothicBold.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

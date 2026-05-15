@@ -2,21 +2,21 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import type { AdminTab } from '@/components/NavBar';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
+import type { AdminTab } from '@/components/layout/NavBar';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
 import {
   onPendingReservationsByBuilding,
   onReservationsByBuilding,
   approveReservation,
   rejectReservation,
   Reservation,
-} from '@/lib/reservations';
+} from '@/lib/reservations/reservations';
 import {
   onUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   Notification,
-} from '@/lib/notifications';
+} from '@/lib/notifications/notifications';
 import {
   Room,
   RoomInput,
@@ -25,13 +25,13 @@ import {
   deleteRoom,
   updateRoomStatus,
   onRoomsByBuilding,
-} from '@/lib/rooms';
+} from '@/lib/rooms/rooms';
 import {
   Feedback,
   onFeedbackByBuilding,
   respondToFeedback,
-} from '@/lib/feedback';
-import { getBuildingById } from '@/lib/buildings';
+} from '@/lib/feedback/feedback';
+import { getBuildingById } from '@/lib/buildings/buildings';
 import {
   Schedule,
   ScheduleInput,
@@ -40,16 +40,16 @@ import {
   deleteSchedule,
   onSchedulesByBuilding,
   isRoomInClass,
-} from '@/lib/schedules';
+} from '@/lib/schedules/schedules';
 import {
   RoomHistoryEntry,
   onRoomHistoryByBuilding,
-} from '@/lib/roomHistory';
+} from '@/lib/rooms/roomHistory';
 import {
   AdminRequest,
   onAdminRequestsByBuilding,
   respondToAdminRequest,
-} from '@/lib/adminRequests';
+} from '@/lib/admin/adminRequests';
 
 interface UseAdminDashboardOptions {
   activeTab: AdminTab;
@@ -167,7 +167,7 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
   }, [buildingId, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (buildingId && activeTab === 'add-rooms') {
+    if (buildingId && activeTab === 'manage-rooms') {
       getBuildingById(buildingId).then((building) => {
         if (building) setBuildingFloors(building.floors);
       });
@@ -370,14 +370,14 @@ export function useAdminDashboard({ activeTab }: UseAdminDashboardOptions) {
 
     if (activeReservation) {
       return activeReservation.checkedInAt
-        ? { status: 'Ongoing', detail: `Checked in: ${activeReservation.userName}` }
+        ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
         : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
     }
 
     return { status: 'Available', detail: '' };
   };
 
-  const ongoingCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Ongoing').length;
+  const ongoingCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Occupied').length;
   const reservedCount = rooms.filter((room) => computeEffectiveStatus(room).status === 'Reserved').length;
   const unavailableCount = rooms.filter((room) => room.status === 'Unavailable').length;
   const availableCount = rooms.length - ongoingCount - reservedCount - unavailableCount;

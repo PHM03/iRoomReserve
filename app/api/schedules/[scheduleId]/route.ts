@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { USER_ROLES } from "@/lib/domain/roles";
-import { db } from "@/lib/configs/firebase-admin";
+import { USER_ROLES } from "@/lib/auth/roles";
+import { db } from "@/lib/firebase/firebase-admin";
 import { ApiError, handleApiError } from "@/lib/server/api-error";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {

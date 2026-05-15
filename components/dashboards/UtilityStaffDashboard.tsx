@@ -2,34 +2,33 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import BleSummaryCard from '@/components/BleSummaryCard';
+import BleSummaryCard from '@/components/ui/BleSummaryCard';
+import StatusBadge from '@/components/ui/StatusBadge';
+import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
-import {
-  DAY_NAMES,
-  formatTime12h,
-  isRoomInClass,
-  onSchedulesByBuilding,
-  Schedule,
-} from '@/lib/schedules';
-import {
-  onReservationsByBuilding,
-  Reservation,
-} from '@/lib/reservations';
 import {
   AdminRequest,
   onAdminRequestsByBuilding,
-} from '@/lib/adminRequests';
+} from '@/lib/admin/adminRequests';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { formatTimeRange } from '@/lib/utils/dateTime';
+import {
+  onReservationsByBuilding,
+  Reservation,
+} from '@/lib/reservations/reservations';
 import {
   onRoomsByBuilding,
   Room,
-} from '@/lib/rooms';
-import StatusBadge from '@/components/StatusBadge';
+} from '@/lib/rooms/rooms';
 import {
-  getCurrentTimeString,
+  isRoomInClass,
+  onSchedulesByBuilding,
+  Schedule,
+} from '@/lib/schedules/schedules';
+import {
   getLocalDateString,
   resolveRoomStatus,
-} from '@/lib/roomStatus';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
+} from '@/lib/rooms/roomStatus';
 
 interface UtilityStaffDashboardProps {
   firstName: string;
@@ -99,12 +98,6 @@ export default function UtilityStaffDashboard({
 
   const today = new Date();
   const todayDateString = getLocalDateString(today);
-  const currentDay = today.getDay();
-  const currentTime = getCurrentTimeString(today);
-
-  const todaySchedules = schedules.filter(
-    (schedule) => schedule.dayOfWeek === currentDay
-  );
   const todayReservations = reservations.filter(
     (reservation) =>
       reservation.date === todayDateString &&
@@ -134,7 +127,9 @@ export default function UtilityStaffDashboard({
     return (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-black">Hello, {firstName} 🔑</h2>
+          <h2 className="text-2xl font-bold text-black">
+            Hello, {firstName} {'\u{1F511}'}
+          </h2>
           <p className="text-black mt-1">Utility Staff Dashboard</p>
         </div>
         <div className="glass-card p-12 text-center">
@@ -168,8 +163,10 @@ export default function UtilityStaffDashboard({
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
       <div className="mb-8">
-        <div className="backdrop-blur-md bg-white/40 rounded-xl px-6 py-4 border border-white/30 inline-block">
-          <h2 className="text-2xl font-bold text-gray-800">Hello, {firstName} 🔑</h2>
+        <div className="bg-white rounded-xl px-6 py-4 border border-white/30 inline-block">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Hello, {firstName} {'\u{1F511}'}
+          </h2>
           <p className="text-gray-600 mt-1">
             Managing: <span className="ui-text-teal font-bold">{buildingName}</span>
           </p>
@@ -252,7 +249,7 @@ export default function UtilityStaffDashboard({
           </div>
           <div className="rounded-xl border border-dark/10 bg-dark/5 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <StatusBadge status="Ongoing" />
+              <StatusBadge status="Occupied" />
             </div>
             <p className="text-sm text-black">
               A reservation has checked in and is actively using the room.
@@ -268,71 +265,18 @@ export default function UtilityStaffDashboard({
         />
       </section>
 
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-black">
-            Today&apos;s Class Schedules
-            <span className="text-sm text-black font-normal ml-2">
-              ({DAY_NAMES[currentDay]})
-            </span>
-          </h3>
-          <span className="text-xs text-black">
-            {todaySchedules.length} class{todaySchedules.length !== 1 ? 'es' : ''}
-          </span>
-        </div>
-
-        {todaySchedules.length === 0 ? (
-          <div className="glass-card p-8 text-center">
-            <div className="text-3xl mb-2">📚</div>
-            <p className="text-sm text-black">No classes scheduled for today.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {todaySchedules.map((schedule) => {
-              const isActive =
-                schedule.startTime <= currentTime && schedule.endTime > currentTime;
-              const isUpcoming = schedule.startTime > currentTime;
-
-              return (
-                <div
-                  key={schedule.id}
-                  className={`glass-card p-4 border-l-4 ${
-                    isActive
-                      ? 'border-orange-500/60'
-                      : isUpcoming
-                        ? 'border-teal-500/40'
-                        : 'border-dark/10'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-black">
-                        {schedule.subjectName}
-                      </p>
-                      <p className="text-xs text-black mt-0.5">
-                        {schedule.roomName} | {schedule.instructorName}
-                      </p>
-                      <p className="text-xs text-black mt-1">
-                        {formatTime12h(schedule.startTime)} -{' '}
-                        {formatTime12h(schedule.endTime)}
-                      </p>
-                    </div>
-                    {isActive && <StatusBadge status="Reserved" />}
-                    {isUpcoming && !isActive && <StatusBadge status="Available" />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <MyReservationTimetable
+        className="mb-8"
+        currentUserId={uid}
+        reservations={reservations}
+      />
 
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-black">
+        <div className="flex items-center justify-between mb-4 bg-white rounded-xl px-6 py-4 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800">
             Today&apos;s Room Reservations
           </h3>
-          <span className="text-xs text-black">
+          <span className="text-xs text-gray-600">
             {todayReservations.length} reservation
             {todayReservations.length !== 1 ? 's' : ''}
           </span>
@@ -340,7 +284,7 @@ export default function UtilityStaffDashboard({
 
         {todayReservations.length === 0 ? (
           <div className="glass-card p-8 text-center">
-            <div className="text-3xl mb-2">📋</div>
+            <div className="text-3xl mb-2">{'\u{1F4CB}'}</div>
             <p className="text-sm text-black">No reservations for today.</p>
           </div>
         ) : (
@@ -352,7 +296,7 @@ export default function UtilityStaffDashboard({
               const roomStatus = resolveRoomStatus(
                 reservationRoom ?? {
                   id: reservation.roomId,
-                  status: reservation.checkedInAt ? 'Ongoing' : 'Reserved',
+                  status: reservation.checkedInAt ? 'Occupied' : 'Reserved',
                 },
                 reservations,
                 { now: today }
@@ -381,8 +325,7 @@ export default function UtilityStaffDashboard({
                           <StatusBadge status={roomStatus.status} />
                         </div>
                         <p className="text-xs text-black mt-0.5">
-                          {reservation.roomName} | {reservation.startTime} -{' '}
-                          {reservation.endTime}
+                          {reservation.roomName} | {formatTimeRange(reservation.startTime, reservation.endTime)}
                         </p>
                         <p className="text-xs text-black mt-0.5">
                           Purpose: {reservation.purpose}
@@ -391,86 +334,6 @@ export default function UtilityStaffDashboard({
                     </div>
                     <p className="text-xs text-black">{roomStatus.detail}</p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-black">Admin Requests</h3>
-          {openRequests.length > 0 && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ui-badge-blue">
-              {openRequests.length} open
-            </span>
-          )}
-        </div>
-
-        {adminRequests.length === 0 ? (
-          <div className="glass-card p-8 text-center">
-            <div className="text-3xl mb-2">💬</div>
-            <p className="text-sm text-black">
-              No admin requests for this building.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {adminRequests.slice(0, 10).map((request) => {
-              const requestStatusStyle =
-                request.status === 'open'
-                  ? 'ui-badge-blue'
-                  : request.status === 'responded'
-                    ? 'ui-badge-green'
-                    : 'ui-badge-gray';
-              const requestTypeIcon =
-                request.type === 'equipment'
-                  ? '🔧'
-                  : request.type === 'general'
-                    ? '💬'
-                    : '📋';
-
-              return (
-                <div key={request.id} className="glass-card p-4 sm:p-5">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-dark/5 border border-dark/10 flex items-center justify-center text-black font-bold text-sm shrink-0">
-                        {request.userName
-                          .split(' ')
-                          .map((name) => name[0])
-                          .join('')
-                          .toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <h4 className="font-bold text-black text-sm">
-                            {request.userName}
-                          </h4>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${requestStatusStyle} capitalize`}
-                          >
-                            {request.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-black">
-                          <span className="mr-1">{requestTypeIcon}</span>
-                          {request.type} | {request.subject}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-black mb-2">{request.message}</p>
-                  {request.adminResponse && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
-                      <p className="text-xs font-bold text-primary mb-1">
-                        Admin Response
-                      </p>
-                      <p className="text-sm text-black">
-                        {request.adminResponse}
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })}

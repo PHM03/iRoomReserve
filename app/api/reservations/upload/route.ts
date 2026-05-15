@@ -5,6 +5,8 @@ import { getRequestAuthContext } from "@/lib/server/request-auth";
 import { assertAuthenticated } from "@/lib/server/route-guards";
 import { uploadReservationDocument } from "@/lib/server/supabase-storage";
 
+export const runtime = "nodejs";
+
 function getOptionalString(value: FormDataEntryValue | null) {
   if (typeof value !== "string") {
     return null;
@@ -20,6 +22,10 @@ export async function POST(request: NextRequest) {
       includeProfile: false,
     });
     assertAuthenticated(authContext);
+    const userId = authContext.uid;
+    if (!userId) {
+      throw new ApiError(401, "unauthenticated", "Authentication is required.");
+    }
 
     const formData = await request.formData();
     const fileEntry = formData.get("file");
@@ -32,10 +38,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("[reservation-upload] received concept paper file", {
+      contentType: fileEntry.type,
+      fileName: fileEntry.name,
+      size: fileEntry.size,
+      userId,
+    });
+
     const upload = await uploadReservationDocument({
       file: fileEntry,
       reservationId: getOptionalString(formData.get("reservationId")),
-      userId: authContext.uid,
+      userId,
+    });
+
+    console.log("[reservation-upload] returning uploaded concept paper", {
+      hasFileUrl: Boolean(upload.url),
+      path: upload.path,
+      userId,
     });
 
     return NextResponse.json(upload, { status: 201 });

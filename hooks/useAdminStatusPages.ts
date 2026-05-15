@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useAdminTab } from '@/context/AdminTabContext';
-import { getManagedBuildingsForCampus } from '@/lib/campusAssignments';
-import { normalizeRoomCheckInMethod } from '@/lib/roomStatus';
+import { getManagedBuildingsForCampus } from '@/lib/buildings/campusAssignments';
+import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
+import { normalizeRoomCheckInMethod } from '@/lib/rooms/roomStatus';
 import {
   Schedule,
   ScheduleInput,
@@ -13,11 +14,12 @@ import {
   deleteSchedule,
   isRoomInClass,
   onSchedulesByBuilding,
+  onSchedulesByBuildingRoomIds,
   updateSchedule,
   DAY_NAMES,
-} from '@/lib/schedules';
-import { onReservationsByBuilding, Reservation } from '@/lib/reservations';
-import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms';
+} from '@/lib/schedules/schedules';
+import { onReservationsByBuilding, Reservation } from '@/lib/reservations/reservations';
+import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms/rooms';
 
 function getManagedBuildingDisplayLabel(input: {
   id?: string | null;
@@ -50,7 +52,26 @@ export function getManagedBuildingOptionLabel(building: {
     : `${displayLabel} - ${building.name}`;
 }
 
-export function useAdminStatusPages() {
+interface UseAdminStatusPagesOptions {
+  scheduleSelectionRequired?: boolean;
+  selectedScheduleFloor?: string;
+  selectedScheduleRoom?: string;
+}
+
+function getRoomScheduleFilterValue(room: Room) {
+  return room.name.trim() || room.id;
+}
+
+function getStoredRoomFloor(room: Room) {
+  return room.floor;
+}
+
+export function useAdminStatusPages(options: UseAdminStatusPagesOptions = {}) {
+  const {
+    scheduleSelectionRequired = false,
+    selectedScheduleFloor = '',
+    selectedScheduleRoom = '',
+  } = options;
   const { firebaseUser, profile } = useAuth();
   const { selectedBuildingId, setSelectedBuildingId } = useAdminTab();
   const managedBuildings = useMemo(
@@ -85,12 +106,55 @@ export function useAdminStatusPages() {
   const [schedEnd, setSchedEnd] = useState('');
   const [addingSchedule, setAddingSchedule] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const selectedScheduleFloorValue = selectedScheduleFloor;
+  const normalizedSelectedScheduleRoom = selectedScheduleRoom.trim();
+  const selectedScheduleRoomIds = useMemo(() => {
+    if (!scheduleSelectionRequired) {
+      return null;
+    }
+
+    if (normalizedSelectedScheduleRoom && selectedScheduleFloorValue) {
+      return rooms
+        .filter(
+          (room) =>
+            room.buildingId === buildingId &&
+            getStoredRoomFloor(room) === selectedScheduleFloorValue &&
+            (room.id === normalizedSelectedScheduleRoom ||
+              getRoomScheduleFilterValue(room) === normalizedSelectedScheduleRoom)
+        )
+        .map((room) => room.id);
+    }
+
+    if (selectedScheduleFloorValue) {
+      return rooms
+        .filter(
+          (room) =>
+            room.buildingId === buildingId &&
+            getStoredRoomFloor(room) === selectedScheduleFloorValue
+        )
+        .map((room) => room.id);
+    }
+
+    return [];
+  }, [
+    selectedScheduleFloorValue,
+    normalizedSelectedScheduleRoom,
+    buildingId,
+    rooms,
+    scheduleSelectionRequired,
+  ]);
+
+  // Stable string key so the schedule subscription only restarts when the
+  // actual set of room IDs changes, not on every Firestore rooms snapshot
+  // (which always produces a new array reference).
+  const selectedScheduleRoomKey = selectedScheduleRoomIds
+    ? [...selectedScheduleRoomIds].sort().join(',')
+    : null;
 
   useEffect(() => {
     if (!buildingId || !firebaseUser?.uid) {
       setAllReservations([]);
       setRooms([]);
-      setSchedules([]);
       return;
     }
 
@@ -107,18 +171,97 @@ export function useAdminStatusPages() {
       if (cancelled) return;
       setRooms(nextRooms);
     });
-    const unsubSchedules = onSchedulesByBuilding(buildingId, (nextSchedules) => {
+
+    return () => {
+      cancelled = true;
+      unsubAllReservations();
+      unsubRooms();
+    };
+  }, [buildingId, firebaseUser?.uid]);
+
+  useEffect(() => {
+    if (!buildingId || !firebaseUser?.uid) {
+      setSchedules([]);
+      return;
+    }
+
+    if (scheduleSelectionRequired) {
+      const hasScheduleSelection =
+        Boolean(selectedScheduleFloorValue) ||
+        Boolean(normalizedSelectedScheduleRoom);
+
+      console.log('[schedules effect]', {
+        selectedScheduleFloorValue,
+        normalizedSelectedScheduleRoom,
+        selectedScheduleRoomIds,
+        selectedScheduleRoomKey,
+        hasScheduleSelection,
+        roomsLoaded: rooms.length,
+      });
+
+      if (!hasScheduleSelection || !selectedScheduleRoomIds?.length) {
+        setSchedules([]);
+        return;
+      }
+
+      // ── DEBUG: trace room-ID resolution ───────────────────────────────────
+      console.group('[DEBUG] Schedule subscription starting');
+      console.log('1. Context', {
+        buildingId,
+        selectedScheduleFloorValue,
+        normalizedSelectedScheduleRoom,
+      });
+      console.log('2. Rooms loaded from Firestore (this building)', rooms.map((r) => ({
+        id: r.id,
+        name: r.name,
+        floor: r.floor,
+        buildingId: r.buildingId,
+      })));
+      console.log('3. Resolved selectedScheduleRoomIds (passed to Firestore query)',
+        selectedScheduleRoomIds,
+      );
+      console.groupEnd();
+      // ─────────────────────────────────────────────────────────────────────
+
+      let cancelled = false;
+      const unsubscribe = onSchedulesByBuildingRoomIds(
+        buildingId,
+        selectedScheduleRoomIds,
+        (nextSchedules) => {
+          console.log('[schedules] onSchedulesByBuildingRoomIds callback', {
+            buildingId,
+            roomIds: selectedScheduleRoomIds,
+            count: nextSchedules.length,
+          });
+          if (cancelled) return;
+          setSchedules(nextSchedules);
+        }
+      );
+
+      return () => {
+        cancelled = true;
+        unsubscribe();
+      };
+    }
+
+    let cancelled = false;
+    const unsubscribe = onSchedulesByBuilding(buildingId, (nextSchedules) => {
       if (cancelled) return;
       setSchedules(nextSchedules);
     });
 
     return () => {
       cancelled = true;
-      unsubAllReservations();
-      unsubRooms();
-      unsubSchedules();
+      unsubscribe();
     };
-  }, [buildingId, firebaseUser?.uid]);
+  }, [
+    buildingId,
+    firebaseUser?.uid,
+    selectedScheduleFloorValue,
+    normalizedSelectedScheduleRoom,
+    scheduleSelectionRequired,
+    selectedScheduleRoomKey,
+  ]);
 
   const resetScheduleForm = () => {
     setShowScheduleForm(false);
@@ -322,10 +465,14 @@ export function useAdminStatusPages() {
     return uniqueFloors
       .map((floor) => ({
         floor,
+        label: getFloorDisplayLabel(floor, {
+          id: buildingId,
+          name: buildingName,
+        }),
         rooms: roomsByFloor.get(floor) ?? [],
       }))
       .filter((floorGroup) => floorGroup.rooms.length > 0);
-  }, [rooms, uniqueFloors]);
+  }, [buildingId, buildingName, rooms, uniqueFloors]);
 
   const scheduleCountsByDay = useMemo(
     () =>
