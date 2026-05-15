@@ -6,7 +6,8 @@ import {
   rejectReservation,
   type Reservation,
 } from '@/lib/reservations/reservations';
-import { formatTimeRange } from '@/lib/utils/dateTime';
+import { DAY_NAMES, getSchedulesByRoomId, type Schedule } from '@/lib/schedules/schedules';
+import { extractTimeString, formatTimeRange } from '@/lib/utils/dateTime';
 import { formatReservationDates, RoleBadge, getManagedBuildingOptionLabel } from './shared';
 
 interface BuildingOption {
@@ -24,6 +25,27 @@ interface AdminPendingTabProps {
   onReload: () => Promise<void>;
 }
 
+type ApproveConfirmStep = 'no-conflict' | 'conflict-warning' | 'conflict-reminder';
+
+interface ClassScheduleConflict {
+  date: string;
+  dayName: string;
+  roomName: string;
+  schedule: Schedule;
+}
+
+type ConfirmModal =
+  | {
+      type: 'approve';
+      id: string;
+      step: ApproveConfirmStep;
+      conflict?: ClassScheduleConflict;
+    }
+  | {
+      type: 'reject';
+      id: string;
+    };
+
 function ChevronDownIcon({ className }: { className: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,6 +62,83 @@ function CheckIcon({ className }: { className: string }) {
   );
 }
 
+function getReservationDates(request: Reservation) {
+  return request.dates?.length ? request.dates : request.date ? [request.date] : [];
+}
+
+function getDayOfWeekFromDate(dateString: string) {
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return new Date(
+      Number(isoMatch[1]),
+      Number(isoMatch[2]) - 1,
+      Number(isoMatch[3])
+    ).getDay();
+  }
+
+  const parsedDate = new Date(dateString);
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate.getDay();
+}
+
+function getMinutesFromTime(value: string) {
+  const match = extractTimeString(value).match(/^(\d{2}):(\d{2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function timeRangesOverlap(
+  leftStart: string,
+  leftEnd: string,
+  rightStart: string,
+  rightEnd: string
+) {
+  const leftStartMinutes = getMinutesFromTime(leftStart);
+  const leftEndMinutes = getMinutesFromTime(leftEnd);
+  const rightStartMinutes = getMinutesFromTime(rightStart);
+  const rightEndMinutes = getMinutesFromTime(rightEnd);
+
+  if (
+    leftStartMinutes === null ||
+    leftEndMinutes === null ||
+    rightStartMinutes === null ||
+    rightEndMinutes === null
+  ) {
+    return false;
+  }
+
+  return leftStartMinutes < rightEndMinutes && rightStartMinutes < leftEndMinutes;
+}
+
+function findClassScheduleConflict(request: Reservation, schedules: Schedule[]) {
+  for (const date of getReservationDates(request)) {
+    const dayOfWeek = getDayOfWeekFromDate(date);
+    if (dayOfWeek === null) continue;
+
+    const schedule = schedules.find(
+      (candidate) =>
+        candidate.roomId === request.roomId &&
+        candidate.dayOfWeek === dayOfWeek &&
+        timeRangesOverlap(
+          request.startTime,
+          request.endTime,
+          candidate.startTime,
+          candidate.endTime
+        )
+    );
+
+    if (schedule) {
+      return {
+        date,
+        dayName: DAY_NAMES[dayOfWeek],
+        roomName: schedule.roomName || request.roomName,
+        schedule,
+      };
+    }
+  }
+
+  return null;
+}
+
 export default function AdminPendingTab({
   activeBuildingLabel,
   approverEmail,
@@ -54,11 +153,13 @@ export default function AdminPendingTab({
   const [rejectReason, setRejectReason] = useState('');
   const [reservationActionError, setReservationActionError] = useState('');
   const [isBuildingSwitcherOpen, setIsBuildingSwitcherOpen] = useState(false);
+  const [expandedReservationIds, setExpandedReservationIds] = useState<string[]>([]);
+  const [approveCheckLoading, setApproveCheckLoading] = useState<string | null>(null);
   const buildingSwitcherRef = useRef<HTMLDivElement | null>(null);
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [confirmModal, setConfirmModal] = useState<{ type: 'approve' | 'reject'; id: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
   const [userTypeFilter, setUserTypeFilter] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -90,22 +191,54 @@ export default function AdminPendingTab({
     );
   };
 
-  const openConfirm = (type: 'approve' | 'reject', id: string) => {
+  const openConfirm = (
+    type: 'approve' | 'reject',
+    id: string,
+    step: ApproveConfirmStep = 'no-conflict',
+    conflict?: ClassScheduleConflict
+  ) => {
     setReservationActionError('');
     if (type === 'reject') {
       setRejectingReservationId(id);
       setRejectReason('');
     }
-    setConfirmModal({
-      type,
-      id
-    });
+    setConfirmModal(type === 'approve' ? { type, id, step, conflict } : { type, id });
   };
 
   const closeConfirm = () => {
     setConfirmModal(null);
     setRejectingReservationId(null);
     setRejectReason('');
+  };
+
+  const toggleReservationExpanded = (id: string) => {
+    setExpandedReservationIds((currentIds) =>
+      currentIds.includes(id)
+        ? currentIds.filter((currentId) => currentId !== id)
+        : [...currentIds, id]
+    );
+  };
+
+  const openApproveConfirm = async (request: Reservation) => {
+    if (!approverEmail) return;
+    setReservationActionError('');
+    setApproveCheckLoading(request.id);
+    try {
+      const schedules = await getSchedulesByRoomId(request.roomId);
+      const conflict = findClassScheduleConflict(request, schedules);
+      if (conflict) {
+        openConfirm('approve', request.id, 'conflict-warning', conflict);
+        return;
+      }
+      openConfirm('approve', request.id, 'no-conflict');
+    } catch (error) {
+      console.warn('Failed to check class schedules:', error);
+      setReservationActionError(
+        error instanceof Error ? error.message : 'Failed to check class schedule conflicts.'
+      );
+    } finally {
+      setApproveCheckLoading(null);
+    }
   };
 
   const handleApprove = async (id: string) => {
@@ -549,42 +682,43 @@ export default function AdminPendingTab({
                   }}
               onClick={(e) => { if (e.target === e.currentTarget) closeConfirm(); }}
             >
-                  <div style={{
-                    background: '#fff',
-                    borderRadius: '16px',
-                    padding: '28px 32px',
-                    maxWidth: '440px',
-                    width: '100%',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.18)'
-                  }}>
-                    <h4 style={{
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      color: '#111',
-                      marginBottom: '8px'
-                    }}>
-                  {confirmModal.type === 'approve' ? 'Approve Reservation?' : 'Reject Reservation?'}
-                </h4>
-                    <p style={{
-                      fontSize: '13px',
-                      color: '#666',
-                      marginBottom: confirmModal.type === 'reject' ? '16px' : '24px'
-                    }}>
-                  {confirmModal.type === 'approve'
-                    ? 'This will approve the reservation and notify the requester.'
-                    : 'Please provide a reason for rejecting this reservation.'}
-                </p>
-                {confirmModal.type === 'reject' && (
-                      <div style={{ marginBottom: '20px' }}>
-                        <label style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#555',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          display: 'block',
-                          marginBottom: '6px'
-                        }}>Reason for rejection</label>
+              <div style={{ background: '#fff', borderRadius: '16px', padding: '28px 32px', maxWidth: '440px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+                {confirmModal.type === 'approve' ? (
+                  <>
+                    <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+                      {confirmModal.step === 'conflict-warning' ? 'Class Schedule Conflict' : 'Are you sure?'}
+                    </h4>
+                    {confirmModal.step === 'no-conflict' && (
+                      <>
+                        <p style={{ fontSize: '12px', color: '#15803d', fontWeight: 700, marginBottom: '8px' }}>
+                          No class conflicts. Good to approve!
+                        </p>
+                        <p style={{ fontSize: '13px', color: '#666', marginBottom: '24px' }}>
+                          This will approve the reservation and notify the requester.
+                        </p>
+                      </>
+                    )}
+                    {confirmModal.step === 'conflict-warning' && confirmModal.conflict && (
+                      <p style={{ fontSize: '13px', color: '#666', marginBottom: '24px' }}>
+                        There is a class in {confirmModal.conflict.roomName} on {confirmModal.conflict.dayName} from {formatTimeRange(confirmModal.conflict.schedule.startTime, confirmModal.conflict.schedule.endTime)} ({confirmModal.conflict.schedule.subjectName} by {confirmModal.conflict.schedule.instructorName}). Approve anyway?
+                      </p>
+                    )}
+                    {confirmModal.step === 'conflict-reminder' && confirmModal.conflict && (
+                      <p style={{ fontSize: '13px', color: '#666', marginBottom: '24px' }}>
+                        Just a reminder — there may be no class held on {formatReservationDates([confirmModal.conflict.date], confirmModal.conflict.date)} but a schedule exists. Still approve?
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+                      Reject Reservation?
+                    </h4>
+                    <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px' }}>
+                      Please provide a reason for rejecting this reservation.
+                    </p>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Reason for rejection</label>
                     <textarea
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
@@ -607,22 +741,18 @@ export default function AdminPendingTab({
                           marginTop: '4px'
                         }}>{reservationActionError}</p>}
                   </div>
+                  </>
                 )}
-                    <div style={{
-                      display: 'flex',
-                      gap: '10px',
-                      justifyContent: 'flex-end'
-                    }}>
-                      <button onClick={closeConfirm} style={{
-                        padding: '8px 18px',
-                        borderRadius: '8px',
-                        border: '1px solid #e0e0e0',
-                        background: 'transparent',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#555',
-                        cursor: 'pointer'
-                      }}>Cancel</button>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button onClick={closeConfirm} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid #e0e0e0', background: 'transparent', fontSize: '13px', fontWeight: 600, color: '#555', cursor: 'pointer' }}>Cancel</button>
+                  {confirmModal.type === 'approve' && confirmModal.step === 'conflict-warning' ? (
+                    <button
+                      onClick={() => setConfirmModal({ ...confirmModal, step: 'conflict-reminder' })}
+                      style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#8B0000', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Yes, Continue
+                    </button>
+                  ) : (
                   <button
                     disabled={actionLoading === confirmModal.id || (confirmModal.type === 'reject' && !rejectReason.trim())}
                     onClick={async () => {
@@ -645,8 +775,9 @@ export default function AdminPendingTab({
                           opacity: actionLoading === confirmModal.id ? 0.6 : 1
                         }}
                   >
-                    {actionLoading === confirmModal.id ? 'Processing…' : confirmModal.type === 'approve' ? 'Yes, Approve' : 'Yes, Reject'}
+                    {actionLoading === confirmModal.id ? 'Processing...' : confirmModal.type === 'approve' ? confirmModal.step === 'conflict-reminder' ? 'Approve Anyway' : 'Yes, Approve' : 'Yes, Reject'}
                   </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -692,47 +823,30 @@ export default function AdminPendingTab({
                 const badge = statusBadge(request.status);
                 const initials = request.userName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
                 const avatarBg = avatarColor(request.userName);
+                const isExpanded = expandedReservationIds.includes(request.id);
+                const dateLabel = formatReservationDates(request.dates, request.date);
+                const timeLabel = formatTimeRange(request.startTime, request.endTime);
                 return (
                   <div
                     key={request.id}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      border: '1px solid #f0f0f0',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                      padding: '20px 24px',
-                      transition: 'box-shadow 0.2s',
-                      animation: 'fadeInCard 0.25s ease both'
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleReservationExpanded(request.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleReservationExpanded(request.id);
+                      }
                     }}
+                    style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: isExpanded ? '20px 24px' : '14px 18px', transition: 'box-shadow 0.2s', animation: 'fadeInCard 0.25s ease both', cursor: 'pointer' }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; }}
                   >
                     {/* Top row */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      marginBottom: '16px',
-                      gap: '12px'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px'
-                      }}>
-                        <div style={{
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '50%',
-                          background: avatarBg,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fff',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          flexShrink: 0
-                        }}>{initials}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isExpanded ? '16px' : 0, gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                        <div style={{ width: isExpanded ? '44px' : '36px', height: isExpanded ? '44px' : '36px', borderRadius: '50%', background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: isExpanded ? '14px' : '12px', flexShrink: 0 }}>{initials}</div>
                         <div>
                           <div style={{
                             display: 'flex',
@@ -747,27 +861,20 @@ export default function AdminPendingTab({
                             }}>{request.userName}</span>
                             <RoleBadge role={request.userRole} />
                           </div>
-                          <p style={{
-                            fontSize: '12px',
-                            color: '#999',
-                            marginTop: '2px'
-                          }}>Reservation Request</p>
+                          {isExpanded && <p style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>Reservation Request</p>}
                         </div>
                       </div>
-                      <span style={{
-                        flexShrink: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        background: badge.bg,
-                        color: badge.color,
-                        border: `1px solid ${badge.border}`
-                      }}>{badge.label}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', color: '#222', fontWeight: 600 }}>{request.roomName}</span>
+                        <span style={{ fontSize: '13px', color: '#555' }}>{dateLabel}</span>
+                        <span style={{ fontSize: '13px', color: '#555' }}>{timeLabel}</span>
+                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>{badge.label}</span>
+                        <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
                     </div>
 
+                    {isExpanded && (
+                      <>
                     {/* Info grid */}
                     <div style={{
                       display: 'grid',
@@ -776,23 +883,10 @@ export default function AdminPendingTab({
                       marginBottom: '12px'
                     }}>
                       {[
-                        {
-                          label: 'ROOM',
-                          main: request.roomName,
-                          sub: request.buildingName
-                        },
-                        {
-                          label: 'DATE',
-                          main: formatReservationDates(request.dates, request.date)
-                        },
-                        {
-                          label: 'TIME',
-                          main: formatTimeRange(request.startTime, request.endTime)
-                        },
-                        {
-                          label: 'PURPOSE',
-                          main: request.purpose || 'Not specified'
-                        },
+                        { label: 'ROOM', main: request.roomName, sub: request.buildingName },
+                        { label: 'DATE', main: dateLabel },
+                        { label: 'TIME', main: timeLabel },
+                        { label: 'PURPOSE', main: request.purpose || 'Not specified' },
                       ].map(({ label, main, sub }) => (
                         <div key={label} style={{
                           background: '#fafafa',
@@ -878,15 +972,8 @@ export default function AdminPendingTab({
                           marginBottom: '6px'
                         }}>Concept Paper / Letter of Approval</p>
                         <a href={request.approvalDocumentUrl} target="_blank" rel="noreferrer"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '13px',
-                            color: '#8B0000',
-                            fontWeight: 600,
-                            textDecoration: 'none'
-                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#8B0000', fontWeight: 600, textDecoration: 'none' }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
                         >
@@ -905,31 +992,23 @@ export default function AdminPendingTab({
                       borderTop: '1px solid #f0f0f0'
                     }}>
                       <button
-                        onClick={() => openConfirm('approve', request.id)}
-                        disabled={actionLoading === request.id}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 20px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: '#8B0000',
-                          color: '#fff',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          opacity: actionLoading === request.id ? 0.6 : 1,
-                          transition: 'background 0.15s'
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openApproveConfirm(request);
                         }}
-                        onMouseEnter={(e) => { if (!actionLoading) (e.currentTarget as HTMLButtonElement).style.background = '#6e0000'; }}
+                        disabled={actionLoading === request.id || approveCheckLoading === request.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#8B0000', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: actionLoading === request.id || approveCheckLoading === request.id ? 0.6 : 1, transition: 'background 0.15s' }}
+                        onMouseEnter={(e) => { if (!actionLoading && !approveCheckLoading) (e.currentTarget as HTMLButtonElement).style.background = '#6e0000'; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#8B0000'; }}
                       >
                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
-                        Approve
+                        {approveCheckLoading === request.id ? 'Checking...' : 'Approve'}
                       </button>
                       <button
-                        onClick={() => openConfirm('reject', request.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openConfirm('reject', request.id);
+                        }}
                         disabled={actionLoading === request.id}
                         style={{
                           display: 'inline-flex',
@@ -953,6 +1032,8 @@ export default function AdminPendingTab({
                         Reject
                       </button>
                     </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
