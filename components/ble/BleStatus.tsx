@@ -35,9 +35,7 @@ function formatRefreshTime(value: Date | null) {
     return 'Not refreshed yet';
   }
 
-  return formatClockTime(value, {
-    includeSeconds: true
-  });
+  return formatClockTime(value, { includeSeconds: true });
 }
 
 function formatRefreshCountdown(milliseconds: number) {
@@ -117,9 +115,7 @@ export default function BleStatus({
       }
 
       try {
-        const nextOccupancyStatus = await fetchOccupancySnapshot({
-          force: mode === 'manual',
-        });
+        const nextOccupancyStatus = await fetchOccupancySnapshot({ force: mode === 'manual' });
         setOccupancyStatus(nextOccupancyStatus);
         setStatusError(null);
         setLastRefreshedAt(new Date());

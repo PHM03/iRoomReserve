@@ -76,14 +76,10 @@ export default function RoomAvailabilityPicker({
   const selectedDate = fromIsoDateString(value);
 
   const disabledMatcher = useMemo(() => {
-    const matchers: Array<Date | { before: Date } | { after: Date }> = [{
-      before: minSelectable
-    }];
+    const matchers: Array<Date | { before: Date } | { after: Date }> = [{ before: minSelectable }];
 
     if (maxDate) {
-      matchers.push({
-        after: maxDate
-      });
+      matchers.push({ after: maxDate });
     }
 
     return matchers;
@@ -104,9 +100,7 @@ export default function RoomAvailabilityPicker({
             onChange(nextDate ? toIsoDateString(nextDate) : '');
           }}
           disabled={disabled ? () => true : disabledMatcher}
-          modifiers={{
-            partiallyBooked: partiallyBookedDateObjects,
-          }}
+          modifiers={{ partiallyBooked: partiallyBookedDateObjects }}
           modifiersClassNames={{
             partiallyBooked: 'rdp-partially-booked-day',
             selected: 'rdp-selected-day',

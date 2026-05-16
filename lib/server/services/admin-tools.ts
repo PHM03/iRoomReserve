@@ -92,9 +92,7 @@ export async function migrateUserRoles() {
     await batch.commit();
   }
 
-  return {
-    updated
-  };
+  return { updated };
 }
 
 export async function migrateUserCampusAssignments() {

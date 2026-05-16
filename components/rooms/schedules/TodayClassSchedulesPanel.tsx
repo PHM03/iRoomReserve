@@ -241,9 +241,7 @@ export default function TodayClassSchedulesPanel(
 
         setRoomOptions(
           [...nextRooms].sort((left, right) =>
-            left.name.localeCompare(right.name, undefined, {
-              numeric: true
-            })
+            left.name.localeCompare(right.name, undefined, { numeric: true })
           )
         );
         setRoomLoadState('ready');

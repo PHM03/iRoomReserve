@@ -18,9 +18,7 @@ function getOptionalString(value: FormDataEntryValue | null) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authContext = await getRequestAuthContext(request, {
-      includeProfile: false,
-    });
+    const authContext = await getRequestAuthContext(request, { includeProfile: false });
     assertAuthenticated(authContext);
     const userId = authContext.uid;
     if (!userId) {
@@ -57,9 +55,7 @@ export async function POST(request: NextRequest) {
       userId,
     });
 
-    return NextResponse.json(upload, {
-      status: 201
-    });
+    return NextResponse.json(upload, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

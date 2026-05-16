@@ -25,9 +25,7 @@ export function handleApiError(error: unknown) {
           details: error.details ?? null,
         },
       },
-      {
-        status: error.status
-      }
+      { status: error.status }
     );
   }
 
@@ -40,9 +38,7 @@ export function handleApiError(error: unknown) {
           details: error.flatten(),
         },
       },
-      {
-        status: 400
-      }
+      { status: 400 }
     );
   }
 
@@ -56,8 +52,6 @@ export function handleApiError(error: unknown) {
         message,
       },
     },
-    {
-      status: 500
-    }
+    { status: 500 }
   );
 }

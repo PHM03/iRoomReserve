@@ -133,9 +133,7 @@ export default function MyReservationTimetable({
       const todayEntries = [...(entriesByDay.get(todayValue)?.values() ?? [])].sort(
         (left, right) =>
           left.startTime.localeCompare(right.startTime) ||
-          left.roomName.localeCompare(right.roomName, undefined, {
-            numeric: true,
-          })
+          left.roomName.localeCompare(right.roomName, undefined, { numeric: true })
       );
 
       return (
@@ -202,9 +200,7 @@ export default function MyReservationTimetable({
               const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
                 (left, right) =>
                   left.startTime.localeCompare(right.startTime) ||
-                  left.roomName.localeCompare(right.roomName, undefined, {
-                    numeric: true,
-                  })
+                  left.roomName.localeCompare(right.roomName, undefined, { numeric: true })
               );
 
               return (
@@ -268,9 +264,7 @@ export default function MyReservationTimetable({
             const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
               (left, right) =>
                 left.startTime.localeCompare(right.startTime) ||
-                left.roomName.localeCompare(right.roomName, undefined, {
-                  numeric: true,
-                })
+                left.roomName.localeCompare(right.roomName, undefined, { numeric: true })
             );
 
             return (

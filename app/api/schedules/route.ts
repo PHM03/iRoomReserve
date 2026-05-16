@@ -99,9 +99,7 @@ export async function POST(request: NextRequest) {
     assertCanManageBuilding(authContext, payload.buildingId);
 
     const id = await createScheduleRecord(payload);
-    return NextResponse.json({
-      id
-    });
+    return NextResponse.json({ id });
   } catch (error) {
     return handleApiError(error);
   }

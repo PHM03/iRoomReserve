@@ -79,9 +79,7 @@ export async function updateSchedule(
 }
 
 export async function deleteSchedule(scheduleId: string): Promise<void> {
-  await apiRequest(`/api/schedules/${scheduleId}`, {
-    method: "DELETE",
-  });
+  await apiRequest(`/api/schedules/${scheduleId}`, { method: "DELETE" });
 }
 
 export function onSchedulesByBuilding(
@@ -126,9 +124,7 @@ export function onSchedulesByBuilding(
 export async function getSchedulesByRoomId(roomId: string): Promise<Schedule[]> {
   const payload = await apiRequest<Schedule[]>("/api/schedules", {
     method: "GET",
-    params: {
-      roomId
-    },
+    params: { roomId },
     userId: auth.currentUser?.uid,
   });
 

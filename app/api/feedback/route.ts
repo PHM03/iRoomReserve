@@ -36,9 +36,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       assertOwnsResource(authContext, userId);
 
-      return NextResponse.json({
-        feedback: await getFeedbackRecordsByUser(userId),
-      });
+      return NextResponse.json({ feedback: await getFeedbackRecordsByUser(userId) });
     }
 
     assertCanViewBuildingFeedback(authContext, buildingId);
@@ -60,9 +58,7 @@ export async function POST(request: NextRequest) {
     assertOwnsResource(authContext, payload.userId);
 
     const id = await createFeedbackRecord(payload);
-    return NextResponse.json({
-      id
-    });
+    return NextResponse.json({ id });
   } catch (error) {
     return handleApiError(error);
   }

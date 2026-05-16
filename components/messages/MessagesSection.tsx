@@ -882,9 +882,7 @@ export default function MessagesSection(props: MessagesSectionProps) {
               <button
                 type="button"
                 onClick={() =>
-                  handleOpenMessage(message, {
-                    markAsRead: tab !== 'sent'
-                  })
+                  handleOpenMessage(message, { markAsRead: tab !== 'sent' })
                 }
                 className="w-full px-5 py-4 text-left transition-colors hover:bg-white/35"
               >

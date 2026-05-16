@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/configs/firebase", () => ({
-  auth: {
-    currentUser: null,
-  },
-}));
+vi.mock("@/lib/configs/firebase", () => ({ auth: { currentUser: null } }));
 
 import { apiRequest } from "../lib/api/client";
 
@@ -15,28 +11,20 @@ describe("apiRequest", () => {
   });
 
   it("preserves JSON error details on non-2xx responses", async () => {
-    const responseBody = JSON.stringify({
-      error: {
-        message: "Reservation is already completed.",
-      },
-    });
+    const responseBody = JSON.stringify({ error: { message: "Reservation is already completed." } });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
         new Response(responseBody, {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           status: 400,
         })
       )
     );
 
     await expect(
-      apiRequest("/api/reservations/reservation-1", {
-        method: "PATCH",
-      })
+      apiRequest("/api/reservations/reservation-1", { method: "PATCH" })
     ).rejects.toMatchObject({
       contentType: "application/json",
       message: "Reservation is already completed.",
@@ -52,18 +40,14 @@ describe("apiRequest", () => {
       "fetch",
       vi.fn().mockResolvedValue(
         new Response(responseBody, {
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-          },
+          headers: { "Content-Type": "text/html; charset=utf-8" },
           status: 500,
         })
       )
     );
 
     await expect(
-      apiRequest("/api/reservations/reservation-1", {
-        method: "PATCH",
-      })
+      apiRequest("/api/reservations/reservation-1", { method: "PATCH" })
     ).rejects.toMatchObject({
       contentType: "text/html; charset=utf-8",
       message: "The request failed (status 500).",

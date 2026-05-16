@@ -6,7 +6,5 @@ export interface SeedBuildingsResult {
 }
 
 export async function seedBuildings(): Promise<SeedBuildingsResult> {
-  return apiRequest<SeedBuildingsResult>("/api/admin/tools/seed-buildings", {
-    method: "POST",
-  });
+  return apiRequest<SeedBuildingsResult>("/api/admin/tools/seed-buildings", { method: "POST" });
 }

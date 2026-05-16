@@ -26,9 +26,7 @@ function getResponseMessage(payload: unknown) {
 }
 
 async function requestOccupancySnapshot() {
-  const response = await fetch('/api/occupancy', {
-    cache: 'no-store',
-  });
+  const response = await fetch('/api/occupancy', { cache: 'no-store' });
   const payload = await response.json().catch(() => null);
   const nextPayload = payload
     ? parseOccupancyPayload(payload)

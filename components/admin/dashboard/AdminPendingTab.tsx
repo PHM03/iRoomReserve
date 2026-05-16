@@ -473,9 +473,7 @@ export default function AdminPendingTab({
           padding: '48px 24px',
           textAlign: 'center'
         }}>
-          <svg width="48" height="48" fill="none" stroke="#ccc" viewBox="0 0 24 24" style={{
-            margin: '0 auto 12px'
-          }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <svg width="48" height="48" fill="none" stroke="#ccc" viewBox="0 0 24 24" style={{ margin: '0 auto 12px' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
           <p style={{
             fontSize: '14px',
             fontWeight: 700,
@@ -499,9 +497,7 @@ export default function AdminPendingTab({
             justifyContent: 'center',
             textAlign: 'center'
           }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cccccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{
-              marginBottom: '16px'
-            }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cccccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}>
             <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
             <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
           </svg>
@@ -579,9 +575,7 @@ export default function AdminPendingTab({
                     : 'Please provide a reason for rejecting this reservation.'}
                 </p>
                 {confirmModal.type === 'reject' && (
-                      <div style={{
-                        marginBottom: '20px'
-                      }}>
+                      <div style={{ marginBottom: '20px' }}>
                         <label style={{
                           fontSize: '11px',
                           fontWeight: 700,

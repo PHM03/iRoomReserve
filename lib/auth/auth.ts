@@ -57,9 +57,7 @@ export async function loginWithEmail(email: string, password: string) {
 
   if (!credential.user.emailVerified) {
     await signOut(auth);
-    throw {
-      code: "auth/email-not-verified"
-    };
+    throw { code: "auth/email-not-verified" };
   }
 
   if (credential.user.email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase()) {
@@ -77,9 +75,7 @@ export async function loginWithEmail(email: string, password: string) {
   const profile = await getUserProfile(credential.user.uid);
   if (!profile) {
     await signOut(auth);
-    throw {
-      code: "auth/profile-missing"
-    };
+    throw { code: "auth/profile-missing" };
   }
 
   const normalizedRole = normalizeRole(profile.role) ?? USER_ROLES.STUDENT;
@@ -91,23 +87,17 @@ export async function loginWithEmail(email: string, password: string) {
 
   if (status === "disabled") {
     await signOut(auth);
-    throw {
-      code: "auth/account-disabled"
-    };
+    throw { code: "auth/account-disabled" };
   }
 
   if (requiresApproval && status === "pending") {
     await signOut(auth);
-    throw {
-      code: "auth/account-pending"
-    };
+    throw { code: "auth/account-pending" };
   }
 
   if (requiresApproval && status === "rejected") {
     await signOut(auth);
-    throw {
-      code: "auth/account-rejected"
-    };
+    throw { code: "auth/account-rejected" };
   }
 
   return credential;
@@ -127,16 +117,12 @@ export async function registerWithEmail(
   }
 
   if (actualRole !== USER_ROLES.UTILITY && !isAllowedEmail(email)) {
-    throw {
-      code: "auth/unauthorized-domain"
-    };
+    throw { code: "auth/unauthorized-domain" };
   }
 
   const credential = await createUserWithEmailAndPassword(auth, email, password);
 
-  await updateProfile(credential.user, {
-    displayName: `${firstName} ${lastName}`,
-  });
+  await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
 
   const status = actualRole === USER_ROLES.STUDENT ? "approved" : "pending";
 
@@ -164,9 +150,7 @@ export async function loginWithGoogle() {
 
   if (!result.user.email) {
     await signOut(auth);
-    throw {
-      code: "auth/invalid-email"
-    };
+    throw { code: "auth/invalid-email" };
   }
 
   const { uid, displayName, email } = result.user;
@@ -180,9 +164,7 @@ export async function loginWithGoogle() {
 
     if (!canUsePersonalEmail && !isAllowedEmail(email)) {
       await signOut(auth);
-      throw {
-        code: "auth/unauthorized-domain"
-      };
+      throw { code: "auth/unauthorized-domain" };
     }
 
     const status =
@@ -196,21 +178,15 @@ export async function loginWithGoogle() {
     ) {
       if (status === "pending") {
         await signOut(auth);
-        throw {
-          code: "auth/account-pending"
-        };
+        throw { code: "auth/account-pending" };
       }
       if (status === "rejected") {
         await signOut(auth);
-        throw {
-          code: "auth/account-rejected"
-        };
+        throw { code: "auth/account-rejected" };
       }
       if (status === "disabled") {
         await signOut(auth);
-        throw {
-          code: "auth/account-disabled"
-        };
+        throw { code: "auth/account-disabled" };
       }
     }
 
@@ -243,9 +219,7 @@ export async function loginSuperAdmin(email: string, password: string) {
   const profile = await getUserProfile(credential.user.uid);
   if (!profile || normalizeRole(profile.role) !== USER_ROLES.SUPER_ADMIN) {
     await signOut(auth);
-    throw {
-      code: "auth/not-superadmin"
-    };
+    throw { code: "auth/not-superadmin" };
   }
 
   return credential;
@@ -259,9 +233,7 @@ export async function seedSuperAdmin() {
       SUPERADMIN_PASSWORD
     );
 
-    await updateProfile(credential.user, {
-      displayName: "Super Admin",
-    });
+    await updateProfile(credential.user, { displayName: "Super Admin" });
 
     await saveUserProfile(credential.user.uid, {
       firstName: "Super",
@@ -378,19 +350,13 @@ export async function saveUserProfile(
     {
       ...data,
       email: data.email.toLowerCase(),
-      ...(data.role ? {
-        role: normalizeRole(data.role) ?? data.role
-      } : {}),
+      ...(data.role ? { role: normalizeRole(data.role) ?? data.role } : {}),
       ...(data.campus
-        ? {
-          campusName: data.campusName ?? getCampusName(data.campus)
-        }
+        ? { campusName: data.campusName ?? getCampusName(data.campus) }
         : {}),
       updatedAt: serverTimestamp(),
     },
-    {
-      merge: true
-    }
+    { merge: true }
   );
 }
 
@@ -486,9 +452,7 @@ export function onUsersByStatus(
 
 export async function approveUser(uid: string) {
   await apiRequest(`/api/admin/users/${uid}`, {
-    body: {
-      action: "approve-user"
-    },
+    body: { action: "approve-user" },
     method: "PATCH",
   });
 }
@@ -514,33 +478,25 @@ export async function approveAdmin(
 
 export async function rejectUser(uid: string) {
   await apiRequest(`/api/admin/users/${uid}`, {
-    body: {
-      action: "reject"
-    },
+    body: { action: "reject" },
     method: "PATCH",
   });
 }
 
 export async function deleteUserAccount(uid: string): Promise<void> {
-  await apiRequest(`/api/admin/users/${uid}`, {
-    method: "DELETE",
-  });
+  await apiRequest(`/api/admin/users/${uid}`, { method: "DELETE" });
 }
 
 export async function disableUserAccount(uid: string): Promise<void> {
   await apiRequest(`/api/admin/users/${uid}`, {
-    body: {
-      action: "disable"
-    },
+    body: { action: "disable" },
     method: "PATCH",
   });
 }
 
 export async function enableUserAccount(uid: string): Promise<void> {
   await apiRequest(`/api/admin/users/${uid}`, {
-    body: {
-      action: "enable"
-    },
+    body: { action: "enable" },
     method: "PATCH",
   });
 }

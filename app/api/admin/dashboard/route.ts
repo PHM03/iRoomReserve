@@ -229,12 +229,7 @@ async function getApprovalDocumentUrl(reservation: DashboardReservation) {
 
   try {
     return (
-      (await createReservationDocumentSignedUrl({
-      path:
-        typeof reservation.approvalDocumentPath === "string"
-          ? reservation.approvalDocumentPath
-          : null,
-      })) ?? storedUrl
+      (await createReservationDocumentSignedUrl({ path: typeof reservation.approvalDocumentPath === "string" ? reservation.approvalDocumentPath : null })) ?? storedUrl
     );
   } catch (error) {
     console.warn("Failed to resolve reservation approval document URL", {
@@ -290,9 +285,7 @@ export async function GET(request: NextRequest) {
             message: "buildingId is required."
           }
         },
-        {
-          status: 400
-        }
+        { status: 400 }
       );
     }
 

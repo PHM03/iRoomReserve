@@ -116,9 +116,7 @@ function createWelcomeMessage() {
     'Hi! I can help you choose a room through chat or check whether the room you picked is still free.',
     'system',
     'buttons',
-    {
-      options: ENTRY_OPTIONS,
-    }
+    { options: ENTRY_OPTIONS }
   );
 }
 
@@ -156,9 +154,7 @@ function createCapacityPromptMessage(selectedType: string, options: AssistantOpt
       'Got it \u{1F44D} no specific room type. How many people?',
       'system',
       'buttons',
-      {
-        options,
-      }
+      { options }
     );
   }
 
@@ -166,9 +162,7 @@ function createCapacityPromptMessage(selectedType: string, options: AssistantOpt
     `Got it \u{1F44D} a ${selectedType} room. How many people?`,
     'system',
     'buttons',
-    {
-      options,
-    }
+    { options }
   );
 }
 
@@ -210,9 +204,7 @@ function createRecommendationMessage(
     );
   }
 
-  return createMessage(introText, 'system', 'recommendations', {
-    recommendations,
-  });
+  return createMessage(introText, 'system', 'recommendations', { recommendations });
 }
 
 function normalizeMessageType(type?: string): AssistantMessage['type'] {
@@ -338,9 +330,7 @@ export default function RoomAssistantWidget({
   const welcomeMessage = useMemo(() => createWelcomeMessage(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([welcomeMessage]);
-  const [preferences, setPreferences] = useState<RoomAssistantPreferences>({
-    requiredFeatures: [],
-  });
+  const [preferences, setPreferences] = useState<RoomAssistantPreferences>({ requiredFeatures: [] });
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [step, setStep] = useState<RoomAssistantStep>('entry');
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -378,9 +368,7 @@ export default function RoomAssistantWidget({
 
     clearReplyTimers();
     setMessages([nextWelcomeMessage]);
-    setPreferences({
-      requiredFeatures: []
-    });
+    setPreferences({ requiredFeatures: [] });
     setSelectedFeatures([]);
     setStep('entry');
     setActivePromptId(nextWelcomeMessage.id);
@@ -421,9 +409,7 @@ export default function RoomAssistantWidget({
   }
 
   function startGuidedFlow() {
-    setPreferences({
-      requiredFeatures: []
-    });
+    setPreferences({ requiredFeatures: [] });
     setSelectedFeatures([]);
     setStep('type');
     appendUserMessage('Help me choose');
@@ -644,9 +630,7 @@ export default function RoomAssistantWidget({
 
     const frameId = window.requestAnimationFrame(() => {
       clearReplyTimers();
-      setPreferences({
-        requiredFeatures: []
-      });
+      setPreferences({ requiredFeatures: [] });
       setSelectedFeatures([]);
       setStep('results');
       setIsOpen(true);

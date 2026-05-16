@@ -41,9 +41,7 @@ export async function PATCH(
     assertCanManageBuilding(authContext, buildingId);
     await updateRoomStatusRecord(roomId, payload);
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }

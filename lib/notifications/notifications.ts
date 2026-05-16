@@ -130,9 +130,7 @@ export function onAllNotifications(
 export async function markNotificationRead(
   notificationId: string
 ): Promise<void> {
-  await updateDoc(doc(db, "notifications", notificationId), {
-    read: true,
-  });
+  await updateDoc(doc(db, "notifications", notificationId), { read: true });
 }
 
 // ─── Mark All Notifications as Read for a User ──────────────────
@@ -147,9 +145,7 @@ export async function markAllNotificationsRead(uid: string): Promise<void> {
 
   const batch = writeBatch(db);
   snap.docs.forEach((d) => {
-    batch.update(d.ref, {
-      read: true
-    });
+    batch.update(d.ref, { read: true });
   });
   await batch.commit();
 }

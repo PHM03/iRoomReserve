@@ -160,9 +160,7 @@ export async function respondToAdminRequest(
   responseText: string
 ): Promise<void> {
   await apiRequest(`/api/admin/requests/${requestId}`, {
-    body: {
-      responseText
-    },
+    body: { responseText },
     method: "PATCH",
   });
 }

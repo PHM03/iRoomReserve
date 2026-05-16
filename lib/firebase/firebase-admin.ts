@@ -121,9 +121,7 @@ if (!admin.apps.length) {
         clientEmail,
         privateKey,
       }),
-      ...(storageBucket ? {
-        storageBucket
-      } : {}),
+      ...(storageBucket ? { storageBucket } : {}),
     });
   } catch (error) {
     const errorWithCode =

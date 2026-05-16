@@ -8,9 +8,7 @@ import {
 describe("feedback sentiment helpers", () => {
   it("falls back to the compound score when the stored label is missing", () => {
     expect(
-      resolveFeedbackSentimentLabel({
-        compoundScore: 0.42,
-      })
+      resolveFeedbackSentimentLabel({ compoundScore: 0.42 })
     ).toBe("positive");
 
     expect(

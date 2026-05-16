@@ -13,9 +13,7 @@ import {
 
 describe('campus assignments', () => {
   it('maps legacy GD building assignments to the main campus', () => {
-    const assignment = resolveCampusAssignment({
-      assignedBuildingIds: ['gd2'],
-    });
+    const assignment = resolveCampusAssignment({ assignedBuildingIds: ['gd2'] });
 
     expect(assignment).toEqual({
       campus: 'main',
@@ -24,9 +22,7 @@ describe('campus assignments', () => {
   });
 
   it('maps legacy digital campus assignments to the digi campus', () => {
-    const assignment = resolveCampusAssignment({
-      assignedBuilding: 'SDCA Digital Campus',
-    });
+    const assignment = resolveCampusAssignment({ assignedBuilding: 'SDCA Digital Campus' });
 
     expect(assignment).toEqual({
       campus: 'digi',

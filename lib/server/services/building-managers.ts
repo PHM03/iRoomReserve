@@ -6,9 +6,7 @@ import { db } from "@/lib/firebase/firebase-admin";
 import { normalizeRole, USER_ROLES } from "@/lib/auth/roles";
 
 export async function getAssignedManagerIds(buildingId: string) {
-  const campus = inferCampusFromBuilding({
-    id: buildingId
-  });
+  const campus = inferCampusFromBuilding({ id: buildingId });
   const [campusSnapshot, legacySnapshot, multiSnapshot] = await Promise.all([
     campus
       ? db.collection("users").where("campus", "==", campus).get()

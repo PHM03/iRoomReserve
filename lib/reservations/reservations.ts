@@ -222,12 +222,8 @@ export async function uploadReservationDocument(
   const response = await fetch(buildUrl("/api/reservations/upload"), {
     method: "POST",
     headers: {
-      ...(token ? {
-        Authorization: `Bearer ${token}`
-      } : {}),
-      ...(auth.currentUser?.uid ? {
-        "x-user-id": auth.currentUser.uid
-      } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(auth.currentUser?.uid ? { "x-user-id": auth.currentUser.uid } : {}),
     },
     body: formData,
   });

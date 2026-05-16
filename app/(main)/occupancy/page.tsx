@@ -32,9 +32,7 @@ function formatRefreshTime(value: Date | null) {
     return "Not refreshed yet";
   }
 
-  return formatClockTime(value, {
-    includeSeconds: true
-  });
+  return formatClockTime(value, { includeSeconds: true });
 }
 
 function formatRefreshCountdown(milliseconds: number) {
@@ -62,9 +60,7 @@ export default function OccupancyPage() {
       }
 
       try {
-        const json = (await fetchOccupancySnapshot({
-          force: mode === "manual",
-        })) as OccupancyData;
+        const json = (await fetchOccupancySnapshot({ force: mode === "manual" })) as OccupancyData;
         setData(json);
         setError(null);
         setLastRefreshedAt(new Date());
@@ -210,9 +206,7 @@ export default function OccupancyPage() {
         borderCollapse: "collapse"
       }}>
         <thead>
-          <tr style={{
-            background: "#f0f0f0"
-          }}>
+          <tr style={{ background: "#f0f0f0" }}>
             <th style={{
               padding: "8px",
               border: "1px solid #ddd"
@@ -253,12 +247,7 @@ export default function OccupancyPage() {
             data.history.map((item, index) => (
               <tr
                 key={index}
-                style={{
-                  background:
-                    item.connectionStatus === "CONNECTED"
-                      ? "#f0fff0"
-                      : "#fff0f0",
-                }}
+                style={{ background: item.connectionStatus === "CONNECTED" ? "#f0fff0" : "#fff0f0" }}
               >
                 <td style={{
                   padding: "8px",

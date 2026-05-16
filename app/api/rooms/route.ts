@@ -70,9 +70,7 @@ export async function GET(request: NextRequest) {
               message: "buildingId is required."
             }
           },
-          {
-            status: 400
-          }
+          { status: 400 }
         );
       }
 
@@ -175,9 +173,7 @@ export async function POST(request: NextRequest) {
     assertCanManageBuilding(authContext, payload.buildingId);
 
     const id = await createRoomRecord(payload);
-    return NextResponse.json({
-      id
-    });
+    return NextResponse.json({ id });
   } catch (error) {
     return handleApiError(error);
   }

@@ -118,9 +118,7 @@ async function migrateRooms() {
       console.log(
         `  ✏️   [${buildingId}] "${data.name}" · floor: "${currentFloor}" → "${newFloor}"`
       );
-      batch.update(doc.ref, {
-        floor: newFloor
-      });
+      batch.update(doc.ref, { floor: newFloor });
       updatedCount++;
       batchCount++;
 

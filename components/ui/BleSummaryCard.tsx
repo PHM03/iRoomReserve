@@ -31,9 +31,7 @@ function formatRefreshTime(value: Date | null) {
     return 'Not refreshed yet';
   }
 
-  return formatClockTime(value, {
-    includeSeconds: true
-  });
+  return formatClockTime(value, { includeSeconds: true });
 }
 
 function formatRefreshCountdown(milliseconds: number) {
@@ -77,9 +75,7 @@ export default function BleSummaryCard({
       }
 
       try {
-        const nextOccupancyData = await fetchOccupancySnapshot({
-          force: mode === 'manual',
-        });
+        const nextOccupancyData = await fetchOccupancySnapshot({ force: mode === 'manual' });
         setOccupancyData(nextOccupancyData);
 
         setErrorMessage(null);

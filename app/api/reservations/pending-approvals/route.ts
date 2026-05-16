@@ -60,12 +60,7 @@ async function getApprovalDocumentUrl(reservation: PendingApprovalReservation) {
 
   try {
     return (
-      (await createReservationDocumentSignedUrl({
-      path:
-        typeof reservation.approvalDocumentPath === "string"
-          ? reservation.approvalDocumentPath
-          : null,
-      })) ?? storedUrl
+      (await createReservationDocumentSignedUrl({ path: typeof reservation.approvalDocumentPath === "string" ? reservation.approvalDocumentPath : null })) ?? storedUrl
     );
   } catch (error) {
     console.warn("Failed to resolve reservation approval document URL", {

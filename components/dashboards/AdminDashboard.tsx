@@ -300,9 +300,7 @@ export default function AdminDashboard({
                   value={buildingId}
                   onChange={(event) => setSelectedBuildingId(event.target.value)}
                   className="glass-input w-full appearance-none bg-dark/6 px-3 py-1.5 text-xs font-bold"
-                  style={{
-                    backgroundImage: 'none'
-                  }}
+                  style={{ backgroundImage: 'none' }}
                 >
                   {managedBuildings.map((building) => (
                     <option key={building.id} value={building.id} className="bg-white text-black">

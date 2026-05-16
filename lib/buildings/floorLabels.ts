@@ -65,9 +65,7 @@ function createMatchingFloorOption(label: string): FloorOption {
 }
 
 function createStandardFloorOptions(totalFloors: number) {
-  return Array.from({
-    length: totalFloors || 5
-  }, (_, index) => {
+  return Array.from({ length: totalFloors || 5 }, (_, index) => {
     const label = index === 0 ? "Ground Floor" : formatOrdinalFloor(index + 1);
     return createMatchingFloorOption(label);
   });
@@ -104,23 +102,17 @@ export function getBuildingFloorOptions(building?: BuildingLike | null): FloorOp
       return [
         "Basement",
         "Ground Floor",
-        ...Array.from({
-          length: 7
-        }, (_, index) => formatOrdinalFloor(index + 2)),
+        ...Array.from({ length: 7 }, (_, index) => formatOrdinalFloor(index + 2)),
       ].map(createMatchingFloorOption);
     case "gd2":
       return [
         "Ground Floor",
-        ...Array.from({
-          length: 9
-        }, (_, index) => formatOrdinalFloor(index + 2)),
+        ...Array.from({ length: 9 }, (_, index) => formatOrdinalFloor(index + 2)),
       ].map(createMatchingFloorOption);
     case "gd3":
       return [
         "Ground Floor",
-        ...Array.from({
-          length: 10
-        }, (_, index) => formatOrdinalFloor(index + 2)),
+        ...Array.from({ length: 10 }, (_, index) => formatOrdinalFloor(index + 2)),
       ].map(createMatchingFloorOption);
     default:
       return createStandardFloorOptions(building?.floors ?? 0);

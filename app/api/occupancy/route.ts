@@ -52,17 +52,11 @@ export async function POST(request: Request) {
         message:
           error instanceof Error ? error.message : "Invalid occupancy payload.",
       },
-      {
-        status: 400
-      }
+      { status: 400 }
     );
   }
 }
 
 export async function GET() {
-  return toNoStoreResponse(trimOccupancyHistory(occupancyData), {
-    headers: {
-      "x-occupancy-source": occupancyData.timestamp ? "memory" : "empty",
-    },
-  });
+  return toNoStoreResponse(trimOccupancyHistory(occupancyData), { headers: { "x-occupancy-source": occupancyData.timestamp ? "memory" : "empty" } });
 }

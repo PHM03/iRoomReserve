@@ -154,9 +154,7 @@ export default function AdminClassSchedulesPage() {
       ...new Set(
         selectedFloorRooms.map(getRoomFilterValue).filter(Boolean)
       ),
-    ].sort((left, right) => left.localeCompare(right, undefined, {
-      numeric: true
-    }));
+    ].sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
   }, [selectedFloor, selectedFloorRooms]);
   const selectedRoomIds = useMemo(
     () =>

@@ -161,9 +161,7 @@ export default function RoomStatusPage() {
 
   const roomStatuses: RoomStatusViewItem[] = rooms.map((room) => ({
     room,
-    resolved: resolveRoomStatus(room, reservations, {
-      activeSchedule: isRoomInClass(schedules, room.id),
-    }),
+    resolved: resolveRoomStatus(room, reservations, { activeSchedule: isRoomInClass(schedules, room.id) }),
   }));
   const buildingSections = buildingOptions.map((building) => ({
     building,

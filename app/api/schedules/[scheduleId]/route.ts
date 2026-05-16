@@ -44,9 +44,7 @@ export async function PATCH(
     assertCanManageBuilding(authContext, buildingId);
     await updateScheduleRecord(scheduleId, payload);
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }
@@ -71,9 +69,7 @@ export async function DELETE(
     assertCanManageBuilding(authContext, buildingId);
     await deleteScheduleRecord(scheduleId);
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }

@@ -34,9 +34,7 @@ const TIMETABLE_START_HOUR = 7;
 const TIMETABLE_END_HOUR = 21;
 const PIXELS_PER_HOUR = 60;
 const HOUR_SLOTS = Array.from(
-  {
-    length: TIMETABLE_END_HOUR - TIMETABLE_START_HOUR + 1
-  },
+  { length: TIMETABLE_END_HOUR - TIMETABLE_START_HOUR + 1 },
   (_, index) => index + TIMETABLE_START_HOUR
 );
 
@@ -220,16 +218,12 @@ export default function AdminClassSchedulesSection({
               </div>
             ))}
 
-          <div className="relative" style={{
-            height: timetableHeight
-          }}>
+          <div className="relative" style={{ height: timetableHeight }}>
               {HOUR_SLOTS.map((hour) => (
                 <div
                 key={hour}
                   className="absolute left-0 w-full pr-2 text-right text-xs text-[#999999]"
-                  style={{
-                    top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8,
-                  }}
+                  style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8 }}
                 >
                   {formatHourLabel(hour)}
                 </div>
@@ -240,17 +234,13 @@ export default function AdminClassSchedulesSection({
               <div
                 key={day.value}
                 className="relative border-r border-[#f0f0f0]"
-                style={{
-                  height: timetableHeight
-                }}
+                style={{ height: timetableHeight }}
               >
                 {HOUR_SLOTS.map((hour) => (
                   <div
                     key={hour}
                     className="absolute left-0 w-full border-t border-[#f0f0f0]"
-                    style={{
-                      top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR
-                    }}
+                    style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR }}
                   />
                 ))}
 

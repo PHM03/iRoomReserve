@@ -152,8 +152,6 @@ export function isCampusManagedBuilding(
 
   return (
     getManagedBuildingIdsForCampus(campus).includes(normalizedBuildingId) ||
-    inferCampusFromBuilding({
-      id: normalizedBuildingId
-    }) === campus
+    inferCampusFromBuilding({ id: normalizedBuildingId }) === campus
   );
 }

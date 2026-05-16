@@ -21,9 +21,7 @@ export async function GET(request: NextRequest) {
 
     const average = await getAverageFeedbackSentiment(roomId);
 
-    return NextResponse.json({
-      average
-    });
+    return NextResponse.json({ average });
   } catch (error) {
     return handleApiError(error);
   }

@@ -259,9 +259,7 @@ export default function ReserveRoomPage() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState('');
-  const [equipment, setEquipment] = useState<Record<string, number>>({
-    ...INITIAL_EQUIPMENT,
-  });
+  const [equipment, setEquipment] = useState<Record<string, number>>({ ...INITIAL_EQUIPMENT });
   const [approvalDocument, setApprovalDocument] = useState<File | null>(null);
   const [uploadedApprovalDocument, setUploadedApprovalDocument] = useState<{
     contentType: string;
@@ -273,9 +271,7 @@ export default function ReserveRoomPage() {
   const [documentUploading, setDocumentUploading] = useState(false);
   const [approvalDocumentError, setApprovalDocumentError] = useState('');
   const [approvalEmailError, setApprovalEmailError] = useState('');
-  const [approvalEmails, setApprovalEmails] = useState({
-    advisorEmail: '',
-  });
+  const [approvalEmails, setApprovalEmails] = useState({ advisorEmail: '' });
   const [bookedSlots, setBookedSlots] = useState<BookingSlot[]>([]);
   const [bookedSlotsLoading, setBookedSlotsLoading] = useState(() =>
     Boolean(selectedRoomParam)
@@ -518,15 +514,11 @@ export default function ReserveRoomPage() {
     setIsRecurring(false);
     setSelectedDays([]);
     setRecurringEndDate('');
-    setEquipment({
-      ...INITIAL_EQUIPMENT
-    });
+    setEquipment({ ...INITIAL_EQUIPMENT });
     setApprovalDocument(null);
     setUploadedApprovalDocument(null);
     setApprovalDocumentError('');
-    setApprovalEmails({
-      advisorEmail: '',
-    });
+    setApprovalEmails({ advisorEmail: '' });
   }
 
   function getPreviewDates(): string[] {
@@ -818,9 +810,7 @@ export default function ReserveRoomPage() {
       if (selectedCampus === 'main') {
         const reservationData = {
           ...sharedData,
-          ...(approvalEmail ? {
-            advisorEmail: approvalEmail
-          } : {}),
+          ...(approvalEmail ? { advisorEmail: approvalEmail } : {}),
           campus: 'main' as const,
         };
 

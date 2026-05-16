@@ -16,23 +16,15 @@ import {
 } from "@/lib/server/services/admin-users";
 
 const managedApprovalSchema = z.discriminatedUnion("action", [
-  z.object({
-    action: z.literal("approve-user"),
-  }),
+  z.object({ action: z.literal("approve-user") }),
   z.object({
     action: z.literal("approve-managed"),
     campus: reservationCampusSchema,
     role: z.enum([USER_ROLES.ADMIN, USER_ROLES.UTILITY]),
   }),
-  z.object({
-    action: z.literal("reject"),
-  }),
-  z.object({
-    action: z.literal("disable"),
-  }),
-  z.object({
-    action: z.literal("enable"),
-  }),
+  z.object({ action: z.literal("reject") }),
+  z.object({ action: z.literal("disable") }),
+  z.object({ action: z.literal("enable") }),
 ]);
 
 export async function PATCH(
@@ -67,9 +59,7 @@ export async function PATCH(
         break;
     }
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }
@@ -87,9 +77,7 @@ export async function DELETE(
     const { uid } = await params;
     await deleteUserProfile(uid);
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }

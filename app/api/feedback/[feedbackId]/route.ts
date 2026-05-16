@@ -43,9 +43,7 @@ export async function PATCH(
     assertCanManageBuilding(authContext, buildingId);
     await respondToFeedbackRecord(feedbackId, payload.response);
 
-    return NextResponse.json({
-      ok: true
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }

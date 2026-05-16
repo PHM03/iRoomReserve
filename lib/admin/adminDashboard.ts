@@ -92,9 +92,7 @@ function reviveRecordTimestamps<T extends object>(
   record: T,
   fields: string[]
 ) {
-  const nextRecord = {
-    ...record
-  } as T;
+  const nextRecord = { ...record } as T;
   const mutableRecord = nextRecord as Record<string, unknown>;
 
   fields.forEach((field) => {

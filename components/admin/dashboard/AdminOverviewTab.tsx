@@ -280,9 +280,7 @@ export default function AdminOverviewTab({
         .sort(
           (left, right) =>
             left.floorLabel.localeCompare(right.floorLabel) ||
-            left.room.name.localeCompare(right.room.name, undefined, {
-              numeric: true,
-            })
+            left.room.name.localeCompare(right.room.name, undefined, { numeric: true })
         ),
     [buildingId, buildingName, computeEffectiveStatus, previewRooms]
   );

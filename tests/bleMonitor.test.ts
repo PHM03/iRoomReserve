@@ -18,9 +18,7 @@ describe('bleMonitor helpers', () => {
       } as never)
     ).toBe('BLE-ID');
     expect(
-      getRoomBleBeaconId({
-        beaconId: 'LEGACY-ID',
-      } as never)
+      getRoomBleBeaconId({ beaconId: 'LEGACY-ID' } as never)
     ).toBe('LEGACY-ID');
   });
 

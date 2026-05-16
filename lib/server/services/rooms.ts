@@ -114,9 +114,7 @@ export async function updateRoomRecord(
   batch.update(roomRef, {
     ...data,
     ...(normalizedBuildingName !== undefined
-      ? {
-        buildingName: normalizedBuildingName
-      }
+      ? { buildingName: normalizedBuildingName }
       : {}),
     ...(beaconIdProvided
       ? {
@@ -124,9 +122,7 @@ export async function updateRoomRecord(
           bleBeaconId: normalizedBeaconId,
         }
       : {}),
-    ...(data.status ? {
-      status: normalizeRoomStatus(data.status)
-    } : {}),
+    ...(data.status ? { status: normalizeRoomStatus(data.status) } : {}),
     updatedAt: serverTimestamp(),
   });
 
@@ -175,9 +171,7 @@ export async function updateRoomStatusRecord(
   await db.collection("rooms").doc(roomId).update({
     ...data,
     ...(normalizedCheckInMethod !== undefined
-      ? {
-        checkInMethod: normalizedCheckInMethod
-      }
+      ? { checkInMethod: normalizedCheckInMethod }
       : {}),
     status: normalizeRoomStatus(data.status),
     ...(data.status !== "Occupied" && data.beaconConnected === undefined

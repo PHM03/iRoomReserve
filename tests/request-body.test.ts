@@ -7,9 +7,7 @@ describe('readJsonBody', () => {
   it('parses a valid JSON request body', async () => {
     const request = new Request('http://localhost/api/test', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         campus: 'main',
         email: 'faculty@sdca.edu.ph',
@@ -23,14 +21,10 @@ describe('readJsonBody', () => {
   });
 
   it('rejects a request with no body', async () => {
-    const request = new Request('http://localhost/api/test', {
-      method: 'POST',
-    });
+    const request = new Request('http://localhost/api/test', { method: 'POST' });
 
     await expect(readJsonBody(request)).rejects.toBeInstanceOf(ApiError);
-    await expect(readJsonBody(new Request('http://localhost/api/test', {
-      method: 'POST',
-    }))).rejects.toMatchObject({
+    await expect(readJsonBody(new Request('http://localhost/api/test', { method: 'POST' }))).rejects.toMatchObject({
       code: 'missing_body',
       status: 400,
     });
@@ -39,9 +33,7 @@ describe('readJsonBody', () => {
   it('rejects malformed JSON', async () => {
     const request = new Request('http://localhost/api/test', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: '{"campus":"main"',
     });
 

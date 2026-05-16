@@ -101,9 +101,7 @@ export function groupReservationsForDisplay<T extends ReservationLike>(
         (left.date ?? "").localeCompare(right.date ?? "") ||
         left.id.localeCompare(right.id)
       );
-      const representative = {
-        ...sortedReservations[0],
-      } as GroupedReservation<T>;
+      const representative = { ...sortedReservations[0] } as GroupedReservation<T>;
 
       if (sortedReservations.length === 1 || !isGroupableReservation(representative)) {
         return representative;
