@@ -274,7 +274,6 @@ export default function AdminClassSchedulesPage() {
                 onChange={(event) => setSelectedRoom(event.target.value)}
                 className="min-w-[150px] rounded-lg border border-[#e0e0e0] bg-white px-[14px] py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
-                <option value="">Select Room</option>
                 {availableRooms.map((room) => (
                   <option key={room} value={room}>
                     {room}
