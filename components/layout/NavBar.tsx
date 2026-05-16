@@ -201,7 +201,11 @@ const NavBar: React.FC<NavBarProps> = ({
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    await markNotificationRead(notification.id);
+    const isPending = notification.type === 'new_reservation'
+
+    if (!isPending) {
+      await markNotificationRead(notification.id);
+    }
     setShowNotifications(false);
 
     if (notification.reservationId) {
