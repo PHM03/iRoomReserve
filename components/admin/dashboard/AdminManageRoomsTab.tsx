@@ -42,6 +42,10 @@ interface AdminManageRoomsTabProps {
     onBuildingChange: (buildingId: string) => void;
 }
 
+interface IconProps {
+    className: string;
+}
+
 function sortFloors(floors: string[]) {
     return [...floors].sort((left, right) => {
         const floorOrder = (value: string) => {
@@ -74,7 +78,7 @@ function getRoomTypeBadgeLetter(roomType?: string) {
     }
 }
 
-function PlusIcon({ className }: { className: string }) {
+function PlusIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m7-7H5" />
@@ -82,7 +86,7 @@ function PlusIcon({ className }: { className: string }) {
     );
 }
 
-function SearchIcon({ className }: { className: string }) {
+function SearchIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -90,7 +94,7 @@ function SearchIcon({ className }: { className: string }) {
     );
 }
 
-function ChevronDownIcon({ className }: { className: string }) {
+function ChevronDownIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -98,7 +102,7 @@ function ChevronDownIcon({ className }: { className: string }) {
     );
 }
 
-function CheckIcon({ className }: { className: string }) {
+function CheckIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
@@ -106,7 +110,7 @@ function CheckIcon({ className }: { className: string }) {
     );
 }
 
-function PencilIcon({ className }: { className: string }) {
+function PencilIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.688-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
@@ -115,7 +119,7 @@ function PencilIcon({ className }: { className: string }) {
     );
 }
 
-function TrashIcon({ className }: { className: string }) {
+function TrashIcon({ className }: Readonly<IconProps>) {
     return (
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M19.228 5.79L18.16 19.673A2.25 2.25 0 0115.916 21H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .563c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916A2.25 2.25 0 0013.5 2.25h-3A2.25 2.25 0 008.25 4.5v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -130,7 +134,7 @@ export default function AdminManageRoomsTab({
     buildingName,
     managedBuildings,
     onBuildingChange,
-}: AdminManageRoomsTabProps) {
+}: Readonly<AdminManageRoomsTabProps>) {
     const [addRoomStep, setAddRoomStep] = useState(0);
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomFloor, setNewRoomFloor] = useState('');

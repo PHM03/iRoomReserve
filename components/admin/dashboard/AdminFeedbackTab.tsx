@@ -40,7 +40,7 @@ export default function AdminFeedbackTab({
   feedbackSummary,
   onReload,
   rooms = [],
-}: AdminFeedbackTabProps) {
+}: Readonly<AdminFeedbackTabProps>) {
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
 

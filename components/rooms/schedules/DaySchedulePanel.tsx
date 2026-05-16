@@ -68,7 +68,7 @@ export default function DaySchedulePanel({
   campusTimeRange,
   onSelectSlot,
   onRequestAlternatives,
-}: DaySchedulePanelProps) {
+}: Readonly<DaySchedulePanelProps>) {
   const [toast, setToast] = useState<{
     message: string;
     type: 'info' | 'warning' | 'error';

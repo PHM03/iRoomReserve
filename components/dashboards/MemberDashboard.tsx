@@ -27,7 +27,7 @@ interface MemberDashboardProps {
 export default function MemberDashboard({
   firstName,
   welcomeEmoji,
-}: MemberDashboardProps) {
+}: Readonly<MemberDashboardProps>) {
   const { firebaseUser } = useAuth();
   const uid = firebaseUser?.uid;
   const {

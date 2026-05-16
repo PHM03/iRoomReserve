@@ -3,10 +3,12 @@ import DashboardLayoutClient from "@/components/layout/DashboardLayoutClient";
 
 export const metadata: Metadata = { title: "iRoomReserve | Dashboard" }
 
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
 export default function DashboardLayout({
   children
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<DashboardLayoutProps>) {
   return <DashboardLayoutClient>{children}</DashboardLayoutClient>
 }

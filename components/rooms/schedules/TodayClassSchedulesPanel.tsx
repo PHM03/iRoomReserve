@@ -13,17 +13,17 @@ import {
 type ScheduleCampusFilter = 'SDCA Digi Campus' | 'SDCA Main Campus';
 type ScheduleBuildingFilter = 'gd1' | 'gd2' | 'gd3';
 
-type TodayClassSchedulesPanelProps =
-  | {
-      className?: string;
-      scope: 'campus';
-    }
-  | {
-      buildingId: string;
-      buildingName: string;
-      className?: string;
-      scope: 'building';
-    };
+interface TodayClassSchedulesPanelProps {
+  buildingId?: string;
+  buildingName?: string;
+  className?: string;
+  scope: 'campus' | 'building';
+}
+
+interface EmptyStateProps {
+  description?: string;
+  title: string;
+}
 
 const SCHEDULE_DAY_OPTIONS = [
   {
@@ -91,10 +91,7 @@ function getDefaultSelectedDay() {
 function EmptyState({
   description,
   title,
-}: {
-  description?: string;
-  title: string;
-}) {
+}: Readonly<EmptyStateProps>) {
   return (
     <div className="p-12 text-center">
       <svg
@@ -117,7 +114,7 @@ function EmptyState({
 }
 
 export default function TodayClassSchedulesPanel(
-  props: TodayClassSchedulesPanelProps
+  props: Readonly<TodayClassSchedulesPanelProps>
 ) {
   const [selectedDay, setSelectedDay] = useState<string>(getDefaultSelectedDay);
   const [selectedCampus, setSelectedCampus] = useState<ScheduleCampusFilter | null>(

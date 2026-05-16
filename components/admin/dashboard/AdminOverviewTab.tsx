@@ -37,6 +37,22 @@ interface AdminOverviewTabProps {
   unavailableCount: number;
 }
 
+interface DashboardSectionProps {
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  eyebrow?: string;
+  title: string;
+}
+
+interface SummaryMetricCardProps {
+  action?: () => void;
+  detail?: string;
+  label: string;
+  tone: string;
+  value: number;
+}
+
 const ROOM_FILTERS: RoomStatusFilter[] = [
   'All',
   'Available',
@@ -54,13 +70,7 @@ function DashboardSection({
   className = '',
   eyebrow,
   title,
-}: {
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  eyebrow?: string;
-  title: string;
-}) {
+}: Readonly<DashboardSectionProps>) {
   return (
     <section className={`glass-card p-3 sm:p-4 ${className}`.trim()}>
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -85,13 +95,7 @@ function SummaryMetricCard({
   label,
   tone,
   value,
-}: {
-  action?: () => void;
-  detail?: string;
-  label: string;
-  tone: string;
-  value: number;
-}) {
+}: Readonly<SummaryMetricCardProps>) {
   const content = (
     <>
       <div className={`mb-2 h-1 w-8 rounded-full ${tone}`} />
@@ -161,7 +165,7 @@ export default function AdminOverviewTab({
   rooms,
   setActiveTab,
   unavailableCount,
-}: AdminOverviewTabProps) {
+}: Readonly<AdminOverviewTabProps>) {
   const [roomSearch, setRoomSearch] = useState('');
   const [roomStatusFilter, setRoomStatusFilter] = useState<RoomStatusFilter>('All');
   const [previewRooms, setPreviewRooms] = useState<Room[]>(rooms);

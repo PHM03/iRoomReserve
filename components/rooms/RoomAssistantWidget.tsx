@@ -326,7 +326,7 @@ export default function RoomAssistantWidget({
   timeslot,
   requestOpen = false,
   onRequestOpenHandled,
-}: RoomAssistantWidgetProps) {
+}: Readonly<RoomAssistantWidgetProps>) {
   const welcomeMessage = useMemo(() => createWelcomeMessage(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([welcomeMessage]);
