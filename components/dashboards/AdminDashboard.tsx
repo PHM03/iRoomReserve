@@ -327,6 +327,7 @@ export default function AdminDashboard({
           feedbackList={feedbackList}
           feedbackSummary={feedbackSummary}
           onReload={reloadDashboard}
+          rooms={rooms}
         />
       )}
 
