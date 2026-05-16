@@ -25,6 +25,10 @@ interface AdminPendingTabProps {
   onReload: () => Promise<void>;
 }
 
+interface IconProps {
+  className: string;
+}
+
 type ApproveConfirmStep = 'no-conflict' | 'conflict-warning' | 'conflict-reminder';
 
 interface ClassScheduleConflict {
@@ -54,7 +58,7 @@ function ChevronDownIcon({ className }: { className: string }) {
   );
 }
 
-function CheckIcon({ className }: { className: string }) {
+function CheckIcon({ className }: Readonly<IconProps>) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5" />
@@ -147,7 +151,7 @@ export default function AdminPendingTab({
   managedBuildings,
   onBuildingChange,
   onReload,
-}: AdminPendingTabProps) {
+}: Readonly<AdminPendingTabProps>) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectingReservationId, setRejectingReservationId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');

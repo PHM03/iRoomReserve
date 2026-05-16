@@ -24,7 +24,7 @@ export default function AdminPageHeader({
   activeBuildingLabel,
   onBuildingChange,
   integratedBuildingField = false,
-}: AdminPageHeaderProps) {
+}: Readonly<AdminPageHeaderProps>) {
   if (integratedBuildingField) {
     return (
       <section className="w-full rounded-xl bg-white px-6 py-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">

@@ -1,6 +1,18 @@
 import { formatDate } from '@/lib/utils/dateTime';
 
-export function RoleBadge({ role }: { role: string }) {
+interface RoleBadgeProps {
+  role: string;
+}
+
+interface StatusBadgeProps {
+  status: string;
+}
+
+interface StarRatingProps {
+  rating: number;
+}
+
+export function RoleBadge({ role }: Readonly<RoleBadgeProps>) {
   const style = role === 'Faculty Professor' ? 'ui-badge-green' : 'ui-badge-blue';
 
   return (
@@ -10,7 +22,7 @@ export function RoleBadge({ role }: { role: string }) {
   );
 }
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
   const style = (() => {
     switch (status) {
       case 'Occupied':
@@ -41,7 +53,7 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function StarRating({ rating }: { rating: number }) {
+export function StarRating({ rating }: Readonly<StarRatingProps>) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (

@@ -20,6 +20,23 @@ interface AdminRoomStatusSectionProps {
   className?: string;
 }
 
+interface StatusBadgeProps {
+  status: string;
+}
+
+function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
+  const style = (() => {
+    switch (status) {
+      case 'Unavailable':
+        return 'ui-badge-red';
+      case 'Available':
+        return 'ui-badge-green';
+      default:
+        return 'ui-badge-gray';
+    }
+  })();
+}
+
 type AvailabilityFilter = 'Available' | 'Unavailable';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -276,7 +293,7 @@ export default function AdminRoomStatusSection({
   feedbackList = [],
   roomHistory = [],
   className = '',
-}: AdminRoomStatusSectionProps) {
+}: Readonly<AdminRoomStatusSectionProps>) {
   const [search, setSearch] = useState('');
   const [floorFilter, setFloorFilter] = useState<string>('Ground Floor');
   const [availFilter, setAvailFilter] = useState<AvailabilityFilter>('Available');
