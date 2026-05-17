@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import AdminClassSchedulesSection from '@/components/admin/AdminClassSchedulesSection';
 import { getBuildingFloorOptions } from '@/lib/buildings/floorLabels';
@@ -20,7 +21,13 @@ type ScheduleFilterFields = Schedule & {
   roomFloor?: unknown;
 };
 
+type CampusOverride = 'main' | 'digi';
+
 let lastLoggedScheduleId: string | null = null;
+
+function getCampusOverride(value: string | null): CampusOverride | undefined {
+  return value === 'main' || value === 'digi' ? value : undefined;
+}
 
 function normalizeScheduleFilterValue(value: unknown): string {
   if (typeof value === 'string') {
@@ -73,6 +80,8 @@ function getStoredRoomFloor(room: Room) {
 }
 
 export default function AdminClassSchedulesPage() {
+  const searchParams = useSearchParams();
+  const campusOverride = getCampusOverride(searchParams.get('campus'));
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
   const [selectedFloor, setSelectedFloor] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
@@ -106,6 +115,7 @@ export default function AdminClassSchedulesPage() {
     handleEditSchedule,
     handleDeleteSchedule,
   } = useAdminStatusPages({
+    campusOverride,
     scheduleSelectionRequired: true,
     selectedScheduleFloor: selectedFloor,
     selectedScheduleRoom: selectedRoom,

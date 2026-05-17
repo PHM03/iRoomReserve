@@ -132,7 +132,7 @@ service cloud.firestore {
       let u = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return request.auth != null
         && u.status == "approved"
-        && isAdminRoleValue(u.role)
+        && (isAdminRoleValue(u.role) || isSuperAdminRoleValue(u.role))
         && (
           isSuperAdminRoleValue(u.role)
           || u.assignedBuildingId == buildingId
