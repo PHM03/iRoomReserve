@@ -28,6 +28,7 @@ import {
   normalizeRoomStatus,
   type RoomCheckInMethod,
 } from "@/lib/rooms/roomStatus";
+import type { Schedule } from "@/lib/schedules/schedules";
 import { ApiError } from "@/lib/server/api-error";
 import { getAssignedManagerIds } from "@/lib/server/services/building-managers";
 
@@ -137,6 +138,21 @@ function getLocalDateString(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function timeStringToMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function slotsOverlap(
+  left: { startTime: string; endTime: string },
+  right: { startTime: string; endTime: string }
+) {
+  return (
+    timeStringToMinutes(left.startTime) < timeStringToMinutes(right.endTime) &&
+    timeStringToMinutes(left.endTime) > timeStringToMinutes(right.startTime)
+  );
+}
+
 function getDatesForDays(
   startDate: string,
   endDate: string,
@@ -172,6 +188,149 @@ async function getApprovedReservationsForRoom(roomId: string) {
         }) as ReservationRecord
     )
     .sort(compareReservationSchedule);
+}
+
+async function getActiveReservationsForRoom(roomId: string) {
+  const reservationsSnapshot = await db
+    .collection("reservations")
+    .where("roomId", "==", roomId)
+    .where("status", "in", ["pending", "approved"])
+    .get();
+
+  return reservationsSnapshot.docs
+    .map(
+      (reservationDoc) =>
+        ({
+          id: reservationDoc.id,
+          ...reservationDoc.data(),
+        }) as ReservationRecord
+    )
+    .sort(compareReservationSchedule);
+}
+
+async function getActiveReservationsForUser(userId: string) {
+  const reservationsSnapshot = await db
+    .collection("reservations")
+    .where("userId", "==", userId)
+    .where("status", "in", ["pending", "approved"])
+    .get();
+
+  return reservationsSnapshot.docs
+    .map(
+      (reservationDoc) =>
+        ({
+          id: reservationDoc.id,
+          ...reservationDoc.data(),
+        }) as ReservationRecord
+    )
+    .sort(compareReservationSchedule);
+}
+
+async function getSchedulesForRoom(roomId: string): Promise<Schedule[]> {
+  const schedulesSnapshot = await db
+    .collection("schedules")
+    .where("roomId", "==", roomId)
+    .get();
+
+  return schedulesSnapshot.docs.map(
+    (scheduleDoc) =>
+      ({
+        id: scheduleDoc.id,
+        ...scheduleDoc.data(),
+      }) as Schedule
+  );
+}
+
+async function assertReservationDatesAvailable(
+  input: Omit<ReservationCreateInput, "date"> & { date?: string },
+  dateKeys: string[]
+) {
+  if (dateKeys.length === 0) {
+    throw new ApiError(
+      400,
+      "invalid_dates",
+      "No matching dates were found for the selected schedule."
+    );
+  }
+
+  const requestSlot = {
+    endTime: input.endTime,
+    startTime: input.startTime,
+  };
+  const [roomSchedules, roomReservations, userReservations] = await Promise.all([
+    getSchedulesForRoom(input.roomId),
+    getActiveReservationsForRoom(input.roomId),
+    getActiveReservationsForUser(input.userId),
+  ]);
+
+  for (const dateKey of dateKeys) {
+    const date = new Date(`${dateKey}T00:00:00`);
+    const dayOfWeek = date.getDay();
+
+    const conflictingUserReservation = userReservations.find(
+      (reservation) =>
+        reservation.date === dateKey &&
+        slotsOverlap(requestSlot, {
+          endTime: reservation.endTime,
+          startTime: reservation.startTime,
+        })
+    );
+
+    if (conflictingUserReservation) {
+      throw new ApiError(
+        409,
+        "user_timeslot_conflict",
+        "You already have a reservation request for one of the selected timeslots. Remove or change that reservation first.",
+        {
+          conflictingReservationId: conflictingUserReservation.id,
+          date: dateKey,
+        }
+      );
+    }
+
+    const blockedSchedule = roomSchedules.find(
+      (schedule) =>
+        schedule.dayOfWeek === dayOfWeek &&
+        slotsOverlap(requestSlot, {
+          endTime: schedule.endTime,
+          startTime: schedule.startTime,
+        })
+    );
+
+    if (blockedSchedule) {
+      throw new ApiError(
+        409,
+        "room_timeslot_unavailable",
+        "This room is unavailable for the selected timeslot/s. Would you like to see alternative rooms?",
+        {
+          date: dateKey,
+          reason: "schedule_conflict",
+        }
+      );
+    }
+
+    const approvedReservation = roomReservations.find(
+      (reservation) =>
+        reservation.date === dateKey &&
+        reservation.status === "approved" &&
+        slotsOverlap(requestSlot, {
+          endTime: reservation.endTime,
+          startTime: reservation.startTime,
+        })
+    );
+
+    if (approvedReservation) {
+      throw new ApiError(
+        409,
+        "room_timeslot_unavailable",
+        "This room is unavailable for the selected timeslot/s. Would you like to see alternative rooms?",
+        {
+          date: dateKey,
+          reason: "room_reserved",
+        }
+      );
+    }
+  }
 }
 
 async function getBuildingManagerIds(buildingId: string) {
@@ -611,6 +770,8 @@ async function getReservationGroupForMutation(reservation: ReservationRecord) {
 
 export async function createReservationRecord(data: ReservationCreateInput) {
   try {
+    await assertReservationDatesAvailable(data, [data.date]);
+
     const campus = await resolveReservationCampus(data);
     const approvalFlow = buildApprovalFlow(
       await getReservationApproverInput(data, campus)
@@ -697,13 +858,7 @@ export async function createRecurringReservationRecord(
 ) {
   try {
     const dates = getDatesForDays(startDate, endDate, selectedDays);
-    if (dates.length === 0) {
-      throw new ApiError(
-        400,
-        "invalid_dates",
-        "No matching dates were found for the selected schedule."
-      );
-    }
+    await assertReservationDatesAvailable(data, dates);
 
     const campus = await resolveReservationCampus(data);
     const approvalFlow = buildApprovalFlow(
