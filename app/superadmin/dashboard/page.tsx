@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
 import { useAuth } from '@/context/AuthContext';
 import {
   onAllUsers,
@@ -17,8 +16,6 @@ import {
 import { getCampusName } from '@/lib/buildings/campusAssignments';
 import { type ReservationCampus } from '@/lib/buildings/campuses';
 import { USER_ROLES } from '@/lib/auth/roles';
-import { onReservationsByUser, Reservation } from '@/lib/reservations/reservations';
-import { seedBuildings } from '@/lib/buildings/seedBuildings';
 
 type Tab = 'all' | 'students' | 'faculty' | 'utility' | 'admins' | 'pending';
 
@@ -29,7 +26,6 @@ export default function SuperAdminDashboard() {
   const [allUsers, setAllUsers] = useState<ManagedUser[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showAccountTooltip, setShowAccountTooltip] = useState(false);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   // ─── Approval Modal State ─────────────────────────────────────
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -40,11 +36,6 @@ export default function SuperAdminDashboard() {
   // ─── Delete Confirmation State ─────────────────────────────────
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
-  const [seedingBuildings, setSeedingBuildings] = useState(false);
-  const [seedResult, setSeedResult] = useState<{
-    created: string[];
-    skipped: string[];
-  } | null>(null);
 
   // Redirect if not super admin
   useEffect(() => {
@@ -52,8 +43,6 @@ export default function SuperAdminDashboard() {
       router.push('/');
     }
   }, [loading, firebaseUser, profile, router]);
-
-  const seeded = useRef(false);
 
   // Real-time listener for ALL users
   useEffect(() => {
@@ -69,23 +58,6 @@ export default function SuperAdminDashboard() {
       unsub();
     };
   }, []);
-
-  // Real-time listener for current user's reservations (timetable)
-  useEffect(() => {
-    const uid = firebaseUser?.uid;
-    if (!uid) return;
-
-    let cancelled = false;
-    const unsub = onReservationsByUser(uid, (next) => {
-      if (cancelled) return;
-      setReservations(next);
-    });
-
-    return () => {
-      cancelled = true;
-      unsub();
-    };
-  }, [firebaseUser?.uid]);
 
   // ─── Computed Data ────────────────────────────────────────────
   const pendingUsers = allUsers.filter((u) => u.status === 'pending');
@@ -179,18 +151,6 @@ export default function SuperAdminDashboard() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
-  };
-
-  const handleSeedBuildings = async () => {
-    setSeedingBuildings(true);
-    try {
-      const result = await seedBuildings();
-      setSeedResult(result);
-      seeded.current = true;
-    } catch (error) {
-      console.warn('Failed to seed buildings:', error);
-    }
-    setSeedingBuildings(false);
   };
 
   if (loading || !firebaseUser || profile?.role !== 'Super Admin') {
@@ -329,23 +289,25 @@ export default function SuperAdminDashboard() {
         <div className="glass-card p-4 sm:p-5 mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-black">System Tools</h2>
+              <h2 className="text-lg font-bold text-black">Campus Management</h2>
               <p className="text-sm text-black mt-1">
-                Seed default buildings from the protected backend when you need an initial campus setup.
+                Choose a campus to manage rooms, requests, feedback, and room history.
               </p>
-              {seedResult && (
-                <p className="text-xs text-black mt-2">
-                  Created: {seedResult.created.length} | Skipped: {seedResult.skipped.length}
-                </p>
-              )}
             </div>
-            <button
-              onClick={handleSeedBuildings}
-              disabled={seedingBuildings}
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-all disabled:opacity-50"
-            >
-              {seedingBuildings ? 'Seeding Buildings...' : 'Seed Default Buildings'}
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                onClick={() => router.push('/superadmin/admin-dashboard?campus=main')}
+                className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-all"
+              >
+                SDCA Main Campus
+              </button>
+              <button
+                onClick={() => router.push('/superadmin/admin-dashboard?campus=digi')}
+                className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-all"
+              >
+                SDCA Digi Campus
+              </button>
+            </div>
           </div>
         </div>
 
@@ -431,13 +393,6 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </div>
-
-        {/* My Reservation Timetable */}
-        <MyReservationTimetable
-          className="mb-8"
-          currentUserId={firebaseUser?.uid}
-          reservations={reservations}
-        />
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 mb-6 glass-card !rounded-xl p-1">

@@ -1,46 +1,26 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
+import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import type { AdminTab } from '@/components/layout/NavBar';
 import { useAuth } from '@/context/AuthContext';
+import { useAdminTab } from '@/context/AdminTabContext';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   markAllNotificationsRead,
   markNotificationRead,
-  Notification,
   onUnreadNotifications,
+  type Notification,
 } from '@/lib/notifications/notifications';
-import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
-
-export type AdminTab =
-  | 'dashboard'
-  | 'manage-rooms'
-  | 'feedback'
-  | 'status-scheduling'
-  | 'reservation-history'
-  | 'inbox'
-  | 'pending';
 
 type CampusOverride = 'main' | 'digi';
 
-interface NavBarProps {
-  user: {
-    name: string;
-    email?: string;
-    initials: string;
-    role: string;
-  };
-  onLogout?: () => void;
-  activeTab?: AdminTab;
-  onTabChange?: (tab: AdminTab) => void;
-  isSuperAdminLimitedNav?: boolean;
-  superAdminCampus?: CampusOverride;
-}
-
-interface ChevronDownIconProps {
-  open: boolean;
-}
+const CAMPUS_NAMES: Record<CampusOverride, string> = {
+  main: 'SDCA Main Campus',
+  digi: 'SDCA Digital Campus',
+};
 
 const adminLinks: Array<{ label: string; tab: AdminTab }> = [
   { label: 'Dashboard', tab: 'dashboard' },
@@ -52,9 +32,8 @@ const adminLinks: Array<{ label: string; tab: AdminTab }> = [
 ];
 
 const statusSchedulingLinks = [
-  { label: 'Room Status Monitor', href: '/admin/room-status' },
-  { label: 'BLE Beacon Status', href: '/admin/ble-status' },
-  { label: 'Class Schedules', href: '/admin/class-schedules' },
+  { label: 'Room Status Monitoring', pathname: '/admin/room-status' },
+  { label: 'Class Schedules', pathname: '/admin/class-schedules' },
 ];
 
 const navItemBaseClasses =
@@ -62,6 +41,34 @@ const navItemBaseClasses =
 const navItemActiveClasses = 'bg-transparent text-[#a12124] shadow-none';
 const navItemInactiveClasses =
   'bg-transparent text-[#343434] hover:bg-transparent hover:text-[#a12124] hover:shadow-none';
+const navIconButtonClasses =
+  'rounded-lg bg-transparent p-2 text-[#343434] transition-colors duration-200 ease-in-out hover:bg-transparent hover:text-[#a12124]';
+const navbarBoldStyle = {
+  fontFamily: 'var(--font-century-gothic-bold)',
+  fontWeight: 700 as const,
+};
+
+function getCampusOverride(value: string | null): CampusOverride | null {
+  return value === 'main' || value === 'digi' ? value : null;
+}
+
+function LoadingState() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <svg className="animate-spin h-8 w-8 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <p className="text-black">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+interface ChevronDownIconProps {
+  open: boolean;
+}
 
 function ChevronDownIcon({ open }: Readonly<ChevronDownIconProps>) {
   return (
@@ -81,36 +88,36 @@ function ChevronDownIcon({ open }: Readonly<ChevronDownIconProps>) {
   );
 }
 
-const NavBar: React.FC<Readonly<NavBarProps>> = ({
-  user,
-  onLogout,
+interface SuperAdminCampusNavBarProps {
+  activeTab: AdminTab;
+  campusOverride: CampusOverride;
+  email?: string;
+  initials: string;
+  onBack: () => void;
+  onLogout: () => void;
+  onTabChange: (tab: AdminTab) => void;
+  uid?: string;
+}
+
+function SuperAdminCampusNavBar({
   activeTab,
+  campusOverride,
+  email,
+  initials,
+  onBack,
+  onLogout,
   onTabChange,
-  isSuperAdminLimitedNav = false,
-  superAdminCampus,
-}) => {
+  uid,
+}: Readonly<SuperAdminCampusNavBarProps>) {
+  const router = useRouter();
   const navRef = useRef<HTMLElement | null>(null);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isMobileStatusMenuOpen, setIsMobileStatusMenuOpen] = useState(false);
-  const { firebaseUser } = useAuth();
-  const uid = firebaseUser?.uid;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserTooltip, setShowUserTooltip] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const notificationRef = useRef<HTMLDivElement | null>(null);
-  const normalizedRole = normalizeRole(user.role);
-  const isFacultyRole = normalizedRole === USER_ROLES.FACULTY;
-  const isUtilityRole = normalizedRole === USER_ROLES.UTILITY;
-  const isStudentRole = normalizedRole === USER_ROLES.STUDENT;
-  const isAdmin = normalizedRole === USER_ROLES.ADMIN;
-  const isBuildingAdmin = normalizedRole === USER_ROLES.BUILDING_ADMIN;
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isStatusSchedulingActive =
-    isAdminRoute || activeTab === 'status-scheduling';
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -119,8 +126,8 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
         event.target instanceof Node &&
         !navRef.current.contains(event.target)
       ) {
-        setIsStatusMenuOpen(false);
         setIsMenuOpen(false);
+        setIsStatusMenuOpen(false);
         setIsMobileStatusMenuOpen(false);
       }
     };
@@ -149,46 +156,11 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
     };
 
     document.addEventListener('mousedown', handlePointerDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-    };
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
-
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
-    }
-
-    router.push('/');
-  };
-
-  const defaultLinks = isUtilityRole
-    ? [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Room Status', href: '/dashboard/room-status' },
-        { label: 'BLE Beacon', href: '/dashboard/ble-beacon' },
-        { label: 'Inbox', href: '/dashboard/inbox' },
-      ]
-    : [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Reserve', href: '/dashboard/reserve' },
-        { label: 'My Reservations', href: '/dashboard/reservations' },
-        { label: 'Inbox', href: '/dashboard/inbox' },
-        ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
-      ];
 
   const getNavItemClasses = (isActive: boolean) =>
     `${navItemBaseClasses} ${isActive ? navItemActiveClasses : navItemInactiveClasses}`;
-  const navIconButtonClasses =
-    'rounded-lg bg-transparent p-2 text-[#343434] transition-colors duration-200 ease-in-out hover:bg-transparent hover:text-[#a12124]';
-  const defaultLinkPaddingClasses = isStudentRole ? 'px-5' : 'px-3';
-  const navCenterPaddingClasses = isAdmin ? 'px-3' : 'px-10';
-  const adminLinkPaddingClasses = 'px-2.5';
-  const navbarBoldStyle = {
-    fontFamily: 'var(--font-century-gothic-bold)',
-    fontWeight: 700 as const,
-  };
 
   const closeMenus = () => {
     setIsStatusMenuOpen(false);
@@ -196,53 +168,54 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
     setIsMobileStatusMenuOpen(false);
   };
 
-  const superAdminDashboardHref = superAdminCampus
-    ? `/superadmin/admin-dashboard?campus=${superAdminCampus}`
-    : '/superadmin/dashboard';
-  const visibleStatusSchedulingLinks = isSuperAdminLimitedNav
-    ? statusSchedulingLinks.filter((link) => link.href !== '/admin/ble-status')
-    : statusSchedulingLinks;
-  const getStatusSchedulingHref = (href: string) =>
-    isSuperAdminLimitedNav &&
-    superAdminCampus &&
-    (href === '/admin/room-status' || href === '/admin/class-schedules')
-      ? `${href}?campus=${superAdminCampus}`
-      : href;
-
   const handleAdminTabClick = (tab: AdminTab) => {
-    onTabChange?.(tab);
+    onTabChange(tab);
     closeMenus();
+  };
 
-    if (isSuperAdminLimitedNav) {
-      router.push(superAdminDashboardHref);
-      return;
-    }
-
-    if (pathname !== '/dashboard') {
-      router.push('/dashboard');
-    }
+  const handleStatusLinkClick = (pathname: string) => {
+    closeMenus();
+    router.push(`${pathname}?campus=${campusOverride}`);
   };
 
   const handleMarkAllRead = async () => {
-    if (!firebaseUser) return;
-    await markAllNotificationsRead(firebaseUser.uid);
+    if (!uid) return;
+    await markAllNotificationsRead(uid);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    const isPending = notification.type === 'new_reservation'
+    const isPending = notification.type === 'new_reservation';
 
     if (!isPending) {
       await markNotificationRead(notification.id);
     }
+
     setShowNotifications(false);
-
-    if (notification.reservationId) {
-      router.push(`/dashboard/inbox?reservationId=${encodeURIComponent(notification.reservationId)}`);
-      return;
-    }
-
-    router.push('/dashboard/inbox');
+    onTabChange('inbox');
   };
+
+  const isStatusSchedulingActive =
+    isStatusMenuOpen || isMobileStatusMenuOpen || activeTab === 'status-scheduling';
+
+  const subtleBackButtonClasses =
+    'hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-transparent px-2 py-1.5 text-[11px] font-medium leading-none text-[#343434]/70 transition-colors duration-200 ease-in-out hover:bg-transparent hover:text-[#a12124]';
+
+  const renderStatusSchedulingLinks = (mobile = false) =>
+    statusSchedulingLinks.map((link) => (
+      <button
+        key={link.pathname}
+        type="button"
+        onClick={() => handleStatusLinkClick(link.pathname)}
+        className={
+          mobile
+            ? `block w-full rounded-xl px-3 py-2.5 text-left text-sm ${getNavItemClasses(false)}`
+            : `flex w-full items-center rounded-xl px-3 py-2.5 text-sm ${getNavItemClasses(false)}`
+        }
+        style={navbarBoldStyle}
+      >
+        {link.label}
+      </button>
+    ));
 
   return (
     <nav ref={navRef} className="glass-nav fixed top-0 left-0 right-0 z-50">
@@ -254,101 +227,64 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
             </h1>
           </div>
 
-          <div
-            className={`hidden md:flex flex-1 items-center justify-center gap-2 ${navCenterPaddingClasses}`}
-          >
-            {isAdmin ? (
-              <>
-                {adminLinks.map((link) => (
-                  <button
-                    key={link.tab}
-                    onClick={() => handleAdminTabClick(link.tab)}
-                    className={`flex shrink-0 items-center ${adminLinkPaddingClasses} py-2 ${getNavItemClasses(
-                      !isAdminRoute && activeTab === link.tab
-                    )}`}
-                    style={navbarBoldStyle}
-                  >
-                    <span className="whitespace-nowrap" style={navbarBoldStyle}>
-                      {link.label}
-                    </span>
-                  </button>
-                ))}
+          <div className="hidden md:flex flex-1 items-center justify-center gap-2 px-3">
+            {adminLinks.map((link) => (
+              <button
+                key={link.tab}
+                onClick={() => handleAdminTabClick(link.tab)}
+                className={`flex shrink-0 items-center px-2.5 py-2 ${getNavItemClasses(
+                  activeTab === link.tab
+                )}`}
+                style={navbarBoldStyle}
+              >
+                <span className="whitespace-nowrap" style={navbarBoldStyle}>
+                  {link.label}
+                </span>
+              </button>
+            ))}
 
-                <div ref={dropdownRef} className="relative flex shrink-0 items-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsStatusMenuOpen((current) => !current)}
-                    className={`flex items-center gap-2 ${adminLinkPaddingClasses} py-2 ${getNavItemClasses(
-                      isStatusSchedulingActive
-                    )}`}
-                    style={navbarBoldStyle}
-                    aria-haspopup="menu"
-                    aria-expanded={isStatusMenuOpen}
-                  >
-                    <span className="whitespace-nowrap" style={navbarBoldStyle}>
-                      Status & Scheduling
-                    </span>
-                    <ChevronDownIcon open={isStatusMenuOpen} />
-                  </button>
+            <div className="relative flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={() => setIsStatusMenuOpen((current) => !current)}
+                className={`flex items-center gap-2 px-2.5 py-2 ${getNavItemClasses(
+                  isStatusSchedulingActive
+                )}`}
+                style={navbarBoldStyle}
+                aria-haspopup="menu"
+                aria-expanded={isStatusMenuOpen}
+              >
+                <span className="whitespace-nowrap" style={navbarBoldStyle}>
+                  Status & Scheduling
+                </span>
+                <ChevronDownIcon open={isStatusMenuOpen} />
+              </button>
 
-                  {isStatusMenuOpen ? (
-                    <div className="absolute left-0 top-full mt-2 w-64 glass-card !rounded-2xl p-2 shadow-xl">
-                      {visibleStatusSchedulingLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={getStatusSchedulingHref(link.href)}
-                          onClick={closeMenus}
-                          className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm ${getNavItemClasses(
-                            pathname === link.href
-                          )}`}
-                          style={navbarBoldStyle}
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
+              {isStatusMenuOpen ? (
+                <div className="absolute left-0 top-full mt-2 w-56 glass-card !rounded-2xl p-2 shadow-xl">
+                  {renderStatusSchedulingLinks()}
                 </div>
-              </>
-            ) : (
-              defaultLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`shrink-0 ${defaultLinkPaddingClasses} py-2 whitespace-nowrap ${getNavItemClasses(
-                    pathname === link.href
-                  )}`}
-                  style={navbarBoldStyle}
-                >
-                  <span style={navbarBoldStyle}>{link.label}</span>
-                </Link>
-              ))
-            )}
+              ) : null}
+            </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <div
-                className="relative"
-                onMouseEnter={() => setShowUserTooltip(true)}
-                onMouseLeave={() => setShowUserTooltip(false)}
-              >
-                <div
-                  className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm cursor-default"
-                  style={navbarBoldStyle}
-                >
-                  {user.initials}
-                </div>
-                {showUserTooltip && (
-                  <div className="absolute right-0 top-full mt-2 w-52 glass-card !rounded-xl p-3 shadow-xl z-50">
-                    <p className="text-xs font-bold text-black capitalize">{user.role}</p>
-                    {user.email && (
-                      <p className="text-[11px] text-black/70 mt-0.5 truncate">{user.email}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+            <button
+              onClick={onBack}
+              className={subtleBackButtonClasses}
+              title="Super Admin Dashboard"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span>Super Admin Dashboard</span>
+            </button>
+
             <div ref={notificationRef} className="relative">
               <button
                 onClick={() => setShowNotifications((prev) => !prev)}
@@ -381,7 +317,7 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
                     <h4 className="font-bold text-black text-sm">Notifications</h4>
                     {notifications.length > 0 && (
                       <button
-                        onClick={handleMarkAllRead}
+                        onClick={() => void handleMarkAllRead()}
                         className="text-xs text-primary font-bold hover:text-primary-hover transition-colors"
                       >
                         Mark all read
@@ -479,7 +415,31 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
                 </div>
               )}
             </div>
-            <button onClick={handleLogout} className={navIconButtonClasses} title="Logout">
+
+            <div className="flex items-center space-x-2">
+              <div
+                className="relative"
+                onMouseEnter={() => setShowUserTooltip(true)}
+                onMouseLeave={() => setShowUserTooltip(false)}
+              >
+                <div
+                  className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm cursor-default"
+                  style={navbarBoldStyle}
+                >
+                  {initials}
+                </div>
+                {showUserTooltip && (
+                  <div className="absolute right-0 top-full mt-2 w-52 glass-card !rounded-xl p-3 shadow-xl z-50">
+                    <p className="text-xs font-bold text-black capitalize">Super Admin</p>
+                    {email && (
+                      <p className="text-[11px] text-black/70 mt-0.5 truncate">{email}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button onClick={onLogout} className={navIconButtonClasses} title="Logout">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -521,73 +481,153 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
       {isMenuOpen ? (
         <div className="md:hidden border-t border-[#343434]/8 bg-[#f5f5f5]/80 backdrop-blur-xl">
           <div className="px-3 py-2 space-y-1">
-            {isAdmin ? (
-              <>
-                {adminLinks.map((link) => (
-                  <button
-                    key={link.tab}
-                    onClick={() => handleAdminTabClick(link.tab)}
-                    className={`flex w-full items-center px-3 py-2.5 text-left ${getNavItemClasses(
-                      !isAdminRoute && activeTab === link.tab
-                    )}`}
-                    style={navbarBoldStyle}
-                  >
-                    {link.label}
-                  </button>
-                ))}
+            {adminLinks.map((link) => (
+              <button
+                key={link.tab}
+                onClick={() => handleAdminTabClick(link.tab)}
+                className={`flex w-full items-center px-3 py-2.5 text-left ${getNavItemClasses(
+                  activeTab === link.tab
+                )}`}
+                style={navbarBoldStyle}
+              >
+                {link.label}
+              </button>
+            ))}
 
-                <div className="rounded-xl border border-dark/5 bg-white/50">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setIsMobileStatusMenuOpen((current) => !current)
-                    }
-                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left ${getNavItemClasses(
-                      isStatusSchedulingActive
-                    )}`}
-                    style={navbarBoldStyle}
-                  >
-                    <span>Status & Scheduling</span>
-                    <ChevronDownIcon open={isMobileStatusMenuOpen} />
-                  </button>
+            <div className="rounded-xl border border-dark/5 bg-white/50">
+              <button
+                type="button"
+                onClick={() =>
+                  setIsMobileStatusMenuOpen((current) => !current)
+                }
+                className={`flex w-full items-center justify-between px-3 py-2.5 text-left ${getNavItemClasses(
+                  isStatusSchedulingActive
+                )}`}
+                style={navbarBoldStyle}
+              >
+                <span>Status & Scheduling</span>
+                <ChevronDownIcon open={isMobileStatusMenuOpen} />
+              </button>
 
-                  {isMobileStatusMenuOpen ? (
-                    <div className="px-2 pb-2">
-                      {visibleStatusSchedulingLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={getStatusSchedulingHref(link.href)}
-                          onClick={closeMenus}
-                          className={`block rounded-xl px-3 py-2.5 text-sm ${getNavItemClasses(
-                            pathname === link.href
-                          )}`}
-                          style={navbarBoldStyle}
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
+              {isMobileStatusMenuOpen ? (
+                <div className="px-2 pb-2">
+                  {renderStatusSchedulingLinks(true)}
                 </div>
-              </>
-            ) : (
-              defaultLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2.5 ${getNavItemClasses(pathname === link.href)}`}
-                  style={navbarBoldStyle}
-                >
-                  {link.label}
-                </Link>
-              ))
-            )}
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}
     </nav>
   );
-};
+}
 
-export default NavBar;
+function SuperAdminAdminDashboardContent() {
+  const { firebaseUser, profile, loading, logout } = useAuth();
+  const { activeTab, setActiveTab } = useAdminTab();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const campusOverride = getCampusOverride(searchParams.get('campus'));
+
+  useEffect(() => {
+    if (!campusOverride) {
+      router.replace('/superadmin/dashboard');
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+
+    if (!firebaseUser) {
+      router.replace('/');
+      return;
+    }
+
+    if (profile?.role !== USER_ROLES.SUPER_ADMIN) {
+      router.replace('/dashboard');
+    }
+  }, [campusOverride, firebaseUser, loading, profile?.role, router]);
+
+  if (
+    loading ||
+    !campusOverride ||
+    !firebaseUser ||
+    profile?.role !== USER_ROLES.SUPER_ADMIN
+  ) {
+    return <LoadingState />;
+  }
+
+  const displayName = profile
+    ? `${profile.firstName} ${profile.lastName}`
+    : firebaseUser.displayName || 'User';
+  const initials = displayName
+    .split(' ')
+    .map((name) => name[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  const campusName = CAMPUS_NAMES[campusOverride];
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
+  return (
+    <div className="min-h-screen relative isolate">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute inset-0 bg-center bg-no-repeat opacity-80"
+          style={{
+            backgroundImage: "url('/images/admin-superadmin-dashboard-bg.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center center',
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(161,33,36,0.2),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.2)_0%,rgba(248,249,250,0.38)_16%,rgba(248,249,250,0.64)_46%,rgba(248,249,250,0.86)_100%)]" />
+      </div>
+
+      <div className="relative z-10">
+        <SuperAdminCampusNavBar
+          activeTab={activeTab}
+          campusOverride={campusOverride}
+          email={profile?.email || firebaseUser.email || undefined}
+          initials={initials}
+          onBack={() => router.push('/superadmin/dashboard')}
+          onLogout={handleLogout}
+          onTabChange={setActiveTab}
+          uid={firebaseUser.uid}
+        />
+
+        <div className="superadmin-campus-dashboard">
+          <style>{`
+            .superadmin-campus-dashboard main > div:first-child p.text-xs.font-bold.text-gray-600 span {
+              font-size: 0;
+            }
+
+            .superadmin-campus-dashboard main > div:first-child p.text-xs.font-bold.text-gray-600 span::after {
+              content: "${campusName}";
+              font-size: 0.75rem;
+              line-height: 1rem;
+            }
+          `}</style>
+          <AdminDashboard
+            firstName={profile?.firstName || 'User'}
+            activeTab={activeTab}
+            campusOverride={campusOverride}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SuperAdminAdminDashboardPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <SuperAdminAdminDashboardContent />
+    </Suspense>
+  );
+}

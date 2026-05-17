@@ -28,6 +28,7 @@ import { isRoomInClass, type Schedule } from '@/lib/schedules/schedules';
 interface AdminDashboardProps {
   firstName: string;
   activeTab: AdminTab;
+  campusOverride?: 'main' | 'digi';
 }
 
 function getLocalDateKey(date: Date = new Date()) {
@@ -41,13 +42,15 @@ function getLocalDateKey(date: Date = new Date()) {
 export default function AdminDashboard({
   firstName,
   activeTab,
+  campusOverride,
 }: Readonly<AdminDashboardProps>) {
   const { firebaseUser, profile } = useAuth();
   const { setActiveTab, selectedBuildingId, setSelectedBuildingId } = useAdminTab();
+  const managedCampus = campusOverride ?? profile?.campus;
 
   const managedBuildings = useMemo(
-    () => getManagedBuildingsForCampus(profile?.campus),
-    [profile?.campus]
+    () => getManagedBuildingsForCampus(managedCampus),
+    [managedCampus]
   );
   const effectiveManagedBuildingId = managedBuildings.some(
     (building) => building.id === selectedBuildingId

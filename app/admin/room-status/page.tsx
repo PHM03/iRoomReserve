@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AdminNoBuildingAssigned from '@/components/admin/AdminNoBuildingAssigned';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminRoomStatusSection from '@/components/admin/AdminRoomStatusSection';
@@ -8,7 +9,15 @@ import { useAdminStatusPages } from '@/hooks/useAdminStatusPages';
 import { onFeedbackByBuilding, type Feedback } from '@/lib/feedback/feedback';
 import { onRoomHistoryByBuilding, type RoomHistoryEntry } from '@/lib/rooms/roomHistory';
 
+type CampusOverride = 'main' | 'digi';
+
+function getCampusOverride(value: string | null): CampusOverride | undefined {
+  return value === 'main' || value === 'digi' ? value : undefined;
+}
+
 export default function AdminRoomStatusPage() {
+  const searchParams = useSearchParams();
+  const campusOverride = getCampusOverride(searchParams.get('campus'));
   const {
     managedBuildings,
     buildingId,
@@ -19,7 +28,7 @@ export default function AdminRoomStatusPage() {
     statusMonitorFloorGroups,
     handleStatusChange,
     computeEffectiveStatus,
-  } = useAdminStatusPages();
+  } = useAdminStatusPages({ campusOverride });
 
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);

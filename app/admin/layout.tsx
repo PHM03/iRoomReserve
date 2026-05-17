@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import NavBar from '@/components/layout/NavBar';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +10,12 @@ import { normalizeRole, USER_ROLES } from '@/lib/auth/roles';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+}
+
+type CampusOverride = 'main' | 'digi';
+
+function getCampusOverride(value: string | null): CampusOverride | undefined {
+  return value === 'main' || value === 'digi' ? value : undefined;
 }
 
 function LoadingState() {
@@ -46,7 +52,20 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
   const { firebaseUser, profile, loading, logout } = useAuth();
   const { activeTab, setActiveTab } = useAdminTab();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const normalizedRole = normalizeRole(profile?.role);
+  const isSuperAdminAllowedPage =
+    normalizedRole === USER_ROLES.SUPER_ADMIN &&
+    ['/admin/room-status', '/admin/class-schedules'].includes(pathname);
+  const canRenderAdminLayout =
+    normalizedRole === USER_ROLES.ADMIN || isSuperAdminAllowedPage;
+  const navRole = isSuperAdminAllowedPage
+    ? USER_ROLES.ADMIN
+    : profile?.role || USER_ROLES.ADMIN;
+  const superAdminCampus = isSuperAdminAllowedPage
+    ? getCampusOverride(searchParams.get('campus'))
+    : undefined;
 
   useEffect(() => {
     if (!loading && !firebaseUser) {
@@ -54,17 +73,28 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
       return;
     }
 
-    if (!loading && normalizedRole === USER_ROLES.SUPER_ADMIN) {
+    if (
+      !loading &&
+      normalizedRole === USER_ROLES.SUPER_ADMIN &&
+      !isSuperAdminAllowedPage
+    ) {
       router.push('/superadmin/dashboard');
       return;
     }
 
-    if (!loading && firebaseUser && normalizedRole !== USER_ROLES.ADMIN) {
+    if (!loading && firebaseUser && !canRenderAdminLayout) {
       router.push('/dashboard');
     }
-  }, [firebaseUser, loading, normalizedRole, router]);
+  }, [
+    canRenderAdminLayout,
+    firebaseUser,
+    isSuperAdminAllowedPage,
+    loading,
+    normalizedRole,
+    router,
+  ]);
 
-  if (loading || !firebaseUser || normalizedRole !== USER_ROLES.ADMIN) {
+  if (loading || !firebaseUser || !canRenderAdminLayout) {
     return <LoadingState />;
   }
 
@@ -99,11 +129,13 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
             name: displayName,
             email: profile?.email || firebaseUser?.email || undefined,
             initials,
-            role: profile?.role || USER_ROLES.ADMIN,
+            role: navRole,
           }}
           onLogout={logout}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          isSuperAdminLimitedNav={isSuperAdminAllowedPage}
+          superAdminCampus={superAdminCampus}
         />
         {children}
       </div>

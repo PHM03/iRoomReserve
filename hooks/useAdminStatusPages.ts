@@ -53,6 +53,7 @@ export function getManagedBuildingOptionLabel(building: {
 }
 
 interface UseAdminStatusPagesOptions {
+  campusOverride?: 'main' | 'digi';
   scheduleSelectionRequired?: boolean;
   selectedScheduleFloor?: string;
   selectedScheduleRoom?: string;
@@ -68,15 +69,17 @@ function getStoredRoomFloor(room: Room) {
 
 export function useAdminStatusPages(options: UseAdminStatusPagesOptions = {}) {
   const {
+    campusOverride,
     scheduleSelectionRequired = false,
     selectedScheduleFloor = '',
     selectedScheduleRoom = '',
   } = options;
   const { firebaseUser, profile } = useAuth();
   const { selectedBuildingId, setSelectedBuildingId } = useAdminTab();
+  const managedCampus = campusOverride ?? profile?.campus;
   const managedBuildings = useMemo(
-    () => getManagedBuildingsForCampus(profile?.campus),
-    [profile?.campus]
+    () => getManagedBuildingsForCampus(managedCampus),
+    [managedCampus]
   );
 
   const effectiveManagedBuildingId = managedBuildings.some(
