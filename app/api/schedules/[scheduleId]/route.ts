@@ -14,6 +14,8 @@ import {
   deleteScheduleRecord,
   updateScheduleRecord,
 } from "@/lib/server/services/schedules";
+import { inferCampusFromBuilding } from "@/lib/buildings/campuses";
+import { validateScheduleTimes } from "@/lib/schedules/scheduleTimeRules";
 
 async function getScheduleBuildingId(scheduleId: string) {
   const scheduleSnapshot = await db.collection("schedules").doc(scheduleId).get();
@@ -42,6 +44,20 @@ export async function PATCH(
     }
 
     assertCanManageBuilding(authContext, buildingId);
+
+    // Server-side campus time range validation (only when times are being updated)
+    if (payload.startTime || payload.endTime) {
+      const campus = inferCampusFromBuilding({ id: buildingId });
+      const startTime = payload.startTime ?? '';
+      const endTime = payload.endTime ?? '';
+      if (startTime && endTime) {
+        const timeError = validateScheduleTimes(startTime, endTime, campus);
+        if (timeError) {
+          throw new ApiError(400, "invalid_time_range", timeError);
+        }
+      }
+    }
+
     await updateScheduleRecord(scheduleId, payload);
 
     return NextResponse.json({ ok: true });

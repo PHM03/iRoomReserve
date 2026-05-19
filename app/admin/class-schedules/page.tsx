@@ -114,6 +114,7 @@ export default function AdminClassSchedulesPage() {
     handleSaveSchedule,
     handleEditSchedule,
     handleDeleteSchedule,
+    campus,
   } = useAdminStatusPages({
     campusOverride,
     scheduleSelectionRequired: true,
@@ -341,6 +342,7 @@ export default function AdminClassSchedulesPage() {
             onSaveSchedule={handleSaveSchedule}
             onEditSchedule={handleEditSchedule}
             onDeleteSchedule={handleDeleteSchedule}
+            campus={campus}
           />
         </div>
       )}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -18,6 +18,7 @@ import {
   updateSchedule,
   DAY_NAMES,
 } from '@/lib/schedules/schedules';
+import { validateScheduleTimes } from '@/lib/schedules/scheduleTimeRules';
 import { onReservationsByBuilding, Reservation } from '@/lib/reservations/reservations';
 import { onRoomsByBuilding, Room, updateRoomStatus } from '@/lib/rooms/rooms';
 
@@ -307,6 +308,13 @@ export function useAdminStatusPages(options: UseAdminStatusPagesOptions = {}) {
       return;
     }
 
+    // Client-side campus time validation (defence-in-depth before API call)
+    const timeError = validateScheduleTimes(schedStart, schedEnd, managedCampus ?? null);
+    if (timeError) {
+      alert(timeError);
+      return;
+    }
+
     setAddingSchedule(true);
 
     try {
@@ -359,15 +367,18 @@ export function useAdminStatusPages(options: UseAdminStatusPagesOptions = {}) {
   };
 
   const handleDeleteSchedule = async (scheduleId: string) => {
-    if (!confirm('Delete this schedule?')) {
+    const response = await fetch(`/api/schedules/${scheduleId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      console.warn('Failed to delete schedule:', body);
+      alert('Failed to delete schedule. Please try again.');
       return;
     }
 
-    try {
-      await deleteSchedule(scheduleId);
-    } catch (error) {
-      console.warn('Failed to delete schedule:', error);
-    }
+    resetScheduleForm();
   };
 
   const computeEffectiveStatus = (
@@ -514,6 +525,7 @@ export function useAdminStatusPages(options: UseAdminStatusPagesOptions = {}) {
     buildingId,
     buildingName,
     activeBuildingLabel,
+    campus: managedCampus ?? null,
     selectedBuildingId: effectiveManagedBuildingId,
     setSelectedBuildingId,
     rooms,

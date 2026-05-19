@@ -1,9 +1,83 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 import type { Room } from '@/lib/rooms/rooms';
 import type { Schedule } from '@/lib/schedules/schedules';
 import { DAY_NAMES, formatTime12h } from '@/lib/schedules/schedules';
+import { getCampusTimeRule, validateScheduleTimes } from '@/lib/schedules/scheduleTimeRules';
+
+// ---------------------------------------------------------------------------
+// TimeSelect – a minimal hour + minute picker where minutes are 00 or 30 only
+// ---------------------------------------------------------------------------
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES = [0, 30];
+
+function pad2(n: number) {
+  return String(n).padStart(2, '0');
+}
+
+function formatHour12(h: number) {
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${pad2(h12)} ${period}`;
+}
+
+function TimeSelect({
+  value,
+  onChange,
+  minHour = 0,
+  maxHour = 23,
+  className = '',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  minHour?: number;
+  maxHour?: number;
+  className?: string;
+}) {
+  const [rawHour, rawMin] = value ? value.split(':') : ['07', '00'];
+  const hour = Number(rawHour ?? 7);
+  // Snap stored minute to nearest allowed value
+  const minute = MINUTES.includes(Number(rawMin)) ? Number(rawMin) : 0;
+  const allowedHours = HOURS.filter((h) => h >= minHour && h <= maxHour);
+
+  function handleHour(e: React.ChangeEvent<HTMLSelectElement>) {
+    onChange(`${pad2(Number(e.target.value))}:${pad2(minute)}`);
+  }
+
+  function handleMinute(e: React.ChangeEvent<HTMLSelectElement>) {
+    onChange(`${pad2(hour)}:${pad2(Number(e.target.value))}`);
+  }
+
+  return (
+    <div className={`flex gap-1 ${className}`}>
+      <select
+        value={hour}
+        onChange={handleHour}
+        className="glass-input flex-1 px-2 py-2.5 text-sm"
+      >
+        {allowedHours.map((h) => (
+          <option key={h} value={h}>
+            {formatHour12(h)}
+          </option>
+        ))}
+      </select>
+      <select
+        value={minute}
+        onChange={handleMinute}
+        className="glass-input w-[4.5rem] px-2 py-2.5 text-sm"
+      >
+        {MINUTES.map((m) => (
+          <option key={m} value={m}>
+            {pad2(m)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 interface AdminClassSchedulesSectionProps {
   schedules: Schedule[];
@@ -26,7 +100,8 @@ interface AdminClassSchedulesSectionProps {
   onSchedEndChange: (value: string) => void;
   onSaveSchedule: () => void;
   onEditSchedule: (schedule: Schedule) => void;
-  onDeleteSchedule: (scheduleId: string) => void;
+  onDeleteSchedule: (scheduleId: string) => Promise<void>;
+  campus?: string | null;
   className?: string;
 }
 
@@ -79,12 +154,53 @@ export default function AdminClassSchedulesSection({
   onSchedEndChange,
   onSaveSchedule,
   onEditSchedule,
+  onDeleteSchedule,
+  campus = null,
   className = '',
-}: AdminClassSchedulesSectionProps) {
-  const timetableDays = DAY_NAMES.map((label, value) => ({
-    label,
-    value
-  })).filter(
+}: Readonly<AdminClassSchedulesSectionProps>) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingSchedule, setDeletingSchedule] = useState(false);
+  const [timeError, setTimeError] = useState<string | null>(null);
+
+  // Clear the time error whenever the form is hidden (cancelled / saved)
+  useEffect(() => {
+    if (!showScheduleForm) setTimeError(null);
+  }, [showScheduleForm]);
+
+  const campusTimeRule = getCampusTimeRule(campus);
+  const minHour = campusTimeRule?.startHour ?? 0;
+  const maxHour = campusTimeRule?.endHour ?? 23;
+
+  function handleStartChange(value: string) {
+    setTimeError(null);
+    onSchedStartChange(value);
+  }
+
+  function handleEndChange(value: string) {
+    setTimeError(null);
+    onSchedEndChange(value);
+  }
+
+  function handleSaveClick() {
+    const error = validateScheduleTimes(schedStart, schedEnd, campus);
+    if (error) {
+      setTimeError(error);
+      return;
+    }
+    onSaveSchedule();
+  }
+
+  async function handleConfirmDelete() {
+    if (!editingScheduleId) return;
+    setDeletingSchedule(true);
+    try {
+      await onDeleteSchedule(editingScheduleId);
+    } finally {
+      setDeletingSchedule(false);
+      setShowDeleteConfirm(false);
+    }
+  }
+  const timetableDays = DAY_NAMES.map((label, value) => ({ label, value })).filter(
     (day) => day.value >= 1 && day.value <= 6
   );
   const currentDay = new Date().getDay();
@@ -165,36 +281,89 @@ export default function AdminClassSchedulesSection({
               <label className="mb-1 block text-xs font-bold text-black">
                 Start Time
               </label>
-              <input
-                type="time"
+              <TimeSelect
                 value={schedStart}
-                onChange={(event) => onSchedStartChange(event.target.value)}
-                className="glass-input w-full px-4 py-2.5 text-sm"
+                onChange={handleStartChange}
+                minHour={minHour}
+                maxHour={maxHour}
+                className="w-full"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-black">
                 End Time
               </label>
-              <input
-                type="time"
+              <TimeSelect
                 value={schedEnd}
-                onChange={(event) => onSchedEndChange(event.target.value)}
-                className="glass-input w-full px-4 py-2.5 text-sm"
+                onChange={handleEndChange}
+                minHour={minHour}
+                maxHour={maxHour}
+                className="w-full"
               />
             </div>
           </div>
-          <button
-            onClick={onSaveSchedule}
-            disabled={addingSchedule || !schedRoomId || !schedSubject.trim()}
-            className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50"
-          >
-            {addingSchedule
-              ? 'Saving...'
-              : editingScheduleId
-                ? 'Update Schedule'
-                : 'Add Schedule'}
-          </button>
+          {timeError ? (
+            <p className="rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700">
+              {timeError}
+            </p>
+          ) : null}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveClick}
+              disabled={addingSchedule || !schedRoomId || !schedSubject.trim()}
+              className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50"
+            >
+              {addingSchedule
+                ? 'Saving...'
+                : editingScheduleId
+                  ? 'Update Schedule'
+                  : 'Add Schedule'}
+            </button>
+
+            {editingScheduleId ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={addingSchedule}
+                className="rounded-lg border border-red-600 bg-white px-6 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-600 hover:text-white disabled:opacity-50"
+              >
+                Delete
+              </button>
+            ) : null}
+          </div>
+
+          {/* ── Delete confirmation dialog ── */}
+          {showDeleteConfirm ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+                <h4 className="mb-2 text-base font-bold text-gray-900">
+                  Delete Schedule?
+                </h4>
+                <p className="mb-6 text-sm text-gray-500">
+                  Are you sure you want to delete this schedule? This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deletingSchedule}
+                    className="rounded-lg border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    disabled={deletingSchedule}
+                    className="rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deletingSchedule ? 'Deleting...' : 'Yes, Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -206,71 +375,70 @@ export default function AdminClassSchedulesSection({
             minWidth: '665px',
           }}
         >
-            <div />
-            {timetableDays.map((day) => (
-              <div
-                key={day.value}
-                className={`border-b border-r border-[#f0f0f0] px-3 pb-2 text-center text-xs font-semibold uppercase text-[#555555] ${
-                  day.value === currentDay ? 'font-bold text-[#8B0000]' : ''
+          <div />
+          {timetableDays.map((day) => (
+            <div
+              key={day.value}
+              className={`border-b border-r border-[#f0f0f0] px-3 pb-2 text-center text-xs font-semibold uppercase text-[#555555] ${day.value === currentDay ? 'font-bold text-[#8B0000]' : ''
                 }`}
-              >
-                {day.label.slice(0, 3)}
-              </div>
-            ))}
+            >
+              {day.label.slice(0, 3)}
+            </div>
+          ))}
 
           <div className="relative" style={{ height: timetableHeight }}>
-              {HOUR_SLOTS.map((hour) => (
-                <div
-                key={hour}
-                  className="absolute left-0 w-full pr-2 text-right text-xs text-[#999999]"
-                  style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8 }}
-                >
-                  {formatHourLabel(hour)}
-                </div>
-              ))}
-            </div>
-
-            {timetableDays.map((day) => (
+            {HOUR_SLOTS.map((hour) => (
               <div
-                key={day.value}
-                className="relative border-r border-[#f0f0f0]"
-                style={{ height: timetableHeight }}
+                key={hour}
+                className="absolute left-0 w-full pr-2 text-right text-xs text-[#999999]"
+                style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8 }}
               >
-                {HOUR_SLOTS.map((hour) => (
-                  <div
-                    key={hour}
-                    className="absolute left-0 w-full border-t border-[#f0f0f0]"
-                    style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR }}
-                  />
-                ))}
-
-                {schedules
-                  .filter((schedule) => schedule.dayOfWeek === day.value)
-                  .map((schedule) => (
-                    <button
-                      key={schedule.id}
-                      type="button"
-                      onClick={() => onEditSchedule(schedule)}
-                      title={`${schedule.subjectName} | ${schedule.roomName} · ${schedule.instructorName} | ${formatTime12h(schedule.startTime)} - ${formatTime12h(schedule.endTime)}`}
-                      className="absolute left-2 right-2 overflow-hidden rounded-md border-l-[3px] border-[#8B0000] bg-[#fde8e8] px-2 py-1 text-left text-xs transition-all hover:bg-[#f9c8c8] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]"
-                      style={{
-                        top: getTimeOffset(schedule.startTime),
-                        height: getScheduleBlockHeight(
-                          schedule.startTime,
-                          schedule.endTime
-                        ),
-                      }}
-                    >
-                      <p className="truncate font-semibold text-[#8B0000]">
-                        {schedule.subjectName}
-                      </p>
-                      <p className="truncate text-[11px] text-[#666666]">
-                        {schedule.roomName} · {schedule.instructorName}
-                      </p>
-                    </button>
-                  ))}
+                {formatHourLabel(hour)}
               </div>
             ))}
+          </div>
+
+          {timetableDays.map((day) => (
+            <div
+              key={day.value}
+              className="relative border-r border-[#f0f0f0]"
+              style={{ height: timetableHeight }}
+            >
+              {HOUR_SLOTS.map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute left-0 w-full border-t border-[#f0f0f0]"
+                  style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR }}
+                />
+              ))}
+
+              {schedules
+                .filter((schedule) => schedule.dayOfWeek === day.value)
+                .map((schedule) => (
+                  <button
+                    key={schedule.id}
+                    type="button"
+                    onClick={() => onEditSchedule(schedule)}
+                    title={`${schedule.subjectName} | ${schedule.roomName} · ${schedule.instructorName} | ${formatTime12h(schedule.startTime)} - ${formatTime12h(schedule.endTime)}`}
+                    className="absolute left-2 right-2 overflow-hidden rounded-md border-l-[3px] border-[#8B0000] bg-[#fde8e8] px-2 py-1 text-left text-xs transition-all hover:bg-[#f9c8c8] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]"
+                    style={{
+                      top: getTimeOffset(schedule.startTime),
+                      height: getScheduleBlockHeight(
+                        schedule.startTime,
+                        schedule.endTime
+                      ),
+                    }}
+                  >
+                    <p className="truncate font-semibold text-[#8B0000]">
+                      {schedule.subjectName}
+                    </p>
+                    <p className="truncate text-[11px] text-[#666666]">
+                      {schedule.roomName} · {schedule.instructorName}
+                    </p>
+                  </button>
+                ))}
+            </div>
+          ))}
         </div>
       </div>
     </section>

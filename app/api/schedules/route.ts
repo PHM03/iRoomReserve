@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { USER_ROLES } from "@/lib/auth/roles";
-import { handleApiError } from "@/lib/server/api-error";
+import { handleApiError, ApiError } from "@/lib/server/api-error";
 import { getOptionalAdminDb } from "@/lib/server/firebase-admin";
 import { getRequestAuthContext } from "@/lib/server/request-auth";
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/lib/server/route-guards";
 import { scheduleInputSchema } from "@/lib/server/schemas";
 import { createScheduleRecord } from "@/lib/server/services/schedules";
+import { inferCampusFromBuilding } from "@/lib/buildings/campuses";
+import { validateScheduleTimes } from "@/lib/schedules/scheduleTimeRules";
 
 interface ScheduleRecord {
   id: string;
@@ -97,6 +99,13 @@ export async function POST(request: NextRequest) {
 
     const payload = scheduleInputSchema.parse(await request.json());
     assertCanManageBuilding(authContext, payload.buildingId);
+
+    // Server-side campus time range validation
+    const campus = inferCampusFromBuilding({ id: payload.buildingId });
+    const timeError = validateScheduleTimes(payload.startTime, payload.endTime, campus);
+    if (timeError) {
+      throw new ApiError(400, "invalid_time_range", timeError);
+    }
 
     const id = await createScheduleRecord(payload);
     return NextResponse.json({ id });
