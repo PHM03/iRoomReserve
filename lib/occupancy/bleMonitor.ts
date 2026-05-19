@@ -51,7 +51,10 @@ export function formatBleTimestamp(value?: string | null) {
 
   const parsedDate = parseBleTimestamp(value);
   return parsedDate
-    ? formatDateTime(parsedDate, { includeSeconds: true, separator: " " })
+    ? formatDateTime(parsedDate, {
+      includeSeconds: true,
+      separator: " "
+    })
     : value;
 }
 

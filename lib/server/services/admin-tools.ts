@@ -64,7 +64,10 @@ export async function seedDefaultBuildings() {
     created.push(building.name);
   }
 
-  return { created, skipped };
+  return {
+    created,
+    skipped
+  };
 }
 
 export async function migrateUserRoles() {
@@ -161,5 +164,8 @@ export async function migrateUserCampusAssignments() {
 
   await commitBatch();
 
-  return { skipped, updated };
+  return {
+    skipped,
+    updated
+  };
 }

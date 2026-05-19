@@ -55,7 +55,11 @@ if (!privateKey || !clientEmail || !projectId) {
 
 // ── Init Firebase Admin ───────────────────────────────────────────────────────
 initializeApp({
-  credential: cert({ projectId, clientEmail, privateKey }),
+  credential: cert({
+    projectId,
+    clientEmail,
+    privateKey
+  }),
 });
 
 const db = getFirestore();

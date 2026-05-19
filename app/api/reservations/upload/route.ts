@@ -18,9 +18,7 @@ function getOptionalString(value: FormDataEntryValue | null) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authContext = await getRequestAuthContext(request, {
-      includeProfile: false,
-    });
+    const authContext = await getRequestAuthContext(request, { includeProfile: false });
     assertAuthenticated(authContext);
     const userId = authContext.uid;
     if (!userId) {

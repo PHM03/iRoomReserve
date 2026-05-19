@@ -44,17 +44,44 @@ type AssistantRoomType = '' | 'glass' | 'lecture' | 'lab';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const CAMPUS_TIME_RANGES: Record<ReservationCampus, { endMinutes: number; startMinutes: number }> = {
-  digi: { startMinutes: 7 * 60, endMinutes: 17 * 60 },
-  main: { startMinutes: 7 * 60, endMinutes: 21 * 60 },
+  digi: {
+    startMinutes: 7 * 60,
+    endMinutes: 17 * 60
+  },
+  main: {
+    startMinutes: 7 * 60,
+    endMinutes: 21 * 60
+  },
 };
 const FILTER_CHIPS: Array<{ key: RoomFilterKey; label: string }> = [
-  { key: 'classroom', label: 'Classroom' },
-  { key: 'glass-room', label: 'Glass Room' },
-  { key: 'conference-room', label: 'Conference Room' },
-  { key: 'specialized-room', label: 'Specialized Room' },
-  { key: 'gymnasium', label: 'Gymnasium' },
-  { key: 'open-area', label: 'Open Area'},
-  { key: 'available', label: 'Available' },
+  {
+    key: 'classroom',
+    label: 'Classroom'
+  },
+  {
+    key: 'glass-room',
+    label: 'Glass Room'
+  },
+  {
+    key: 'conference-room',
+    label: 'Conference Room'
+  },
+  {
+    key: 'specialized-room',
+    label: 'Specialized Room'
+  },
+  {
+    key: 'gymnasium',
+    label: 'Gymnasium'
+  },
+  {
+    key: 'open-area',
+    label: 'Open Area'
+  },
+  {
+    key: 'available',
+    label: 'Available'
+  },
 ];
 const BUILDING_FLOORS: Record<string, string[]> = {
   // SDCA Digi Campus — single building, use its actual buildingId from getManagedBuildingsForCampus('digi')
@@ -232,9 +259,7 @@ export default function ReserveRoomPage() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState('');
-  const [equipment, setEquipment] = useState<Record<string, number>>({
-    ...INITIAL_EQUIPMENT,
-  });
+  const [equipment, setEquipment] = useState<Record<string, number>>({ ...INITIAL_EQUIPMENT });
   const [approvalDocument, setApprovalDocument] = useState<File | null>(null);
   const [uploadedApprovalDocument, setUploadedApprovalDocument] = useState<{
     contentType: string;
@@ -246,9 +271,7 @@ export default function ReserveRoomPage() {
   const [documentUploading, setDocumentUploading] = useState(false);
   const [approvalDocumentError, setApprovalDocumentError] = useState('');
   const [approvalEmailError, setApprovalEmailError] = useState('');
-  const [approvalEmails, setApprovalEmails] = useState({
-    advisorEmail: '',
-  });
+  const [approvalEmails, setApprovalEmails] = useState({ advisorEmail: '' });
   const [bookedSlots, setBookedSlots] = useState<BookingSlot[]>([]);
   const [bookedSlotsLoading, setBookedSlotsLoading] = useState(() =>
     Boolean(selectedRoomParam)
@@ -495,9 +518,7 @@ export default function ReserveRoomPage() {
     setApprovalDocument(null);
     setUploadedApprovalDocument(null);
     setApprovalDocumentError('');
-    setApprovalEmails({
-      advisorEmail: '',
-    });
+    setApprovalEmails({ advisorEmail: '' });
   }
 
   function getPreviewDates(): string[] {
@@ -618,7 +639,10 @@ export default function ReserveRoomPage() {
 
     setActiveCampus(nextCampus);
     setActiveBuilding(
-      nextBuilding ? { id: nextBuilding.id, name: nextBuilding.name } : null
+      nextBuilding ? {
+        id: nextBuilding.id,
+        name: nextBuilding.name
+      } : null
     );
     setActiveFloor(null);
     setRooms([]);
@@ -799,7 +823,10 @@ export default function ReserveRoomPage() {
           );
           setCreatedCount(ids.length);
         } else {
-          await createReservation({ ...reservationData, date: reservationDate });
+          await createReservation({
+            ...reservationData,
+            date: reservationDate
+          });
           setCreatedCount(1);
         }
       } else {
@@ -817,7 +844,10 @@ export default function ReserveRoomPage() {
           );
           setCreatedCount(ids.length);
         } else {
-          await createReservation({ ...reservationData, date: reservationDate });
+          await createReservation({
+            ...reservationData,
+            date: reservationDate
+          });
           setCreatedCount(1);
         }
       }
@@ -1577,12 +1607,30 @@ export default function ReserveRoomPage() {
                 <form onSubmit={handleSubmitReservation} className="space-y-6">
                   <div className="space-y-3">
                     {[
-                      { key: 'fans', label: 'Fans' },
-                      { key: 'speakers', label: 'Speakers with Microphones' },
-                      { key: 'televisions', label: 'Televisions' },
-                      { key: 'hdmiCables', label: 'HDMI Cables' },
-                      { key: 'monoblockChairs', label: 'Monoblock Chairs' },
-                      { key: 'tables', label: 'Tables' },
+                        {
+                          key: 'fans',
+                          label: 'Fans'
+                        },
+                        {
+                          key: 'speakers',
+                          label: 'Speakers with Microphones'
+                        },
+                        {
+                          key: 'televisions',
+                          label: 'Televisions'
+                        },
+                        {
+                          key: 'hdmiCables',
+                          label: 'HDMI Cables'
+                        },
+                        {
+                          key: 'monoblockChairs',
+                          label: 'Monoblock Chairs'
+                        },
+                        {
+                          key: 'tables',
+                          label: 'Tables'
+                        },
                     ].map((item) => (
                       <div
                         key={item.key}

@@ -199,9 +199,7 @@ export default function AdminFeedbackTab({
                 </p>
                 <p className="text-xs text-black">
                   {formatSentimentLabel(
-                    resolveFeedbackSentimentLabel({
-                      compoundScore: feedbackSummary.averageCompoundScore,
-                    })
+                    resolveFeedbackSentimentLabel({ compoundScore: feedbackSummary.averageCompoundScore })
                   )}
                 </p>
               </div>

@@ -163,7 +163,10 @@ export async function updateRoomStatus(
   const payload =
     typeof update === "string"
       ? { status: normalizeRoomStatus(update) }
-      : { ...update, status: normalizeRoomStatus(update.status) };
+      : {
+        ...update,
+        status: normalizeRoomStatus(update.status)
+      };
 
   await apiRequest(`/api/rooms/${roomId}/status`, {
     body: payload,
@@ -331,7 +334,10 @@ export async function getRoomsByBuildingAndFloor(
 ): Promise<Room[]> {
   const payload = await apiRequest<Room[]>("/api/rooms", {
     method: "GET",
-    params: { buildingId, floor },
+    params: {
+      buildingId,
+      floor
+    },
     userId: auth.currentUser?.uid,
   });
 

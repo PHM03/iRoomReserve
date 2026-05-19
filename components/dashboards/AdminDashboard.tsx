@@ -154,7 +154,10 @@ export default function AdminDashboard({
   const computeEffectiveStatus = useCallback(
     (room: Room): { status: string; detail: string } => {
       if (room.status === 'Unavailable') {
-        return { status: 'Unavailable', detail: 'Manual override' };
+        return {
+          status: 'Unavailable',
+          detail: 'Manual override'
+        };
       }
 
       if (room.status === 'Occupied') {
@@ -162,7 +165,10 @@ export default function AdminDashboard({
           normalizeRoomCheckInMethod(room.checkInMethod) === 'bluetooth' &&
           room.beaconConnected === false
         ) {
-          return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+          return {
+            status: 'Available',
+            detail: 'Bluetooth beacon disconnected'
+          };
         }
 
         return {
@@ -175,12 +181,18 @@ export default function AdminDashboard({
       }
 
       if (room.status === 'Reserved') {
-        return { status: 'Reserved', detail: 'Reserved' };
+        return {
+          status: 'Reserved',
+          detail: 'Reserved'
+        };
       }
 
       const activeClass = isRoomInClass(schedules, room.id);
       if (activeClass) {
-        return { status: 'Reserved', detail: `Class: ${activeClass.subjectName}` };
+        return {
+          status: 'Reserved',
+          detail: `Class: ${activeClass.subjectName}`
+        };
       }
 
       const now = new Date();
@@ -209,15 +221,27 @@ export default function AdminDashboard({
           activeCheckInMethod === 'bluetooth' &&
           room.beaconConnected === false
         ) {
-          return { status: 'Available', detail: 'Bluetooth beacon disconnected' };
+          return {
+            status: 'Available',
+            detail: 'Bluetooth beacon disconnected'
+          };
         }
 
         return activeReservation.checkedInAt
-          ? { status: 'Occupied', detail: `Checked in: ${activeReservation.userName}` }
-          : { status: 'Reserved', detail: `Reserved: ${activeReservation.userName}` };
+          ? {
+            status: 'Occupied',
+            detail: `Checked in: ${activeReservation.userName}`
+          }
+          : {
+            status: 'Reserved',
+            detail: `Reserved: ${activeReservation.userName}`
+          };
       }
 
-      return { status: 'Available', detail: '' };
+      return {
+        status: 'Available',
+        detail: ''
+      };
     },
     [allReservations, schedules]
   );

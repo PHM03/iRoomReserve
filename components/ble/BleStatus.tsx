@@ -115,9 +115,7 @@ export default function BleStatus({
       }
 
       try {
-        const nextOccupancyStatus = await fetchOccupancySnapshot({
-          force: mode === 'manual',
-        });
+        const nextOccupancyStatus = await fetchOccupancySnapshot({ force: mode === 'manual' });
         setOccupancyStatus(nextOccupancyStatus);
         setStatusError(null);
         setLastRefreshedAt(new Date());

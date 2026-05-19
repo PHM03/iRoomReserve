@@ -178,11 +178,30 @@ export default function MyReservationsPage() {
   const completedBadge = Math.max(0, completedCount - lastSeenCompletedCount);
 
   const filters: { key: FilterTab; label: string; badge?: number }[] = [
-    { key: 'pending',   label: 'Pending',   badge: pendingBadge   || undefined },
-    { key: 'approved',  label: 'Approved',  badge: approvedBadge  || undefined },
-    { key: 'rejected',  label: 'Rejected/Cancelled',  badge: rejectedBadge  || undefined },
-    { key: 'completed', label: 'Completed', badge: completedBadge || undefined },
-    { key: 'all',       label: 'All' },
+    {
+      key: 'pending',
+      label: 'Pending',
+      badge: pendingBadge || undefined
+    },
+    {
+      key: 'approved',
+      label: 'Approved',
+      badge: approvedBadge || undefined
+    },
+    {
+      key: 'rejected',
+      label: 'Rejected/Cancelled',
+      badge: rejectedBadge || undefined
+    },
+    {
+      key: 'completed',
+      label: 'Completed',
+      badge: completedBadge || undefined
+    },
+    {
+      key: 'all',
+      label: 'All'
+    },
   ];
 
   // When the user clicks a tab, persist the "last seen" count so the badge clears.

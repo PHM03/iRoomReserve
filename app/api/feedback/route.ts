@@ -36,9 +36,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       assertOwnsResource(authContext, userId);
 
-      return NextResponse.json({
-        feedback: await getFeedbackRecordsByUser(userId),
-      });
+      return NextResponse.json({ feedback: await getFeedbackRecordsByUser(userId) });
     }
 
     assertCanViewBuildingFeedback(authContext, buildingId);

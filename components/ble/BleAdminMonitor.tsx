@@ -93,9 +93,7 @@ export default function BleAdminMonitor({
       }
 
       try {
-        const nextOccupancyData = await fetchOccupancySnapshot({
-          force: mode === 'manual',
-        });
+        const nextOccupancyData = await fetchOccupancySnapshot({ force: mode === 'manual' });
         setOccupancyData(nextOccupancyData);
 
         setErrorMessage(null);

@@ -229,12 +229,7 @@ async function getApprovalDocumentUrl(reservation: DashboardReservation) {
 
   try {
     return (
-      (await createReservationDocumentSignedUrl({
-      path:
-        typeof reservation.approvalDocumentPath === "string"
-          ? reservation.approvalDocumentPath
-          : null,
-      })) ?? storedUrl
+      (await createReservationDocumentSignedUrl({ path: typeof reservation.approvalDocumentPath === "string" ? reservation.approvalDocumentPath : null })) ?? storedUrl
     );
   } catch (error) {
     console.warn("Failed to resolve reservation approval document URL", {
@@ -284,7 +279,12 @@ export async function GET(request: NextRequest) {
 
     if (!buildingId) {
       return NextResponse.json(
-        { error: { code: "missing_building_id", message: "buildingId is required." } },
+        {
+          error: {
+            code: "missing_building_id",
+            message: "buildingId is required."
+          }
+        },
         { status: 400 }
       );
     }
@@ -378,16 +378,25 @@ export async function GET(request: NextRequest) {
         : (summaryCounts?.[0] ?? 0);
     const rooms = roomsSnapshot
       ? roomsSnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoom)
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }) as DashboardRoom)
           .filter((room) => matchesRoomSearch(room, roomSearch))
           .sort(sortRooms)
           .slice(0, roomLimit ?? undefined)
       : [];
     const allReservations = (approvedReservationsSnapshot?.docs ?? [])
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }) as DashboardReservation)
       .sort(sortReservations);
     const pendingRequests = (pendingReservationsSnapshot?.docs ?? [])
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardReservation)
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }) as DashboardReservation)
       .filter(isVisiblePendingReservationForBuildingAdmin);
     const allRequests = groupReservationsForDisplay(
       pendingRequests.sort(sortReservations)
@@ -401,10 +410,16 @@ export async function GET(request: NextRequest) {
       )
     );
     const schedules = (schedulesSnapshot?.docs ?? [])
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardSchedule)
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }) as DashboardSchedule)
       .sort(sortSchedules);
     const roomHistory = (roomHistorySnapshot?.docs ?? [])
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as DashboardRoomHistoryEntry)
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }) as DashboardRoomHistoryEntry)
       .sort(sortByCreatedAtDesc);
     const summary: DashboardSummary | null = summaryCounts
       ? {

@@ -43,18 +43,45 @@ interface ChevronDownIconProps {
 }
 
 const adminLinks: Array<{ label: string; tab: AdminTab }> = [
-  { label: 'Dashboard', tab: 'dashboard' },
-  { label: 'Pending', tab: 'pending' },
-  { label: 'Manage Rooms', tab: 'manage-rooms' },
-  { label: 'Feedback', tab: 'feedback' },
-  { label: 'Reservation History', tab: 'reservation-history' },
-  { label: 'Inbox', tab: 'inbox' },
+  {
+    label: 'Dashboard',
+    tab: 'dashboard'
+  },
+  {
+    label: 'Pending',
+    tab: 'pending'
+  },
+  {
+    label: 'Manage Rooms',
+    tab: 'manage-rooms'
+  },
+  {
+    label: 'Feedback',
+    tab: 'feedback'
+  },
+  {
+    label: 'Reservation History',
+    tab: 'reservation-history'
+  },
+  {
+    label: 'Inbox',
+    tab: 'inbox'
+  },
 ];
 
 const statusSchedulingLinks = [
-  { label: 'Room Status Monitor', href: '/admin/room-status' },
-  { label: 'BLE Beacon Status', href: '/admin/ble-status' },
-  { label: 'Class Schedules', href: '/admin/class-schedules' },
+  {
+    label: 'Room Status Monitor',
+    href: '/admin/room-status'
+  },
+  {
+    label: 'BLE Beacon Status',
+    href: '/admin/ble-status'
+  },
+  {
+    label: 'Class Schedules',
+    href: '/admin/class-schedules'
+  },
 ];
 
 const navItemBaseClasses =
@@ -165,17 +192,44 @@ const NavBar: React.FC<Readonly<NavBarProps>> = ({
 
   const defaultLinks = isUtilityRole
     ? [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Room Status', href: '/dashboard/room-status' },
-        { label: 'BLE Beacon', href: '/dashboard/ble-beacon' },
-        { label: 'Inbox', href: '/dashboard/inbox' },
+      {
+        label: 'Dashboard',
+        href: '/dashboard'
+      },
+      {
+        label: 'Room Status',
+        href: '/dashboard/room-status'
+      },
+      {
+        label: 'BLE Beacon',
+        href: '/dashboard/ble-beacon'
+      },
+      {
+        label: 'Inbox',
+        href: '/dashboard/inbox'
+      },
       ]
     : [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Reserve', href: '/dashboard/reserve' },
-        { label: 'My Reservations', href: '/dashboard/reservations' },
-        { label: 'Inbox', href: '/dashboard/inbox' },
-        ...(!isFacultyRole ? [{ label: 'Feedback', href: '/dashboard/feedback' }] : []),
+      {
+        label: 'Dashboard',
+        href: '/dashboard'
+      },
+      {
+        label: 'Reserve',
+        href: '/dashboard/reserve'
+      },
+      {
+        label: 'My Reservations',
+        href: '/dashboard/reservations'
+      },
+      {
+        label: 'Inbox',
+        href: '/dashboard/inbox'
+      },
+      ...(!isFacultyRole ? [{
+        label: 'Feedback',
+        href: '/dashboard/feedback'
+      }] : []),
       ];
 
   const getNavItemClasses = (isActive: boolean) =>

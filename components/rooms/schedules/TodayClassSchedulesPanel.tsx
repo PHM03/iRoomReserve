@@ -26,12 +26,30 @@ interface EmptyStateProps {
 }
 
 const SCHEDULE_DAY_OPTIONS = [
-  { label: 'Monday', value: 1 },
-  { label: 'Tuesday', value: 2 },
-  { label: 'Wednesday', value: 3 },
-  { label: 'Thursday', value: 4 },
-  { label: 'Friday', value: 5 },
-  { label: 'Saturday', value: 6 },
+  {
+    label: 'Monday',
+    value: 1
+  },
+  {
+    label: 'Tuesday',
+    value: 2
+  },
+  {
+    label: 'Wednesday',
+    value: 3
+  },
+  {
+    label: 'Thursday',
+    value: 4
+  },
+  {
+    label: 'Friday',
+    value: 5
+  },
+  {
+    label: 'Saturday',
+    value: 6
+  },
 ] as const;
 
 const MAIN_BUILDING_OPTIONS: ReadonlyArray<{
@@ -39,9 +57,21 @@ const MAIN_BUILDING_OPTIONS: ReadonlyArray<{
   name: string;
   value: ScheduleBuildingFilter;
 }> = [
-  { label: 'GD1', name: 'GD1', value: 'gd1' },
-  { label: 'GD2', name: 'GD2', value: 'gd2' },
-  { label: 'GD3', name: 'GD3', value: 'gd3' },
+    {
+      label: 'GD1',
+      name: 'GD1',
+      value: 'gd1'
+    },
+    {
+      label: 'GD2',
+      name: 'GD2',
+      value: 'gd2'
+    },
+    {
+      label: 'GD3',
+      name: 'GD3',
+      value: 'gd3'
+    },
 ];
 
 const DIGI_BUILDING = getManagedBuildingsForCampus('digi')[0] ?? null;

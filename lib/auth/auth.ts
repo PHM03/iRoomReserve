@@ -122,9 +122,7 @@ export async function registerWithEmail(
 
   const credential = await createUserWithEmailAndPassword(auth, email, password);
 
-  await updateProfile(credential.user, {
-    displayName: `${firstName} ${lastName}`,
-  });
+  await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
 
   const status = actualRole === USER_ROLES.STUDENT ? "approved" : "pending";
 
@@ -139,7 +137,10 @@ export async function registerWithEmail(
   await sendEmailVerification(credential.user);
   await signOut(auth);
 
-  return { credential, actualRole };
+  return {
+    credential,
+    actualRole
+  };
 }
 
 const googleProvider = new GoogleAuthProvider();
@@ -232,9 +233,7 @@ export async function seedSuperAdmin() {
       SUPERADMIN_PASSWORD
     );
 
-    await updateProfile(credential.user, {
-      displayName: "Super Admin",
-    });
+    await updateProfile(credential.user, { displayName: "Super Admin" });
 
     await saveUserProfile(credential.user.uid, {
       firstName: "Super",
@@ -269,7 +268,10 @@ export async function seedSuperAdmin() {
           status: "approved",
         });
         await signOut(auth);
-        return { success: true, message: "Super Admin profile updated." };
+        return {
+          success: true,
+          message: "Super Admin profile updated."
+        };
       } catch {
         return {
           success: false,
@@ -482,9 +484,7 @@ export async function rejectUser(uid: string) {
 }
 
 export async function deleteUserAccount(uid: string): Promise<void> {
-  await apiRequest(`/api/admin/users/${uid}`, {
-    method: "DELETE",
-  });
+  await apiRequest(`/api/admin/users/${uid}`, { method: "DELETE" });
 }
 
 export async function disableUserAccount(uid: string): Promise<void> {

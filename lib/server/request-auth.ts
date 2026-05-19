@@ -94,9 +94,7 @@ export async function getRequestAuthContext(
         verified: true,
       };
     } catch (error) {
-      console.warn("Firebase ID token verification failed", {
-        error,
-      });
+      console.warn("Firebase ID token verification failed", { error });
       // Fall through to compatibility headers when the bearer token is invalid.
     }
   }

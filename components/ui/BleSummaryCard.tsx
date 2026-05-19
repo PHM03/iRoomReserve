@@ -75,9 +75,7 @@ export default function BleSummaryCard({
       }
 
       try {
-        const nextOccupancyData = await fetchOccupancySnapshot({
-          force: mode === 'manual',
-        });
+        const nextOccupancyData = await fetchOccupancySnapshot({ force: mode === 'manual' });
         setOccupancyData(nextOccupancyData);
 
         setErrorMessage(null);

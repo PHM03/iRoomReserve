@@ -79,9 +79,7 @@ export async function updateSchedule(
 }
 
 export async function deleteSchedule(scheduleId: string): Promise<void> {
-  await apiRequest(`/api/schedules/${scheduleId}`, {
-    method: "DELETE",
-  });
+  await apiRequest(`/api/schedules/${scheduleId}`, { method: "DELETE" });
 }
 
 export function onSchedulesByBuilding(
@@ -97,7 +95,10 @@ export function onSchedulesByBuilding(
     q,
     (snapshot) => {
       const schedules: Schedule[] = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Schedule)
+        .map((d) => ({
+          id: d.id,
+          ...d.data()
+        }) as Schedule)
         .sort(sortSchedules);
       console.log("[schedules] onSchedulesByBuilding snapshot", {
         buildingId,
@@ -305,7 +306,10 @@ export function onAllSchedules(
     q,
     (snapshot) => {
       const schedules: Schedule[] = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Schedule)
+        .map((d) => ({
+          id: d.id,
+          ...d.data()
+        }) as Schedule)
         .sort(sortSchedules);
       listener.emit(schedules);
     },

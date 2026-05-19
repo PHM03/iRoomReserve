@@ -58,9 +58,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return toNoStoreResponse(trimOccupancyHistory(occupancyData), {
-    headers: {
-      "x-occupancy-source": occupancyData.timestamp ? "memory" : "empty",
-    },
-  });
+  return toNoStoreResponse(trimOccupancyHistory(occupancyData), { headers: { "x-occupancy-source": occupancyData.timestamp ? "memory" : "empty" } });
 }

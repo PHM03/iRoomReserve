@@ -79,8 +79,14 @@ const BOT_REPLY_GAP_MS = 760;
 const DEFAULT_CAPACITY_CHOICES = [8, 12, 20, 40, 60];
 const DEFAULT_FEATURE_OPTIONS = ['AC', 'Projector', 'Whiteboard'];
 const ENTRY_OPTIONS: AssistantOption[] = [
-  { label: 'Help me choose', value: 'help-me-choose' },
-  { label: 'Check this room', value: 'check-selected-room' },
+  {
+    label: 'Help me choose',
+    value: 'help-me-choose'
+  },
+  {
+    label: 'Check this room',
+    value: 'check-selected-room'
+  },
 ];
 
 let messageCounter = 0;
@@ -110,9 +116,7 @@ function createWelcomeMessage() {
     'Hi! I can help you choose a room through chat or check whether the room you picked is still free.',
     'system',
     'buttons',
-    {
-      options: ENTRY_OPTIONS,
-    }
+    { options: ENTRY_OPTIONS }
   );
 }
 
@@ -123,10 +127,22 @@ function createTypePromptMessage() {
     'buttons',
     {
       options: [
-        { label: 'Glass', value: 'glass' },
-        { label: 'Lecture', value: 'lecture' },
-        { label: 'Lab', value: 'lab' },
-        { label: 'No preference', value: '' },
+        {
+          label: 'Glass',
+          value: 'glass'
+        },
+        {
+          label: 'Lecture',
+          value: 'lecture'
+        },
+        {
+          label: 'Lab',
+          value: 'lab'
+        },
+        {
+          label: 'No preference',
+          value: ''
+        },
       ],
     }
   );
@@ -138,9 +154,7 @@ function createCapacityPromptMessage(selectedType: string, options: AssistantOpt
       'Got it \u{1F44D} no specific room type. How many people?',
       'system',
       'buttons',
-      {
-        options,
-      }
+      { options }
     );
   }
 
@@ -148,9 +162,7 @@ function createCapacityPromptMessage(selectedType: string, options: AssistantOpt
     `Got it \u{1F44D} a ${selectedType} room. How many people?`,
     'system',
     'buttons',
-    {
-      options,
-    }
+    { options }
   );
 }
 
@@ -165,7 +177,10 @@ function createCapacityAcknowledgementMessage(minCapacity?: number) {
 function createFeaturePromptMessage(options: AssistantOption[]) {
   return createMessage('Any features I should prioritize?', 'system', 'feature-picker', {
     allowMultiple: true,
-    options: [...options, { label: 'Done', value: '__done__' }],
+    options: [...options, {
+      label: 'Done',
+      value: '__done__'
+    }],
   });
 }
 
@@ -189,9 +204,7 @@ function createRecommendationMessage(
     );
   }
 
-  return createMessage(introText, 'system', 'recommendations', {
-    recommendations,
-  });
+  return createMessage(introText, 'system', 'recommendations', { recommendations });
 }
 
 function normalizeMessageType(type?: string): AssistantMessage['type'] {
@@ -266,7 +279,10 @@ function buildCapacityOptions(rooms: RecommendationRoom[]): AssistantOption[] {
       label: `${capacity} people`,
       value: capacity,
     })),
-    { label: 'Any size', value: '' },
+    {
+      label: 'Any size',
+      value: ''
+    },
   ];
 }
 
@@ -314,9 +330,7 @@ export default function RoomAssistantWidget({
   const welcomeMessage = useMemo(() => createWelcomeMessage(), []);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([welcomeMessage]);
-  const [preferences, setPreferences] = useState<RoomAssistantPreferences>({
-    requiredFeatures: [],
-  });
+  const [preferences, setPreferences] = useState<RoomAssistantPreferences>({ requiredFeatures: [] });
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [step, setStep] = useState<RoomAssistantStep>('entry');
   const [isBotTyping, setIsBotTyping] = useState(false);

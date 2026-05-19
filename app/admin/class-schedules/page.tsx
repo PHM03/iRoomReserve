@@ -140,7 +140,10 @@ export default function AdminClassSchedulesPage() {
     });
   }
   const hasActiveScheduleFilters = Boolean(selectedRoom || selectedFloor);
-  const availableFloors = getBuildingFloorOptions({ id: buildingId, name: buildingName });
+  const availableFloors = getBuildingFloorOptions({
+    id: buildingId,
+    name: buildingName
+  });
   const selectedFloorRooms = useMemo(
     () =>
       selectedFloor

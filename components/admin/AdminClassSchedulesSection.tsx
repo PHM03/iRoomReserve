@@ -80,8 +80,11 @@ export default function AdminClassSchedulesSection({
   onSaveSchedule,
   onEditSchedule,
   className = '',
-}: Readonly<AdminClassSchedulesSectionProps>) {
-  const timetableDays = DAY_NAMES.map((label, value) => ({ label, value })).filter(
+}: AdminClassSchedulesSectionProps) {
+  const timetableDays = DAY_NAMES.map((label, value) => ({
+    label,
+    value
+  })).filter(
     (day) => day.value >= 1 && day.value <= 6
   );
   const currentDay = new Date().getDay();
@@ -215,14 +218,12 @@ export default function AdminClassSchedulesSection({
               </div>
             ))}
 
-            <div className="relative" style={{ height: timetableHeight }}>
+          <div className="relative" style={{ height: timetableHeight }}>
               {HOUR_SLOTS.map((hour) => (
                 <div
                 key={hour}
                   className="absolute left-0 w-full pr-2 text-right text-xs text-[#999999]"
-                  style={{
-                    top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8,
-                  }}
+                  style={{ top: (hour - TIMETABLE_START_HOUR) * PIXELS_PER_HOUR - 8 }}
                 >
                   {formatHourLabel(hour)}
                 </div>

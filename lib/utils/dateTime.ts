@@ -159,9 +159,7 @@ export function formatDateTime(
   } = {}
 ): string {
   const dateLabel = formatDateValue(value);
-  const timeLabel = formatClockTime(value, {
-    includeSeconds: options.includeSeconds,
-  });
+  const timeLabel = formatClockTime(value, { includeSeconds: options.includeSeconds });
 
   if (!dateLabel) {
     return timeLabel;

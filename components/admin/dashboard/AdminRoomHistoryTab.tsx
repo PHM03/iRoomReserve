@@ -9,11 +9,26 @@ type HistoryStatusFilter = 'approved' | 'rejectedCancelled' | 'active' | 'comple
 type HistoryDateSortDirection = 'asc' | 'desc';
 
 const HISTORY_STATUS_FILTERS: Array<{ key: HistoryStatusFilter; label: string }> = [
-  { key: 'approved', label: 'Approved' },
-  { key: 'rejectedCancelled', label: 'Rejected/Cancelled' },
-  { key: 'active', label: 'Active' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'all', label: 'All' },
+  {
+    key: 'approved',
+    label: 'Approved'
+  },
+  {
+    key: 'rejectedCancelled',
+    label: 'Rejected/Cancelled'
+  },
+  {
+    key: 'active',
+    label: 'Active'
+  },
+  {
+    key: 'completed',
+    label: 'Completed'
+  },
+  {
+    key: 'all',
+    label: 'All'
+  },
 ];
 
 const MONTH_FILTER_OPTIONS = [

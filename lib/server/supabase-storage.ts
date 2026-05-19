@@ -182,7 +182,10 @@ export async function createReservationDocumentSignedUrl(input: {
     return `${getSupabaseStorageBaseUrl()}${signedUrl}`;
   }
 
-  return `${buildStorageObjectUrl({ bucket, path })}?${signedUrl}`;
+  return `${buildStorageObjectUrl({
+    bucket,
+    path
+  })}?${signedUrl}`;
 }
 
 export async function uploadReservationDocument(input: {

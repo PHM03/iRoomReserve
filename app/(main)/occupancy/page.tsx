@@ -60,9 +60,7 @@ export default function OccupancyPage() {
       }
 
       try {
-        const json = (await fetchOccupancySnapshot({
-          force: mode === "manual",
-        })) as OccupancyData;
+        const json = (await fetchOccupancySnapshot({ force: mode === "manual" })) as OccupancyData;
         setData(json);
         setError(null);
         setLastRefreshedAt(new Date());
@@ -124,7 +122,10 @@ export default function OccupancyPage() {
   const isConnected = data.connectionStatus === "CONNECTED";
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
+    <div style={{
+      padding: "2rem",
+      fontFamily: "sans-serif"
+    }}>
       <div
         style={{
           display: "flex",
@@ -137,10 +138,16 @@ export default function OccupancyPage() {
       >
         <div>
           <h1>Occupancy Dashboard</h1>
-          <p style={{ marginTop: "0.5rem", color: "#555" }}>
+          <p style={{
+            marginTop: "0.5rem",
+            color: "#555"
+          }}>
             Last refreshed: {formatRefreshTime(lastRefreshedAt)}
           </p>
-          <p style={{ marginTop: "0.25rem", color: "#555" }}>
+          <p style={{
+            marginTop: "0.25rem",
+            color: "#555"
+          }}>
             Next refresh in {formatRefreshCountdown(millisecondsUntilRefresh)}
           </p>
         </div>
@@ -194,15 +201,30 @@ export default function OccupancyPage() {
       </div>
 
       <h2>Connection History</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table style={{
+        width: "100%",
+        borderCollapse: "collapse"
+      }}>
         <thead>
           <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ padding: "8px", border: "1px solid #ddd" }}>Time</th>
-            <th style={{ padding: "8px", border: "1px solid #ddd" }}>
+            <th style={{
+              padding: "8px",
+              border: "1px solid #ddd"
+            }}>Time</th>
+            <th style={{
+              padding: "8px",
+              border: "1px solid #ddd"
+            }}>
               Connection
             </th>
-            <th style={{ padding: "8px", border: "1px solid #ddd" }}>Event</th>
-            <th style={{ padding: "8px", border: "1px solid #ddd" }}>
+            <th style={{
+              padding: "8px",
+              border: "1px solid #ddd"
+            }}>Event</th>
+            <th style={{
+              padding: "8px",
+              border: "1px solid #ddd"
+            }}>
               Occupancy
             </th>
           </tr>
@@ -225,23 +247,30 @@ export default function OccupancyPage() {
             data.history.map((item, index) => (
               <tr
                 key={index}
-                style={{
-                  background:
-                    item.connectionStatus === "CONNECTED"
-                      ? "#f0fff0"
-                      : "#fff0f0",
-                }}
+                style={{ background: item.connectionStatus === "CONNECTED" ? "#f0fff0" : "#fff0f0" }}
               >
-                <td style={{ padding: "8px", border: "1px solid #ddd" }}>
+                <td style={{
+                  padding: "8px",
+                  border: "1px solid #ddd"
+                }}>
                   {formatBleTimestamp(item.timestamp)}
                 </td>
-                <td style={{ padding: "8px", border: "1px solid #ddd" }}>
+                <td style={{
+                  padding: "8px",
+                  border: "1px solid #ddd"
+                }}>
                   {item.connectionStatus}
                 </td>
-                <td style={{ padding: "8px", border: "1px solid #ddd" }}>
+                <td style={{
+                  padding: "8px",
+                  border: "1px solid #ddd"
+                }}>
                   {item.eventType}
                 </td>
-                <td style={{ padding: "8px", border: "1px solid #ddd" }}>
+                <td style={{
+                  padding: "8px",
+                  border: "1px solid #ddd"
+                }}>
                   {item.occupancy}
                 </td>
               </tr>

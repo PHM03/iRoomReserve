@@ -64,7 +64,12 @@ export async function GET(request: NextRequest) {
     if (countsOnly) {
       if (!buildingId) {
         return NextResponse.json(
-          { error: { code: "missing_building_id", message: "buildingId is required." } },
+          {
+            error: {
+              code: "missing_building_id",
+              message: "buildingId is required."
+            }
+          },
           { status: 400 }
         );
       }

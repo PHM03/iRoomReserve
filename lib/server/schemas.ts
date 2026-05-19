@@ -210,12 +210,8 @@ export const reservationBaseSchema = z.union([
 ]);
 
 const singleReservationPayloadSchema = z.discriminatedUnion("campus", [
-  digiReservationBaseSchema.extend({
-    date: dateString,
-  }),
-  mainReservationBaseSchema.extend({
-    date: dateString,
-  }),
+  digiReservationBaseSchema.extend({ date: dateString }),
+  mainReservationBaseSchema.extend({ date: dateString }),
 ]);
 
 const recurringReservationPayloadSchema = z.discriminatedUnion("campus", [
@@ -243,13 +239,9 @@ export const createReservationSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const reservationMutationSchema = z.object({
-  userId: nonEmptyString,
-});
+export const reservationMutationSchema = z.object({ userId: nonEmptyString });
 
-export const reservationCheckInSchema = reservationMutationSchema.extend({
-  method: roomCheckInMethodSchema.optional(),
-});
+export const reservationCheckInSchema = reservationMutationSchema.extend({ method: roomCheckInMethodSchema.optional() });
 
 export const adminRequestCreateSchema = z.object({
   userId: nonEmptyString,
@@ -262,9 +254,7 @@ export const adminRequestCreateSchema = z.object({
   buildingName: nonEmptyString,
 });
 
-export const adminRequestRespondSchema = z.object({
-  responseText: nonEmptyString,
-});
+export const adminRequestRespondSchema = z.object({ responseText: nonEmptyString });
 
 export const feedbackCreateSchema = z.object({
   roomId: nonEmptyString,
@@ -278,9 +268,7 @@ export const feedbackCreateSchema = z.object({
   rating: z.number().int().min(1).max(5),
 });
 
-export const feedbackRespondSchema = z.object({
-  response: nonEmptyString,
-});
+export const feedbackRespondSchema = z.object({ response: nonEmptyString });
 
 const roomBaseSchema = z.object({
   name: nonEmptyString,
@@ -300,9 +288,7 @@ export const roomInputSchema = z.preprocess(normalizeRoomPayload, roomBaseSchema
 
 export const roomUpdateSchema = z.preprocess(
   normalizeRoomPayload,
-  roomBaseSchema.partial().refine((value) => Object.keys(value).length > 0, {
-    message: "At least one room field must be provided.",
-  })
+  roomBaseSchema.partial().refine((value) => Object.keys(value).length > 0, { message: "At least one room field must be provided." })
 );
 
 export const roomStatusUpdateSchema = z.object({
@@ -335,9 +321,7 @@ export const scheduleInputSchema = z.object({
 
 export const scheduleUpdateSchema = scheduleInputSchema
   .partial()
-  .refine((value) => Object.keys(value).length > 0, {
-    message: "At least one schedule field must be provided.",
-  });
+  .refine((value) => Object.keys(value).length > 0, { message: "At least one schedule field must be provided." });
 
 export const adminApproveSchema = z.object({
   buildingId: z.string().trim().optional(),

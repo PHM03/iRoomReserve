@@ -12,10 +12,22 @@ interface BuildingLike {
 }
 
 export const DIGITAL_CAMPUS_FLOOR_OPTIONS: readonly FloorOption[] = [
-  { label: "Ground Floor", value: "Ground Floor" },
-  { label: "2nd Floor", value: "2nd Floor" },
-  { label: "3rd Floor", value: "3rd Floor" },
-  { label: "4th Floor", value: "4th Floor" },
+  {
+    label: "Ground Floor",
+    value: "Ground Floor"
+  },
+  {
+    label: "2nd Floor",
+    value: "2nd Floor"
+  },
+  {
+    label: "3rd Floor",
+    value: "3rd Floor"
+  },
+  {
+    label: "4th Floor",
+    value: "4th Floor"
+  },
 ];
 
 function formatOrdinalFloor(level: number) {

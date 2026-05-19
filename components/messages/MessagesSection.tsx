@@ -31,11 +31,26 @@ type CustomDateRange = {
 };
 
 const DATE_PRESETS: Array<{ key: DatePreset; label: string }> = [
-  { key: 'thisWeek', label: 'This Week' },
-  { key: 'thisMonth', label: 'This Month' },
-  { key: 'lastMonth', label: 'Last Month' },
-  { key: 'thisYear', label: 'This Year' },
-  { key: 'all', label: 'All' },
+  {
+    key: 'thisWeek',
+    label: 'This Week'
+  },
+  {
+    key: 'thisMonth',
+    label: 'This Month'
+  },
+  {
+    key: 'lastMonth',
+    label: 'Last Month'
+  },
+  {
+    key: 'thisYear',
+    label: 'This Year'
+  },
+  {
+    key: 'all',
+    label: 'All'
+  },
 ];
 
 function getDateRange(preset: DatePreset): { from: number; to: number } {
@@ -45,24 +60,39 @@ function getDateRange(preset: DatePreset): { from: number; to: number } {
       const from = new Date(now);
       from.setDate(from.getDate() - 7);
       from.setHours(0, 0, 0, 0);
-      return { from: from.getTime(), to: now.getTime() };
+      return {
+        from: from.getTime(),
+        to: now.getTime()
+      };
     }
     case 'thisMonth': {
       const from = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { from: from.getTime(), to: now.getTime() };
+      return {
+        from: from.getTime(),
+        to: now.getTime()
+      };
     }
     case 'lastMonth': {
       const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      return { from: from.getTime(), to: to.getTime() };
+      return {
+        from: from.getTime(),
+        to: to.getTime()
+      };
     }
     case 'thisYear': {
       const from = new Date(now.getFullYear(), 0, 1);
-      return { from: from.getTime(), to: now.getTime() };
+      return {
+        from: from.getTime(),
+        to: now.getTime()
+      };
     }
     case 'all':
     default:
-      return { from: 0, to: Infinity };
+      return {
+        from: 0,
+        to: Infinity
+      };
   }
 }
 
@@ -73,7 +103,10 @@ function getCustomDateRange(range: CustomDateRange): { from: number; to: number 
   const toTime = toDate.getTime();
 
   if (Number.isNaN(fromTime) || Number.isNaN(toTime)) {
-    return { from: 0, to: Infinity };
+    return {
+      from: 0,
+      to: Infinity
+    };
   }
 
   return {
@@ -747,7 +780,10 @@ export default function MessagesSection(props: Readonly<MessagesSectionProps>) {
     setInbox((currentInbox) =>
       currentInbox.map((currentMessage) =>
         currentMessage.id === message.id
-          ? { ...currentMessage, isRead: true }
+          ? {
+            ...currentMessage,
+            isRead: true
+          }
           : currentMessage
       )
     );

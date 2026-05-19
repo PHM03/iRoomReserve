@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
 import DashboardLayoutClient from "@/components/layout/DashboardLayoutClient";
 
-export const metadata: Metadata = {
-  title: "iRoomReserve | Dashboard",
+export const metadata: Metadata = { title: "iRoomReserve | Dashboard" }
+
+interface DashboardLayoutProps {
+  children: React.ReactNode;
 }
 
 interface DashboardLayoutProps {
