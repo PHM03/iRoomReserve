@@ -250,9 +250,9 @@ export default function AdminClassSchedulesSection({
                 onChange={(event) => onSchedDayChange(Number(event.target.value))}
                 className="glass-input w-full px-4 py-2.5 text-sm"
               >
-                {DAY_NAMES.map((name, index) => (
-                  <option key={index} value={index}>
-                    {name}
+                {timetableDays.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
                   </option>
                 ))}
               </select>

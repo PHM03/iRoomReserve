@@ -28,6 +28,7 @@ import {
   type UserActiveSlot,
 } from '@/lib/reservations/roomAvailability';
 import { getRoomsByBuilding, type Room } from '@/lib/rooms/rooms';
+import { getSchedulesByRoomId, type Schedule } from '@/lib/schedules/schedules';
 import { formatDate, formatTime } from '@/lib/utils/dateTime';
 import { getFloorDisplayLabel } from '@/lib/buildings/floorLabels';
 
@@ -42,7 +43,18 @@ type RoomFilterKey =
   | 'open-area';
 type AssistantRoomType = '' | 'glass' | 'lecture' | 'lab';
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_OPTIONS = [
+  { label: 'Mon', value: 1 },
+  { label: 'Tue', value: 2 },
+  { label: 'Wed', value: 3 },
+  { label: 'Thu', value: 4 },
+  { label: 'Fri', value: 5 },
+  { label: 'Sat', value: 6 },
+];
+const DAY_LABELS_BY_VALUE = new Map(
+  WEEKDAY_OPTIONS.map((day) => [day.value, day.label])
+);
+const WEEKDAY_VALUES = new Set(WEEKDAY_OPTIONS.map((day) => day.value));
 const CAMPUS_TIME_RANGES: Record<ReservationCampus, { endMinutes: number; startMinutes: number }> = {
   digi: {
     startMinutes: 7 * 60,
@@ -103,6 +115,10 @@ const TIME_CONFLICT_MESSAGE =
   'This room is already reserved for the selected time. Please choose a different time or date.';
 const USER_CONFLICT_MESSAGE =
   'Only one reservation at a time. You already have a booking at another room during this time.';
+const PAST_TIME_MESSAGE =
+  'That timeslot has already started or passed. Please choose a future 1-hour slot.';
+const NO_RECURRING_DATES_MESSAGE =
+  'No reservation dates match the selected recurring schedule. Choose another date range or weekday.';
 
 function timeStringToMinutes(value: string): number {
   const [hours, minutes] = value.split(':').map(Number);
@@ -113,6 +129,13 @@ function minutesToTimeString(value: number): string {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function toLocalIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function formatTimeLabel(value: string): string {
@@ -127,7 +150,7 @@ function getCampusTimeOptions(campus: ReservationCampus | null): string[] {
   const { startMinutes, endMinutes } = CAMPUS_TIME_RANGES[campus];
   const options: string[] = [];
 
-  for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += 60) {
     options.push(minutesToTimeString(minutes));
   }
 
@@ -150,10 +173,49 @@ function isTimeRangeValid(
   return (
     start >= startMinutes &&
     end <= endMinutes &&
-    start % 30 === 0 &&
-    end % 30 === 0 &&
+    start % 60 === 0 &&
+    end % 60 === 0 &&
     end - start >= 60
   );
+}
+
+function isPastTimeSelection(date: string, startTime: string, now: Date): boolean {
+  if (!date || !startTime) {
+    return false;
+  }
+
+  const today = toLocalIsoDate(now);
+  if (date < today) {
+    return true;
+  }
+
+  if (date !== today) {
+    return false;
+  }
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return timeStringToMinutes(startTime) <= nowMinutes;
+}
+
+function formatConflictDates(dates: string[]): string {
+  const visibleDates = dates.slice(0, 3).map(formatDate);
+  const remainingCount = dates.length - visibleDates.length;
+  return `${visibleDates.join(', ')}${
+    remainingCount > 0 ? `, and ${remainingCount} more` : ''
+  }`;
+}
+
+function timeRangesOverlap(
+  startTime: string,
+  endTime: string,
+  rangeStart: string,
+  rangeEnd: string
+): boolean {
+  return startTime < rangeEnd && endTime > rangeStart;
+}
+
+function isSelectableRecurringDay(day: number): boolean {
+  return WEEKDAY_VALUES.has(day);
 }
 
 function getRoomCampus(room: Room): ReservationCampus | null {
@@ -278,7 +340,9 @@ export default function ReserveRoomPage() {
   );
   const [enrichedSlots, setEnrichedSlots] = useState<EnrichedBookingSlot[]>([]);
   const [userActiveSlots, setUserActiveSlots] = useState<UserActiveSlot[]>([]);
+  const [roomSchedules, setRoomSchedules] = useState<Schedule[]>([]);
   const [assistantRequested, setAssistantRequested] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     if (!firebaseUser || !activeBuilding) {
@@ -322,6 +386,11 @@ export default function ReserveRoomPage() {
   }, [firebaseUser, activeBuilding]);
 
   useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     if (!selectedRoomParam) {
       return;
     }
@@ -336,6 +405,34 @@ export default function ReserveRoomPage() {
     return () => {
       cancelled = true;
       unsubscribe();
+    };
+  }, [selectedRoomParam]);
+
+  useEffect(() => {
+    if (!selectedRoomParam) {
+      setRoomSchedules([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    getSchedulesByRoomId(selectedRoomParam)
+      .then((schedules) => {
+        if (!cancelled) {
+          setRoomSchedules(schedules);
+        }
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.warn('Failed to load room schedules for availability checks:', error);
+        setRoomSchedules([]);
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, [selectedRoomParam]);
 
@@ -408,7 +505,10 @@ export default function ReserveRoomPage() {
   const startTimeOptions = selectedCampus
     ? campusTimeOptions.filter((time) => {
         const optionMinutes = timeStringToMinutes(time);
-        return optionMinutes <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes - 60;
+        return (
+          optionMinutes <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes - 60 &&
+          !isPastTimeSelection(reservationDate, time, now)
+        );
       })
     : [];
   const endTimeOptions = selectedCampus
@@ -425,6 +525,7 @@ export default function ReserveRoomPage() {
       })
     : [];
   const selectedTimeConflict =
+    !isRecurring &&
     Boolean(reservationDate) &&
     Boolean(startTime) &&
     Boolean(endTime) &&
@@ -432,6 +533,7 @@ export default function ReserveRoomPage() {
 
   // Cross-room conflict: user already has a booking at this time in another room.
   const selectedUserConflict =
+    !isRecurring &&
     Boolean(reservationDate) &&
     Boolean(startTime) &&
     Boolean(endTime) &&
@@ -442,12 +544,11 @@ export default function ReserveRoomPage() {
         startTime < slot.endTime &&
         endTime > slot.startTime
     );
-
-  useEffect(() => {
-    if (timeError && !selectedTimeConflict && !selectedUserConflict) {
-      setTimeError('');
-    }
-  }, [selectedTimeConflict, selectedUserConflict, timeError]);
+  const selectedPastTimeConflict =
+    !isRecurring &&
+    Boolean(reservationDate) &&
+    Boolean(startTime) &&
+    isPastTimeSelection(reservationDate, startTime, now);
 
   useEffect(() => {
     console.log('[reservation-form] concept paper state updated', {
@@ -498,8 +599,64 @@ export default function ReserveRoomPage() {
 
     return matchesType && matchesAvailability;
   });
+  const selectedRecurringDays = selectedDays.filter(isSelectableRecurringDay);
   const previewDates = isRecurring ? getPreviewDates() : [];
+  const recurringRoomConflictDates =
+    isRecurring && startTime && endTime
+      ? previewDates.filter((date) => hasTimeConflict(date, startTime, endTime, bookedSlots))
+      : [];
+  const recurringScheduleConflictDates =
+    isRecurring && startTime && endTime
+      ? previewDates.filter((date) => {
+          const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+          return roomSchedules.some(
+            (schedule) =>
+              schedule.dayOfWeek === dayOfWeek &&
+              timeRangesOverlap(startTime, endTime, schedule.startTime, schedule.endTime)
+          );
+        })
+      : [];
+  const recurringUserConflictDates =
+    isRecurring && startTime && endTime
+      ? previewDates.filter((date) =>
+          userActiveSlots.some(
+            (slot) =>
+              slot.date === date &&
+              slot.roomId !== selectedRoomId &&
+              startTime < slot.endTime &&
+              endTime > slot.startTime
+          )
+        )
+      : [];
+  const recurringPastTimeDates =
+    isRecurring && startTime
+      ? previewDates.filter((date) => isPastTimeSelection(date, startTime, now))
+      : [];
+  const hasRecurringAvailabilityIssue =
+    recurringRoomConflictDates.length > 0 ||
+    recurringScheduleConflictDates.length > 0 ||
+    recurringUserConflictDates.length > 0 ||
+    recurringPastTimeDates.length > 0;
+  const recurringAvailabilityMessage = getRecurringAvailabilityMessage();
   const canContinueToEquipment = canProceedToEquipment();
+
+  useEffect(() => {
+    if (
+      timeError &&
+      !selectedTimeConflict &&
+      !selectedUserConflict &&
+      !selectedPastTimeConflict &&
+      !recurringAvailabilityMessage
+    ) {
+      setTimeError('');
+    }
+  }, [
+    recurringAvailabilityMessage,
+    selectedPastTimeConflict,
+    selectedTimeConflict,
+    selectedUserConflict,
+    timeError,
+  ]);
 
   function resetReservationDetails() {
     setReservationDate('');
@@ -522,7 +679,7 @@ export default function ReserveRoomPage() {
   }
 
   function getPreviewDates(): string[] {
-    if (!reservationDate || !recurringEndDate || selectedDays.length === 0) {
+    if (!reservationDate || !recurringEndDate || selectedRecurringDays.length === 0) {
       return [];
     }
 
@@ -531,13 +688,50 @@ export default function ReserveRoomPage() {
     const end = new Date(`${recurringEndDate}T00:00:00`);
 
     while (current <= end && dates.length < 20) {
-      if (selectedDays.includes(current.getDay())) {
-        dates.push(current.toISOString().split('T')[0]);
+      const day = current.getDay();
+      if (isSelectableRecurringDay(day) && selectedRecurringDays.includes(day)) {
+        dates.push(toLocalIsoDate(current));
       }
       current.setDate(current.getDate() + 1);
     }
 
     return dates;
+  }
+
+  function getRecurringAvailabilityMessage(): string {
+    if (!isRecurring || !startTime || !endTime) {
+      return '';
+    }
+
+    if (reservationDate && recurringEndDate && selectedRecurringDays.length > 0 && previewDates.length === 0) {
+      return NO_RECURRING_DATES_MESSAGE;
+    }
+
+    if (recurringPastTimeDates.length > 0) {
+      return `The selected recurring range includes a past timeslot on ${formatConflictDates(
+        recurringPastTimeDates
+      )}. Choose a future 1-hour slot.`;
+    }
+
+    if (recurringRoomConflictDates.length > 0) {
+      return `The room is not available for this weekly timeslot on ${formatConflictDates(
+        recurringRoomConflictDates
+      )}. Choose another time or date range.`;
+    }
+
+    if (recurringScheduleConflictDates.length > 0) {
+      return `A class schedule blocks this room during the selected timeslot on ${formatConflictDates(
+        recurringScheduleConflictDates
+      )}. Choose another time or date range.`;
+    }
+
+    if (recurringUserConflictDates.length > 0) {
+      return `You already have another active reservation during this timeslot on ${formatConflictDates(
+        recurringUserConflictDates
+      )}.`;
+    }
+
+    return '';
   }
 
   function canProceedToEquipment(): boolean {
@@ -552,17 +746,27 @@ export default function ReserveRoomPage() {
     }
 
     if (isRecurring) {
-      return !!reservationDate && !!recurringEndDate && selectedDays.length > 0;
+      return (
+        !!reservationDate &&
+        !!recurringEndDate &&
+        selectedRecurringDays.length > 0 &&
+        previewDates.length > 0 &&
+        !hasRecurringAvailabilityIssue
+      );
     }
 
     if (!reservationDate) {
       return false;
     }
 
-    return !selectedTimeConflict && !selectedUserConflict;
+    return !selectedTimeConflict && !selectedUserConflict && !selectedPastTimeConflict;
   }
 
   function toggleDay(day: number) {
+    if (!isSelectableRecurringDay(day)) {
+      return;
+    }
+
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((value) => value !== day) : [...prev, day]
     );
@@ -682,6 +886,7 @@ export default function ReserveRoomPage() {
       setBookedSlots([]);
       setBookedSlotsLoading(true);
       setEnrichedSlots([]);
+      setRoomSchedules([]);
     }
 
     setDetailsStep(2);
@@ -715,22 +920,39 @@ export default function ReserveRoomPage() {
       return;
     }
 
-    if (hasTimeConflict(reservationDate, startTime, endTime, bookedSlots)) {
-      setTimeError(TIME_CONFLICT_MESSAGE);
-      return;
+    if (isRecurring) {
+      if (recurringAvailabilityMessage) {
+        setTimeError(recurringAvailabilityMessage);
+        return;
+      }
+    } else {
+      if (isPastTimeSelection(reservationDate, startTime, now)) {
+        setTimeError(PAST_TIME_MESSAGE);
+        return;
+      }
+
+      if (hasTimeConflict(reservationDate, startTime, endTime, bookedSlots)) {
+        setTimeError(TIME_CONFLICT_MESSAGE);
+        return;
+      }
+
+      // Cross-room conflict: block if user already has a reservation at this time.
+      if (
+        userActiveSlots.some(
+          (slot) =>
+            slot.date === reservationDate &&
+            slot.roomId !== selectedRoomId &&
+            startTime < slot.endTime &&
+            endTime > slot.startTime
+        )
+      ) {
+        setTimeError(USER_CONFLICT_MESSAGE);
+        return;
+      }
     }
 
-    // Cross-room conflict: block if user already has a reservation at this time.
-    if (
-      userActiveSlots.some(
-        (slot) =>
-          slot.date === reservationDate &&
-          slot.roomId !== selectedRoomId &&
-          startTime < slot.endTime &&
-          endTime > slot.startTime
-      )
-    ) {
-      setTimeError(USER_CONFLICT_MESSAGE);
+    if (isRecurring && previewDates.length === 0) {
+      setTimeError(NO_RECURRING_DATES_MESSAGE);
       return;
     }
 
@@ -814,10 +1036,10 @@ export default function ReserveRoomPage() {
           campus: 'main' as const,
         };
 
-        if (isRecurring && selectedDays.length > 0 && recurringEndDate) {
+        if (isRecurring && selectedRecurringDays.length > 0 && recurringEndDate) {
           const ids = await createRecurringReservation(
             reservationData,
-            selectedDays,
+            selectedRecurringDays,
             reservationDate,
             recurringEndDate
           );
@@ -835,10 +1057,10 @@ export default function ReserveRoomPage() {
           campus: 'digi' as const,
         };
 
-        if (isRecurring && selectedDays.length > 0 && recurringEndDate) {
+        if (isRecurring && selectedRecurringDays.length > 0 && recurringEndDate) {
           const ids = await createRecurringReservation(
             reservationData,
-            selectedDays,
+            selectedRecurringDays,
             reservationDate,
             recurringEndDate
           );
@@ -1290,6 +1512,32 @@ export default function ReserveRoomPage() {
                       {getRoomAvailability(selectedRoom)}
                     </span>
                   </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="rounded-xl border border-dark/10 bg-white/70 p-3">
+                      <p className="text-[10px] font-bold uppercase text-black/55">Capacity</p>
+                      <p className="mt-1 text-sm font-bold text-black">
+                        {selectedRoom.capacity} people
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-dark/10 bg-white/70 p-3">
+                      <p className="text-[10px] font-bold uppercase text-black/55">Air Conditioning</p>
+                      <p className="mt-1 text-sm font-bold text-black">
+                        {selectedRoom.acStatus || 'Not specified'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-dark/10 bg-white/70 p-3">
+                      <p className="text-[10px] font-bold uppercase text-black/55">Category</p>
+                      <p className="mt-1 text-sm font-bold text-black">
+                        {selectedRoom.roomType || 'Room'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-dark/10 bg-white/70 p-3">
+                      <p className="text-[10px] font-bold uppercase text-black/55">TV/Projector</p>
+                      <p className="mt-1 text-sm font-bold text-black">
+                        {selectedRoom.tvProjectorStatus || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -1327,19 +1575,19 @@ export default function ReserveRoomPage() {
                         <label className="mb-2 block text-sm font-bold text-black">
                           Select Days of the Week
                         </label>
-                        <div className="flex gap-2">
-                          {DAY_LABELS.map((label, index) => (
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                          {WEEKDAY_OPTIONS.map((day) => (
                             <button
-                              key={label}
+                              key={day.value}
                               type="button"
-                              onClick={() => toggleDay(index)}
+                              onClick={() => toggleDay(day.value)}
                               className={`flex-1 rounded-xl py-2.5 text-xs font-bold transition-all ${
-                                selectedDays.includes(index)
+                                selectedDays.includes(day.value)
                                   ? 'border border-primary/30 bg-primary/20 text-primary'
                                   : 'border border-dark/10 bg-dark/5 text-black hover:bg-primary/10 hover:text-primary'
                               }`}
                             >
-                              {label}
+                              {day.label}
                             </button>
                           ))}
                         </div>
@@ -1355,7 +1603,7 @@ export default function ReserveRoomPage() {
                             value={reservationDate}
                             onChange={(event) => setReservationDate(event.target.value)}
                             className="glass-input w-full px-4 py-3"
-                            min={new Date().toISOString().split('T')[0]}
+                            min={toLocalIsoDate(now)}
                           />
                         </div>
                         <div>
@@ -1367,7 +1615,7 @@ export default function ReserveRoomPage() {
                             value={recurringEndDate}
                             onChange={(event) => setRecurringEndDate(event.target.value)}
                             className="glass-input w-full px-4 py-3"
-                            min={reservationDate || new Date().toISOString().split('T')[0]}
+                            min={reservationDate || toLocalIsoDate(now)}
                           />
                         </div>
                       </div>
@@ -1396,6 +1644,11 @@ export default function ReserveRoomPage() {
                             )}
                           </div>
                         </div>
+                      )}
+                      {recurringAvailabilityMessage && (
+                        <p className="text-xs font-bold ui-text-red">
+                          {recurringAvailabilityMessage}
+                        </p>
                       )}
                     </>
                   ) : (
@@ -1440,16 +1693,25 @@ export default function ReserveRoomPage() {
                               currentUserId={firebaseUser.uid}
                               currentRoomId={selectedRoomId}
                               campusTimeRange={CAMPUS_TIME_RANGES[selectedCampus]}
-                              onSelectSlot={(slotStart) => {
-                                setStartTime(slotStart);
+                              selectedStartTime={startTime}
+                              selectedEndTime={endTime}
+                              onSelectSlot={(slotStart, slotEnd) => {
                                 const slotStartMins = timeStringToMinutes(slotStart);
-                                const currentEndMins = endTime ? timeStringToMinutes(endTime) : 0;
-                                if (!endTime || currentEndMins <= slotStartMins) {
-                                  const minEndMins = slotStartMins + 60;
-                                  if (minEndMins <= CAMPUS_TIME_RANGES[selectedCampus].endMinutes) {
-                                    setEndTime(minutesToTimeString(minEndMins));
-                                  }
+                                const slotEndMins = timeStringToMinutes(slotEnd);
+
+                                if (!startTime || !endTime) {
+                                  setStartTime(slotStart);
+                                  setEndTime(slotEnd);
+                                  return;
                                 }
+
+                                const currentStartMins = timeStringToMinutes(startTime);
+                                const currentEndMins = timeStringToMinutes(endTime);
+                                const nextStartMins = Math.min(currentStartMins, slotStartMins);
+                                const nextEndMins = Math.max(currentEndMins, slotEndMins);
+
+                                setStartTime(minutesToTimeString(nextStartMins));
+                                setEndTime(minutesToTimeString(nextEndMins));
                               }}
                               onRequestAlternatives={() => {
                                 setAssistantRequested(true);
@@ -1459,9 +1721,10 @@ export default function ReserveRoomPage() {
                         )}
                       </div>
                       {(timeError ||
+                        (reservationDate && startTime && selectedPastTimeConflict) ||
                         (reservationDate && startTime && endTime && selectedTimeConflict)) && (
                         <p className="mt-2 text-xs font-bold ui-text-red">
-                          {timeError || TIME_CONFLICT_MESSAGE}
+                          {timeError || (selectedPastTimeConflict ? PAST_TIME_MESSAGE : TIME_CONFLICT_MESSAGE)}
                         </p>
                       )}
                       {reservationDate && startTime && endTime && selectedUserConflict && !selectedTimeConflict && (
@@ -1519,9 +1782,9 @@ export default function ReserveRoomPage() {
 
                   <p className="text-[11px] text-black">
                     {selectedCampus === 'digi'
-                      ? 'Digital Campus reservations can be booked from 7:00 AM to 5:00 PM in 30-minute intervals, with at least 1 hour between start and end time.'
+                      ? 'Digital Campus reservations can be booked from 7:00 AM to 5:00 PM in 1-hour intervals.'
                       : selectedCampus === 'main'
-                        ? 'Main Campus reservations can be booked from 7:00 AM to 9:00 PM in 30-minute intervals, with at least 1 hour between start and end time.'
+                        ? 'Main Campus reservations can be booked from 7:00 AM to 9:00 PM in 1-hour intervals.'
                         : 'Choose a room to load the allowed reservation hours.'}
                   </p>
 
@@ -1598,7 +1861,7 @@ export default function ReserveRoomPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15" />
                       </svg>
                       <span className="text-xs font-bold text-primary">
-                        Recurring: {previewDates.length} reservations ({selectedDays.map((day) => DAY_LABELS[day]).join(', ')})
+                        Recurring: {previewDates.length} reservations ({selectedRecurringDays.map((day) => DAY_LABELS_BY_VALUE.get(day) ?? `Day ${day}`).join(', ')})
                       </span>
                     </div>
                   </div>

@@ -163,7 +163,8 @@ function getDatesForDays(
   const end = new Date(`${endDate}T00:00:00`);
 
   while (current <= end) {
-    if (selectedDays.includes(current.getDay())) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && selectedDays.includes(dayOfWeek)) {
       dates.push(getLocalDateString(current));
     }
     current.setDate(current.getDate() + 1);
@@ -921,6 +922,7 @@ export async function createRecurringReservationRecord(
     });
 
     const dayNames = selectedDays
+      .filter((day) => day >= 1 && day <= 6)
       .map((day) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day])
       .join(", ");
 

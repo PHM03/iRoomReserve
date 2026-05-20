@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { formatTime } from '@/lib/utils/dateTime';
 import type { EnrichedBookingSlot, UserActiveSlot } from '@/lib/reservations/roomAvailability';
@@ -9,6 +9,7 @@ import type { EnrichedBookingSlot, UserActiveSlot } from '@/lib/reservations/roo
 
 type SlotStatus =
   | 'available'
+  | 'past'
   | 'reserved-others'
   | 'pending-others'
   | 'user-conflict';
@@ -34,6 +35,9 @@ interface DaySchedulePanelProps {
   currentRoomId: string;
   /** Campus operating hours. */
   campusTimeRange: { startMinutes: number; endMinutes: number };
+  /** Current selected reservation range, used to highlight multiple slots. */
+  selectedStartTime?: string;
+  selectedEndTime?: string;
   /** Called when user clicks an available slot to pre-fill start/end time. */
   onSelectSlot: (startTime: string, endTime: string) => void;
   /** Called when user wants to see alternative rooms (from a reserved slot). */
@@ -46,6 +50,13 @@ function minutesToTimeString(value: number): string {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function toLocalIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function slotsOverlap(
@@ -66,18 +77,28 @@ export default function DaySchedulePanel({
   currentUserId,
   currentRoomId,
   campusTimeRange,
+  selectedStartTime = '',
+  selectedEndTime = '',
   onSelectSlot,
   onRequestAlternatives,
 }: Readonly<DaySchedulePanelProps>) {
+  const [now, setNow] = useState(() => new Date());
   const [toast, setToast] = useState<{
     message: string;
     type: 'info' | 'warning' | 'error';
   } | null>(null);
 
-  // Build 30-minute slot grid for the selected date
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  // Build 1-hour slot grid for the selected date.
   const timeSlots = useMemo<TimeSlot[]>(() => {
     const slots: TimeSlot[] = [];
     const { startMinutes, endMinutes } = campusTimeRange;
+    const isToday = date === toLocalIsoDate(now);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     // Filter to only this date's data
     const roomSlotsForDate = roomEnrichedSlots.filter(
@@ -87,9 +108,18 @@ export default function DaySchedulePanel({
       (s) => s.date === date
     );
 
-    for (let mins = startMinutes; mins < endMinutes; mins += 30) {
+    for (let mins = startMinutes; mins < endMinutes; mins += 60) {
       const slotStart = minutesToTimeString(mins);
-      const slotEnd = minutesToTimeString(mins + 30);
+      const slotEnd = minutesToTimeString(mins + 60);
+
+      if (isToday && mins <= nowMinutes) {
+        slots.push({
+          startTime: slotStart,
+          endTime: slotEnd,
+          status: 'past',
+        });
+        continue;
+      }
 
       // 1. Check if this slot overlaps an approved reservation by ANOTHER user on THIS room
       const roomApprovedConflict = roomSlotsForDate.find(
@@ -156,6 +186,7 @@ export default function DaySchedulePanel({
     currentRoomId,
     currentUserId,
     date,
+    now,
     roomEnrichedSlots,
     userActiveSlots,
   ]);
@@ -164,6 +195,9 @@ export default function DaySchedulePanel({
     switch (slot.status) {
       case 'available':
         onSelectSlot(slot.startTime, slot.endTime);
+        break;
+
+      case 'past':
         break;
 
       case 'reserved-others':
@@ -195,19 +229,30 @@ export default function DaySchedulePanel({
     setToast(null);
   }
 
-  function getSlotClasses(status: SlotStatus): string {
+  function isSlotSelected(slot: TimeSlot): boolean {
+    return Boolean(
+      selectedStartTime &&
+        selectedEndTime &&
+        slotsOverlap(slot.startTime, slot.endTime, selectedStartTime, selectedEndTime)
+    );
+  }
+
+  function getSlotClasses(status: SlotStatus, selected: boolean): string {
     const base =
-      'schedule-slot flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-all cursor-pointer';
+      'schedule-slot flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-all';
+    const selectedClass = selected ? ' schedule-slot-selected' : '';
 
     switch (status) {
       case 'available':
-        return `${base} schedule-slot-available`;
+        return `${base} cursor-pointer schedule-slot-available${selectedClass}`;
+      case 'past':
+        return `${base} cursor-not-allowed schedule-slot-unavailable${selectedClass}`;
       case 'reserved-others':
-        return `${base} schedule-slot-reserved`;
+        return `${base} cursor-pointer schedule-slot-reserved${selectedClass}`;
       case 'user-conflict':
-        return `${base} schedule-slot-conflict`;
+        return `${base} cursor-pointer schedule-slot-conflict${selectedClass}`;
       case 'pending-others':
-        return `${base} schedule-slot-pending`;
+        return `${base} cursor-pointer schedule-slot-pending${selectedClass}`;
       default:
         return base;
     }
@@ -228,6 +273,22 @@ export default function DaySchedulePanel({
               strokeLinejoin="round"
               strokeWidth={2.5}
               d="M5 13l4 4L19 7"
+            />
+          </svg>
+        );
+      case 'past':
+        return (
+          <svg
+            className="h-3.5 w-3.5 shrink-0 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M12 6v6l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
             />
           </svg>
         );
@@ -286,8 +347,10 @@ export default function DaySchedulePanel({
     switch (status) {
       case 'available':
         return 'Available';
+      case 'past':
+        return 'Unavailable';
       case 'reserved-others':
-        return 'Reserved';
+        return 'Reserved/Unavailable';
       case 'user-conflict':
         return 'Your conflict';
       case 'pending-others':
@@ -324,7 +387,7 @@ export default function DaySchedulePanel({
           </p>
         </div>
         <span className="inline-flex items-center rounded-full border border-dark/10 bg-dark/5 px-2.5 py-1 text-[10px] font-bold text-black/60">
-          30-min slots
+          1-hour slots
         </span>
       </div>
 
@@ -336,7 +399,15 @@ export default function DaySchedulePanel({
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-red-100 border border-red-300/60" />
-          Reserved
+          Reserved/Unavailable
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gray-100 border border-gray-300/70" />
+          Past
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-primary/15 border border-primary/45" />
+          Selected
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-amber-100 border border-amber-300/60" />
@@ -345,23 +416,31 @@ export default function DaySchedulePanel({
       </div>
 
       {/* Slot Grid */}
-      <div className="schedule-panel-scroll max-h-[22rem] space-y-1.5 overflow-y-auto pr-1">
-        {timeSlots.map((slot) => (
-          <button
-            key={slot.startTime}
-            type="button"
-            onClick={() => handleSlotClick(slot)}
-            className={getSlotClasses(slot.status)}
-          >
-            {getStatusIcon(slot.status)}
-            <span className="min-w-[5.5rem] text-left">
+      <div className="schedule-panel-scroll grid max-h-[22rem] grid-cols-1 gap-2 overflow-y-auto pr-1">
+        {timeSlots.map((slot) => {
+          const selected = isSlotSelected(slot);
+
+          return (
+            <button
+              key={slot.startTime}
+              type="button"
+              onClick={() => handleSlotClick(slot)}
+              disabled={slot.status === 'past'}
+              aria-pressed={selected}
+              className={getSlotClasses(slot.status, selected)}
+            >
+              {getStatusIcon(slot.status)}
+              <span className="min-w-[7.75rem] text-left">
               {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
-            </span>
-            <span className="ml-auto text-[10px] opacity-70">
-              {getStatusLabel(slot.status)}
-            </span>
-          </button>
-        ))}
+              </span>
+              <span className="ml-auto text-right text-[10px] opacity-80">
+                {selected && slot.status === 'available'
+                  ? 'Selected'
+                  : getStatusLabel(slot.status)}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Toast / Action Prompt */}

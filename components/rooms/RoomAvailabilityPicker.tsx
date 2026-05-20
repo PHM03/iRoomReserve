@@ -58,7 +58,7 @@ export default function RoomAvailabilityPicker({
     () =>
       Array.from(new Set(bookedSlots.map((slot) => slot.date)))
         .map((isoDate) => fromIsoDateString(isoDate))
-        .filter((date): date is Date => Boolean(date)),
+        .filter((date): date is Date => date !== undefined && date.getDay() !== 0),
     [bookedSlots]
   );
 
@@ -76,7 +76,9 @@ export default function RoomAvailabilityPicker({
   const selectedDate = fromIsoDateString(value);
 
   const disabledMatcher = useMemo(() => {
-    const matchers: Array<Date | { before: Date } | { after: Date }> = [{ before: minSelectable }];
+    const matchers: Array<
+      Date | { before: Date } | { after: Date } | { dayOfWeek: number[] }
+    > = [{ before: minSelectable }, { dayOfWeek: [0] }];
 
     if (maxDate) {
       matchers.push({ after: maxDate });
@@ -97,9 +99,11 @@ export default function RoomAvailabilityPicker({
           selected={selectedDate}
           onSelect={(nextDate) => {
             if (disabled) return;
+            if (nextDate?.getDay() === 0) return;
             onChange(nextDate ? toIsoDateString(nextDate) : '');
           }}
           disabled={disabled ? () => true : disabledMatcher}
+          hidden={{ dayOfWeek: [0] }}
           modifiers={{ partiallyBooked: partiallyBookedDateObjects }}
           modifiersClassNames={{
             partiallyBooked: 'rdp-partially-booked-day',
@@ -107,6 +111,7 @@ export default function RoomAvailabilityPicker({
           }}
           showOutsideDays
           fixedWeeks
+          weekStartsOn={1}
         />
 
         {loading && (
@@ -125,14 +130,31 @@ export default function RoomAvailabilityPicker({
             --rdp-accent-color: #a12124;
             --rdp-accent-background-color: rgba(161, 33, 36, 0.12);
             --rdp-day-height: 2.4rem;
-            --rdp-day-width: 2.4rem;
+            --rdp-day-width: 16.666%;
             font-family: inherit;
             color: #1f2937;
+          }
+          .rdp-months,
+          .rdp-month,
+          .rdp-month_grid {
+            width: 100%;
+          }
+          .rdp-month_grid {
+            table-layout: fixed;
+          }
+          .rdp-weekday:last-child,
+          .rdp-week .rdp-day:last-child {
+            display: none;
+          }
+          .rdp-weekday {
+            width: 16.666%;
           }
           .rdp-day_button {
             position: relative;
             border-radius: 0.6rem;
             font-weight: 600;
+            width: 2.25rem;
+            max-width: 100%;
           }
           .rdp-day_button:not([disabled]):not(.rdp-selected-day):hover {
             background-color: rgba(34, 197, 94, 0.18);
