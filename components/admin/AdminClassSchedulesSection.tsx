@@ -9,10 +9,10 @@ import { DAY_NAMES, formatTime12h } from '@/lib/schedules/schedules';
 import { getCampusTimeRule, validateScheduleTimes } from '@/lib/schedules/scheduleTimeRules';
 
 // ---------------------------------------------------------------------------
-// TimeSelect – a minimal hour + minute picker where minutes are 00 or 30 only
+// TimeSelect - a minimal hour picker locked to whole-hour intervals
 // ---------------------------------------------------------------------------
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = [0, 30];
+const MINUTES = [0];
 
 function pad2(n: number) {
   return String(n).padStart(2, '0');

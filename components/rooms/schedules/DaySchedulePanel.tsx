@@ -97,7 +97,9 @@ export default function DaySchedulePanel({
   const timeSlots = useMemo<TimeSlot[]>(() => {
     const slots: TimeSlot[] = [];
     const { startMinutes, endMinutes } = campusTimeRange;
-    const isToday = date === toLocalIsoDate(now);
+    const today = toLocalIsoDate(now);
+    const isBeforeToday = date < today;
+    const isToday = date === today;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     // Filter to only this date's data
@@ -112,7 +114,7 @@ export default function DaySchedulePanel({
       const slotStart = minutesToTimeString(mins);
       const slotEnd = minutesToTimeString(mins + 60);
 
-      if (isToday && mins <= nowMinutes) {
+      if (isBeforeToday || (isToday && mins <= nowMinutes)) {
         slots.push({
           startTime: slotStart,
           endTime: slotEnd,
@@ -239,7 +241,7 @@ export default function DaySchedulePanel({
 
   function getSlotClasses(status: SlotStatus, selected: boolean): string {
     const base =
-      'schedule-slot flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-all';
+      'schedule-slot flex h-14 w-full items-center gap-3 rounded-xl px-3 text-xs font-bold transition-all';
     const selectedClass = selected ? ' schedule-slot-selected' : '';
 
     switch (status) {
@@ -430,10 +432,10 @@ export default function DaySchedulePanel({
               className={getSlotClasses(slot.status, selected)}
             >
               {getStatusIcon(slot.status)}
-              <span className="min-w-[7.75rem] text-left">
+              <span className="min-w-[6.75rem] text-left">
               {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
               </span>
-              <span className="ml-auto text-right text-[10px] opacity-80">
+              <span className="ml-auto w-[6.8rem] shrink-0 text-right text-[10px] opacity-80">
                 {selected && slot.status === 'available'
                   ? 'Selected'
                   : getStatusLabel(slot.status)}

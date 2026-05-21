@@ -480,6 +480,10 @@ select option {
   width: 100%;
 }
 
+.schedule-slot:disabled {
+  pointer-events: none;
+}
+
 .schedule-slot-available {
   background: rgba(255, 255, 255, 0.92);
   color: #166534;

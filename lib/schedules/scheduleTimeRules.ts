@@ -46,7 +46,7 @@ export function timeToMinutes(time: string): number {
 
 /**
  * Returns true if the given "HH:mm" time falls within [startHour, endHour] (inclusive hours).
- * A time of e.g. "19:30" with endHour=19 is considered OUT of range
+ * A time of e.g. "20:00" with endHour=19 is considered OUT of range
  * because only full hours on the boundary are allowed (19:00 is last valid start).
  */
 export function isTimeInRange(time: string, rule: CampusTimeRule): boolean {

@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import MyReservationTimetable from '@/components/rooms/schedules/MyReservationTimetable';
-import Toast from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
 import {
   onReservationsByUser,
   Reservation,
 } from '@/lib/reservations/reservations';
-import { useBluetoothReservationCheckIn } from '@/hooks/useBluetoothReservationCheckIn';
 import { onRoomsByIds, Room } from '@/lib/rooms/rooms';
 import StatusBadge from '@/components/ui/StatusBadge';
 import {
@@ -30,15 +28,6 @@ export default function MemberDashboard({
 }: Readonly<MemberDashboardProps>) {
   const { firebaseUser } = useAuth();
   const uid = firebaseUser?.uid;
-  const {
-    checkInWithBluetooth,
-    dismissToast,
-    getConnectionStatus,
-    loadingReservationId,
-    showToast,
-    toastMessage,
-    toastType,
-  } = useBluetoothReservationCheckIn();
   const [reservationHistory, setReservationHistory] = useState<Reservation[]>([]);
   const todayStr = new Date().toISOString().split('T')[0];
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -83,32 +72,13 @@ export default function MemberDashboard({
   const roomLookup = Object.fromEntries(
     rooms.map((room) => [room.id, room] as const)
   ) as Record<string, Room | undefined>;
-  const getBluetoothConnectionStatus = (reservation: Reservation) => {
-    const room = roomLookup[reservation.roomId];
-    const localStatus = getConnectionStatus(reservation.id);
-
-    if (localStatus === 'connecting') {
-      return 'Connecting...';
-    }
-
-    if (localStatus === 'connected') {
-      return 'Connected';
-    }
-
-    if (!room?.beaconId && reservation.checkInMethod !== 'bluetooth') {
-      return null;
-    }
-
-    return room?.beaconConnected ? 'Connected' : 'Disconnected';
-  };
-
   const getRoomStatus = (reservation: Reservation) =>
     getReservationRoomStatus(reservation, roomLookup[reservation.roomId]);
   const canCheckIn = (reservation: Reservation) =>
     canReservationCheckIn(reservation) &&
     getRoomStatus(reservation) !== 'Unavailable';
-  const shouldShowBluetoothAction = (reservation: Reservation) =>
-    getConnectionStatus(reservation.id) === 'connecting' || canCheckIn(reservation);
+  const shouldShowMobileAppStartLabel = (reservation: Reservation) =>
+    canCheckIn(reservation);
 
   const pendingCount = reservationHistory.filter(
     (reservation) => reservation.status === 'pending'
@@ -130,13 +100,6 @@ export default function MemberDashboard({
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-[100px] relative z-10 pb-24 md:pb-8">
-      <Toast
-        message={toastMessage}
-        type={toastType}
-        show={showToast}
-        onClose={dismissToast}
-      />
-
       <div className="mb-8 flex items-start justify-between">
         <div className="bg-white rounded-xl px-6 py-4 border border-white/30">
           <h2 className="text-2xl font-bold text-gray-800">
@@ -180,20 +143,11 @@ export default function MemberDashboard({
           </div>
           {activeReservation ? (
             <>
-              {(() => {
-                const bluetoothConnectionStatus =
-                  getBluetoothConnectionStatus(activeReservation);
-
-                return (
-                  <>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-bold text-black">
                   {activeReservation.roomName}
                 </h3>
                 <StatusBadge status={getRoomStatus(activeReservation)} />
-                {bluetoothConnectionStatus ? (
-                  <StatusBadge status={bluetoothConnectionStatus} />
-                ) : null}
               </div>
               <p className="text-xs text-black mt-2">
                 {activeReservation.buildingName}
@@ -203,27 +157,12 @@ export default function MemberDashboard({
               </p>
               <div className="flex items-center gap-2 flex-wrap mt-3">
                 <StatusBadge status={activeReservation.status} />
-                {shouldShowBluetoothAction(activeReservation) && (
-                  <button
-                    onClick={() =>
-                      checkInWithBluetooth({
-                        reservation: activeReservation,
-                        room: roomLookup[activeReservation.roomId],
-                        userId: firebaseUser?.uid ?? '',
-                      })
-                    }
-                    disabled={loadingReservationId === activeReservation.id}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold ui-button-orange disabled:opacity-50"
-                  >
-                    {loadingReservationId === activeReservation.id
-                      ? 'Connecting...'
-                      : 'Check In via Bluetooth'}
-                  </button>
+                {shouldShowMobileAppStartLabel(activeReservation) && (
+                  <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800">
+                    Start Reservation through Mobile App
+                  </span>
                 )}
               </div>
-                  </>
-                );
-              })()}
             </>
           ) : (
             <div className="text-center py-2">
@@ -305,12 +244,6 @@ export default function MemberDashboard({
                 key={reservation.id}
                 className="bg-white border border-gray-200 shadow-sm rounded-xl p-5"
               >
-                {(() => {
-                  const bluetoothConnectionStatus =
-                    getBluetoothConnectionStatus(reservation);
-
-                  return (
-                    <>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <h4 className="text-sm font-bold text-black">
                     {reservation.roomName}
@@ -319,25 +252,10 @@ export default function MemberDashboard({
                 </div>
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <StatusBadge status={reservation.status} />
-                  {bluetoothConnectionStatus ? (
-                    <StatusBadge status={bluetoothConnectionStatus} />
-                  ) : null}
-                  {shouldShowBluetoothAction(reservation) && (
-                    <button
-                      onClick={() =>
-                        checkInWithBluetooth({
-                          reservation,
-                          room: roomLookup[reservation.roomId],
-                          userId: firebaseUser?.uid ?? '',
-                        })
-                      }
-                      disabled={loadingReservationId === reservation.id}
-                      className="px-3 py-1 rounded-lg text-[11px] font-bold ui-button-orange disabled:opacity-50"
-                    >
-                      {loadingReservationId === reservation.id
-                        ? 'Connecting...'
-                        : 'Check In via Bluetooth'}
-                    </button>
+                  {shouldShowMobileAppStartLabel(reservation) && (
+                    <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-800">
+                      Start Reservation through Mobile App
+                    </span>
                   )}
                 </div>
                 <p className="text-xs text-black">{reservation.buildingName}</p>
@@ -375,9 +293,6 @@ export default function MemberDashboard({
                     {formatTimeRange(reservation.startTime, reservation.endTime)}
                   </span>
                 </div>
-                    </>
-                  );
-                })()}
               </div>
             ))}
           </div>

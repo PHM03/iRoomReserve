@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 
-import BleStatus from '@/components/ble/BleStatus';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
 import { onRoomsByIds, Room } from '@/lib/rooms/rooms';
@@ -12,7 +11,7 @@ import {
   onReservationsByUser,
   Reservation,
 } from '@/lib/reservations/reservations';
-import { getReservationRoomStatus } from '@/lib/rooms/roomStatus';
+import { canReservationCheckIn, getReservationRoomStatus } from '@/lib/rooms/roomStatus';
 import { formatDate, formatTimeRange } from '@/lib/utils/dateTime';
 
 type FilterTab = 'pending' | 'approved' | 'rejected' | 'completed' | 'all';
@@ -68,10 +67,14 @@ export default function MyReservationsPage() {
 
   // Re-read localStorage when the user changes (login/logout).
   useEffect(() => {
-    setLastSeenPendingCount(readLsNumber(lsKeyPending));
-    setLastSeenApprovedCount(readLsNumber(lsKeyApproved));
-    setLastSeenRejectedCount(readLsNumber(lsKeyRejected));
-    setLastSeenCompletedCount(readLsNumber(lsKeyCompleted));
+    const timeoutId = window.setTimeout(() => {
+      setLastSeenPendingCount(readLsNumber(lsKeyPending));
+      setLastSeenApprovedCount(readLsNumber(lsKeyApproved));
+      setLastSeenRejectedCount(readLsNumber(lsKeyRejected));
+      setLastSeenCompletedCount(readLsNumber(lsKeyCompleted));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [lsKeyPending, lsKeyApproved, lsKeyRejected, lsKeyCompleted]);
 
   const currentYear = new Date().getFullYear();
@@ -394,6 +397,8 @@ export default function MyReservationsPage() {
           filteredReservations.map((reservation) => {
             const room = roomLookup[reservation.roomId];
             const roomStatus = getReservationRoomStatus(reservation, room);
+            const showMobileAppStartLabel =
+              canReservationCheckIn(reservation) && roomStatus !== 'Unavailable';
 
             return (
               <div
@@ -454,7 +459,13 @@ export default function MyReservationsPage() {
                       )}
                     </div>
                   </div>
-                  <BleStatus reservation={reservation} room={room} />
+                  {showMobileAppStartLabel ? (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                      <span className="inline-flex items-center rounded-lg border border-blue-200 bg-white/70 px-3 py-1.5 text-xs font-bold text-blue-800">
+                        Start Reservation through Mobile App
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

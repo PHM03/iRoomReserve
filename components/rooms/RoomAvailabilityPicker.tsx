@@ -153,7 +153,8 @@ export default function RoomAvailabilityPicker({
             position: relative;
             border-radius: 0.6rem;
             font-weight: 600;
-            width: 2.25rem;
+            width: 100%;
+            height: 2.4rem;
             max-width: 100%;
           }
           .rdp-day_button:not([disabled]):not(.rdp-selected-day):hover {

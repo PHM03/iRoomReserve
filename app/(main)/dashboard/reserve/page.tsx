@@ -687,7 +687,7 @@ export default function ReserveRoomPage() {
     const current = new Date(`${reservationDate}T00:00:00`);
     const end = new Date(`${recurringEndDate}T00:00:00`);
 
-    while (current <= end && dates.length < 20) {
+    while (current <= end) {
       const day = current.getDay();
       if (isSelectableRecurringDay(day) && selectedRecurringDays.includes(day)) {
         dates.push(toLocalIsoDate(current));
@@ -1631,7 +1631,7 @@ export default function ReserveRoomPage() {
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {previewDates.map((date) => (
+                            {previewDates.slice(0, 20).map((date) => (
                               <span
                                 key={date}
                                 className="rounded-lg border border-dark/10 bg-dark/5 px-2 py-0.5 text-[10px] font-bold text-black"
@@ -1639,8 +1639,10 @@ export default function ReserveRoomPage() {
                                 {formatDate(date)}
                               </span>
                             ))}
-                            {previewDates.length >= 20 && (
-                              <span className="px-2 py-0.5 text-[10px] font-bold text-black">...and more</span>
+                            {previewDates.length > 20 && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold text-black">
+                                ...and {previewDates.length - 20} more
+                              </span>
                             )}
                           </div>
                         </div>

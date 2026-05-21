@@ -45,6 +45,20 @@ const TIMETABLE_DAYS = [
   },
 ] as const;
 
+function getOrderedTimetableDays(referenceDate = new Date()) {
+  const todayValue = referenceDate.getDay();
+  const startIndex = TIMETABLE_DAYS.findIndex((day) => day.value === todayValue);
+
+  if (startIndex < 0) {
+    return TIMETABLE_DAYS;
+  }
+
+  return [
+    ...TIMETABLE_DAYS.slice(startIndex),
+    ...TIMETABLE_DAYS.slice(0, startIndex),
+  ];
+}
+
 function getReservationDates(reservation: Reservation) {
   const dates = reservation.dates?.length ? reservation.dates : [reservation.date];
   return [...new Set(dates.filter(Boolean))];
@@ -124,6 +138,7 @@ export default function MyReservationTimetable({
   reservations,
 }: Readonly<MyReservationTimetableProps>) {
   const entriesByDay = buildEntriesByDay(reservations, currentUserId);
+  const orderedTimetableDays = getOrderedTimetableDays();
 
   if (compact) {
     if (compactVariant === 'today') {
@@ -196,7 +211,7 @@ export default function MyReservationTimetable({
 
         <div className="glass-card !rounded-xl p-2">
           <div className="grid grid-cols-6 gap-2">
-            {TIMETABLE_DAYS.map((day) => {
+            {orderedTimetableDays.map((day) => {
               const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
                 (left, right) =>
                   left.startTime.localeCompare(right.startTime) ||
@@ -260,7 +275,7 @@ export default function MyReservationTimetable({
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 p-4">
         <div className="grid min-w-full grid-cols-[repeat(6,minmax(120px,1fr))] gap-3">
-          {TIMETABLE_DAYS.map((day) => {
+          {orderedTimetableDays.map((day) => {
             const entries = [...(entriesByDay.get(day.value)?.values() ?? [])].sort(
               (left, right) =>
                 left.startTime.localeCompare(right.startTime) ||
